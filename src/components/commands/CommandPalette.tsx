@@ -5,25 +5,13 @@ import { CATEGORY_LABELS, COMMAND_LIST, type CommandDefinition, type CommandId }
 import { useCommandRegistry } from '../../state/useCommandRegistry'
 import { useShortcutSettingsStore } from '../../state/useShortcutSettingsStore'
 import { runCommand } from '../../hooks/useCommand'
+import { rankedScore } from '../../search/textSearch'
 
 interface CommandPaletteProps {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-/**
- * Strips accents and case so « Créer » is found by typing "creer".
- *
- * The whole catalogue is in French, and half of it is accented. A search box
- * that makes you reproduce the accent to find the entry is a search box people
- * stop using.
- */
-function fold(text: string): string {
-  return text
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-}
 
 /**
  * Ranks a command against a query. `null` means "no match".
@@ -33,14 +21,7 @@ function fold(text: string): string {
  * carte » above a command that merely mentions suppression in its explanation.
  */
 export function scoreCommand(command: CommandDefinition, query: string): number | null {
-  if (query === '') return 0
-  const needle = fold(query)
-  const label = fold(command.label)
-  const inLabel = label.indexOf(needle)
-  if (inLabel === 0) return 0
-  if (inLabel > 0) return 1 + inLabel / 100
-  const haystack = fold(`${command.description} ${CATEGORY_LABELS[command.category]}`)
-  return haystack.includes(needle) ? 100 : null
+  return rankedScore(command.label, `${command.description} ${CATEGORY_LABELS[command.category]}`, query)
 }
 
 /**
