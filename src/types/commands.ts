@@ -406,7 +406,15 @@ export const COMMANDS = [
     label: 'Rechercher dans l’arborescence',
     description: 'Filtre les cartes et les dossiers par nom, et place le curseur dans le champ de recherche.',
     category: 'view',
-    defaultBinding: 'Mod+F',
+    defaultBinding: null,
+  },
+  {
+    id: 'view.findInCards',
+    label: 'Rechercher dans les cartes',
+    description:
+      'Cherche une carte par son titre ou sa définition dans la carte mentale ouverte, et place le curseur dans le champ de recherche.',
+    category: 'view',
+    defaultBinding: null,
   },
   {
     id: 'view.collapseFolders',
@@ -468,6 +476,16 @@ export const COMMANDS = [
     description: 'Ouvre la configuration du quiz sur la carte ouverte.',
     category: 'app',
     defaultBinding: 'Mod+Shift+Q',
+  },
+  {
+    id: 'app.find',
+    label: 'Rechercher',
+    description:
+      'Cherche dans l’arborescence ou dans les cartes selon l’endroit où tu es — un second appui bascule vers l’autre.',
+    category: 'app',
+    defaultBinding: 'Mod+F',
+    allowInEditable: true,
+    allowInQuiz: true,
   },
   {
     id: 'sync.publish',
