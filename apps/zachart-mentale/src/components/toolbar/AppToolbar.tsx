@@ -69,7 +69,7 @@ import { duplicatePath, freeSiblingPath, renamePath } from '../../persistence/fi
 import { fileNameOf, mindMapBaseName, parentDirOf, separatorOf, withMindMapExtension } from '../../persistence/paths'
 import { quickExport } from '../../export/quickExport'
 import { describeExportError } from '../../export/describeExportError'
-import type { UpdateCheckHandle } from '../../hooks/useAppUpdater'
+import type { UpdateCheckHandle } from '@suite/shared/update'
 
 interface AppToolbarProps {
   /** The map actually on screen — `null` when nothing is open. */

@@ -1,7 +1,7 @@
 import { Sun, Moon, Monitor, type LucideIcon } from 'lucide-react'
 import type { AppearanceSettings, ThemeMode } from '../../types/appearanceSettings'
 import { FONT_OPTIONS } from '../../types/appearanceSettings'
-import type { UpdateCheckHandle, UpdateCheckStatus } from '../../hooks/useAppUpdater'
+import type { UpdateCheckHandle, UpdateCheckStatus } from '@suite/shared/update'
 import { SettingsSection } from './SettingsSection'
 import { Button } from '@suite/shared/ui'
 

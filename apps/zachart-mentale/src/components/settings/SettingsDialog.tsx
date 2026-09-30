@@ -13,7 +13,7 @@ import { useAppearanceSettingsStore } from '../../state/useAppearanceSettingsSto
 import { useQuizSettingsStore } from '../../state/useQuizSettingsStore'
 import type { AppearanceSettings } from '../../types/appearanceSettings'
 import type { QuizSettings } from '../../types/quizSettings'
-import type { UpdateCheckHandle } from '../../hooks/useAppUpdater'
+import type { UpdateCheckHandle } from '@suite/shared/update'
 import { GeneralSettingsPanel } from './GeneralSettingsPanel'
 import { AppearanceSettingsPanel } from './AppearanceSettingsPanel'
 import { QuizSettingsPanel } from './QuizSettingsPanel'
