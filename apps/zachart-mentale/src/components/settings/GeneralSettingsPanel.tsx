@@ -1,5 +1,6 @@
 import { Sun, Moon, Monitor, type LucideIcon } from 'lucide-react'
-import type { AppearanceSettings, ThemeMode } from '../../types/appearanceSettings'
+import type { ThemeMode } from '@suite/shared/theme'
+import type { AppearanceSettings } from '../../types/appearanceSettings'
 import { FONT_OPTIONS } from '../../types/appearanceSettings'
 import type { UpdateCheckHandle, UpdateCheckStatus } from '@suite/shared/update'
 import { SettingsSection } from '@suite/shared/settings'

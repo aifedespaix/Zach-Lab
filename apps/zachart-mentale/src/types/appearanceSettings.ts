@@ -1,8 +1,7 @@
 import type { CardLevel } from './card'
 import type { LevelColor, LevelColorPair } from '../colors/levelColors'
 import { levelColors } from '../colors/levelColors'
-
-export type ThemeMode = 'light' | 'dark' | 'system'
+import { parseThemeMode, type ThemeMode } from '@suite/shared/theme'
 
 export interface LevelAppearance {
   label: string
@@ -56,12 +55,6 @@ interface PartialAppearanceSettings {
   themeMode?: ThemeMode
 }
 
-const VALID_THEME_MODES: readonly ThemeMode[] = ['light', 'dark', 'system']
-
-function validThemeMode(value: unknown): ThemeMode | undefined {
-  return VALID_THEME_MODES.includes(value as ThemeMode) ? (value as ThemeMode) : undefined
-}
-
 function mergeLevelColor(defaults: LevelColor, partial: Partial<LevelColor> | undefined): LevelColor {
   return { ...defaults, ...partial }
 }
@@ -93,7 +86,7 @@ export function mergeAppearanceSettings(partial: PartialAppearanceSettings | nul
   return {
     levels,
     fontFamily: partial.fontFamily ?? DEFAULT_APPEARANCE_SETTINGS.fontFamily,
-    themeMode: validThemeMode(partial.themeMode) ?? DEFAULT_APPEARANCE_SETTINGS.themeMode,
+    themeMode: parseThemeMode(partial.themeMode) ?? DEFAULT_APPEARANCE_SETTINGS.themeMode,
   }
 }
 

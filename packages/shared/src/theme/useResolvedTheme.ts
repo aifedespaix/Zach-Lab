@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useAppearanceSettingsStore } from '../state/useAppearanceSettingsStore'
+import { useThemeStore } from './useThemeStore'
 
 function systemPrefersDarkNow(): boolean {
   return typeof window !== 'undefined' && typeof window.matchMedia === 'function'
@@ -12,7 +12,7 @@ function systemPrefersDarkNow(): boolean {
  * 'light' | 'dark', tracking the OS preference live while in 'system' mode.
  */
 export function useResolvedTheme(): 'light' | 'dark' {
-  const themeMode = useAppearanceSettingsStore(s => s.themeMode)
+  const themeMode = useThemeStore(s => s.mode)
   const [systemPrefersDark, setSystemPrefersDark] = useState(systemPrefersDarkNow)
 
   useEffect(() => {
@@ -30,7 +30,7 @@ export function useResolvedTheme(): 'light' | 'dark' {
 
 /**
  * Applies the resolved theme to `<html>` as the `dark` class shadcn's tokens
- * key off (`src/index.css`'s `.dark { ... }` block). Call once, near the app
+ * key off (`theme.css`'s `.dark { ... }` block). Call once, near the app
  * root — every other consumer of the theme should read `useResolvedTheme()`
  * for the value, not re-run this side effect.
  */

@@ -67,8 +67,7 @@ import { canMoveCardTo, overflowingCardCount, subtreeDepths } from '../state/car
 import { CardNode, CARD_WIDTH } from './CardNode'
 import { clampCardLevel, detachedColors, levelColor } from '../colors/levelColors'
 import { useAppearanceSettingsStore } from '../state/useAppearanceSettingsStore'
-import { useResolvedTheme } from '../hooks/useResolvedTheme'
-import { toCss } from '@suite/shared/theme'
+import { useResolvedTheme, toCss } from '@suite/shared/theme'
 
 // Nominal card size. The width is the card's own fixed width (`CARD_WIDTH`),
 // shared rather than re-declared so the pre-measurement fallback and the real

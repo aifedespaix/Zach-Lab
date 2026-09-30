@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useResolvedTheme, useThemeDomSync } from './useResolvedTheme'
-import { useAppearanceSettingsStore } from '../state/useAppearanceSettingsStore'
-import { DEFAULT_APPEARANCE_SETTINGS } from '../types/appearanceSettings'
+import { useThemeStore } from './useThemeStore'
 
 function mockMatchMedia(initialMatches: boolean) {
   let handler: ((event: MediaQueryListEvent) => void) | null = null
@@ -26,26 +25,26 @@ function mockMatchMedia(initialMatches: boolean) {
 describe('useResolvedTheme', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
-    useAppearanceSettingsStore.setState(DEFAULT_APPEARANCE_SETTINGS)
+    useThemeStore.setState({ mode: 'system' })
   })
 
   it('returns the explicit mode without consulting the system preference', () => {
     mockMatchMedia(true)
-    useAppearanceSettingsStore.setState({ themeMode: 'light' })
+    useThemeStore.setState({ mode: 'light' })
     const { result } = renderHook(() => useResolvedTheme())
     expect(result.current).toBe('light')
   })
 
   it('follows the system preference when mode is "system"', () => {
     mockMatchMedia(true)
-    useAppearanceSettingsStore.setState({ themeMode: 'system' })
+    useThemeStore.setState({ mode: 'system' })
     const { result } = renderHook(() => useResolvedTheme())
     expect(result.current).toBe('dark')
   })
 
   it('reacts to a live system preference change while in "system" mode', () => {
     const media = mockMatchMedia(false)
-    useAppearanceSettingsStore.setState({ themeMode: 'system' })
+    useThemeStore.setState({ mode: 'system' })
     const { result } = renderHook(() => useResolvedTheme())
     expect(result.current).toBe('light')
 
@@ -65,13 +64,13 @@ describe('useResolvedTheme', () => {
 describe('useThemeDomSync', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
-    useAppearanceSettingsStore.setState(DEFAULT_APPEARANCE_SETTINGS)
+    useThemeStore.setState({ mode: 'system' })
     document.documentElement.classList.remove('dark')
   })
 
   it('adds the dark class when the resolved theme is dark', () => {
     mockMatchMedia(false)
-    useAppearanceSettingsStore.setState({ themeMode: 'dark' })
+    useThemeStore.setState({ mode: 'dark' })
     renderHook(() => useThemeDomSync())
     expect(document.documentElement.classList.contains('dark')).toBe(true)
   })
@@ -79,7 +78,7 @@ describe('useThemeDomSync', () => {
   it('removes the dark class when the resolved theme is light', () => {
     mockMatchMedia(false)
     document.documentElement.classList.add('dark')
-    useAppearanceSettingsStore.setState({ themeMode: 'light' })
+    useThemeStore.setState({ mode: 'light' })
     renderHook(() => useThemeDomSync())
     expect(document.documentElement.classList.contains('dark')).toBe(false)
   })

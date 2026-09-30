@@ -28,8 +28,7 @@ import { useQuizSettingsStore } from '../state/useQuizSettingsStore'
 import { revealedSet, slotsOf } from '../quiz/blanks'
 import { clampCardLevel, detachedColors } from '../colors/levelColors'
 import { useAppearanceSettingsStore } from '../state/useAppearanceSettingsStore'
-import { useResolvedTheme } from '../hooks/useResolvedTheme'
-import { toCss } from '@suite/shared/theme'
+import { useResolvedTheme, toCss } from '@suite/shared/theme'
 import {
   Dialog,
   DialogContent,

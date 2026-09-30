@@ -1,6 +1,5 @@
-import { toCss } from '@suite/shared/theme'
+import { toCss, useResolvedTheme } from '@suite/shared/theme'
 import { mapTypeColor } from '../../colors/mapTypeColors'
-import { useResolvedTheme } from '../../hooks/useResolvedTheme'
 import {
   MAP_TYPE_DESCRIPTIONS,
   MAP_TYPE_LABELS,

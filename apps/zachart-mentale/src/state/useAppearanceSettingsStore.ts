@@ -1,5 +1,6 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import type { AppearanceSettings, ThemeMode } from '../types/appearanceSettings'
+import { useThemeStore, type ThemeMode } from '@suite/shared/theme'
+import type { AppearanceSettings } from '../types/appearanceSettings'
 import { DEFAULT_APPEARANCE_SETTINGS } from '../types/appearanceSettings'
 import { loadAppearanceSettings, saveAppearanceSettings } from '../persistence/appearanceSettings'
 
@@ -80,3 +81,11 @@ export function createAppearanceSettingsStore(): AppearanceSettingsStore {
 }
 
 export const useAppearanceSettingsStore = createAppearanceSettingsStore()
+
+// The theme mode lives in the appearance file (an existing user's choice is
+// already there), but everything that PAINTS the theme reads the shared store —
+// the same one a new app of the suite starts from. Mirror every change into it:
+// the settings dialog's live preview, "Annuler", and the file loading at startup.
+useAppearanceSettingsStore.subscribe((state, previous) => {
+  if (state.themeMode !== previous.themeMode) useThemeStore.getState().setMode(state.themeMode)
+})

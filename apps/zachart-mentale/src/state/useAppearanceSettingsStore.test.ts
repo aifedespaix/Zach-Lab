@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { createAppearanceSettingsStore } from './useAppearanceSettingsStore'
+import { useThemeStore } from '@suite/shared/theme'
+import { createAppearanceSettingsStore, useAppearanceSettingsStore } from './useAppearanceSettingsStore'
 import { DEFAULT_APPEARANCE_SETTINGS } from '../types/appearanceSettings'
 
 vi.mock('../persistence/appearanceSettings', () => ({
@@ -66,5 +67,43 @@ describe('useAppearanceSettingsStore', () => {
     await store.getState().setThemeMode('dark')
 
     expect(store.getState().themeMode).toBe('dark')
+  })
+})
+
+describe('useAppearanceSettingsStore — thème partagé', () => {
+  beforeEach(() => {
+    vi.mocked(loadAppearanceSettings).mockReset()
+    vi.mocked(saveAppearanceSettings).mockReset().mockResolvedValue(undefined)
+    useAppearanceSettingsStore.setState(DEFAULT_APPEARANCE_SETTINGS)
+    useThemeStore.setState({ mode: 'system' })
+  })
+
+  it('recopie chaque changement de mode dans le store de thème que tout le monde lit', () => {
+    useAppearanceSettingsStore.setState({ themeMode: 'dark' })
+    expect(useThemeStore.getState().mode).toBe('dark')
+    useAppearanceSettingsStore.setState({ themeMode: 'light' })
+    expect(useThemeStore.getState().mode).toBe('light')
+  })
+
+  it('ne touche pas au thème quand un autre réglage change', () => {
+    useAppearanceSettingsStore.setState({ themeMode: 'dark' })
+    useThemeStore.setState({ mode: 'light' })
+    useAppearanceSettingsStore.setState({ fontFamily: 'Georgia, serif' })
+    expect(useThemeStore.getState().mode).toBe('light')
+  })
+
+  it('applique au démarrage le mode du fichier d\'un utilisateur existant', async () => {
+    vi.mocked(loadAppearanceSettings).mockResolvedValue({ ...DEFAULT_APPEARANCE_SETTINGS, themeMode: 'dark' })
+    await useAppearanceSettingsStore.getState().init()
+    expect(useThemeStore.getState().mode).toBe('dark')
+  })
+
+  it('un aperçu annulé (applyDraft du snapshot) remet aussi le thème d\'avant', () => {
+    useAppearanceSettingsStore.setState({ themeMode: 'light' })
+    const snapshot = useAppearanceSettingsStore.getState().snapshot()
+    useAppearanceSettingsStore.getState().applyDraft({ ...snapshot, themeMode: 'dark' })
+    expect(useThemeStore.getState().mode).toBe('dark')
+    useAppearanceSettingsStore.getState().applyDraft(snapshot)
+    expect(useThemeStore.getState().mode).toBe('light')
   })
 })
