@@ -177,3 +177,45 @@ Les tests suivent leur code. `packages/shared` a son `vitest.config.ts` (comme
 - Branche distante `origin/claude/nifty-carson-ionw1j` (`newMapOwner`) : non
   mergée, en conflit avec `main` sur la synchro ; à retraiter dans
   `apps/zachart-mentale` après la bascule si on la veut.
+
+## 9. Écarts constatés à l'implémentation
+
+Ce que le code fait et que la spec n'avait pas prévu ou avait décrit autrement.
+Les décisions détaillées sont dans le journal d'exécution du plan.
+
+- **Recherche.** Orama 3.1.18 + `@orama/stemmers` (français). `SearchDocument` =
+  `{ id } & Record<string, string | undefined>` (du texte seulement). La tolérance
+  aux fautes dépend de la longueur du mot le plus long de la requête (0, 1 ou 2).
+  Orama renvoie **tous** les documents pour une requête sans mot (`(`, un emoji) :
+  `search()` renvoie `[]` à la place. `loadSearchIndex` est un fichier à part.
+- **Palette.** Le classement par défaut de `@suite/shared/commands` est Orama
+  (`rankCommandsBySearch`), avec un index en cache par liste de commandes.
+- **Catalogue de commandes.** Le cadre travaille sur des ids `string` et lit un
+  catalogue que l'app enregistre (`defineCommandCatalog`) ; l'app garde des façades
+  typées `CommandId`. `allowInQuiz` devient `allowWhenSuspended`.
+- **Thème.** `themeMode` reste dans `appearance-settings.json` (le choix des
+  utilisateurs existants y est déjà) et est recopié dans `useThemeStore`, persisté
+  en `localStorage` pour les apps qui démarrent de zéro.
+- **Coquille.** Le redimensionnement n'était pas dans `App.tsx` mais dupliqué dans
+  `FileSidebar` et `CardDetailPanel` : extrait en `usePanelResize` /
+  `PanelResizeHandle`. `AppShell` ne fait que placer ; `AnimatedLogo` et
+  `CanvasErrorBoundary` restent dans l'app (`BootScreen` reçoit son logo en enfant).
+- **Paramètres.** `SettingsDialog` prend des `panels` **et** des `sources`
+  (`snapshot` / `restore` / `commit`) ; un enregistrement qui échoue laisse la
+  fenêtre ouverte.
+- **Recherche de cartes.** Aucun écran ne l'appelait : `scoreCard` est remplacé par
+  `cardSearch` (Orama) sans rien câbler.
+- **Rust.** `protocol-asset` n'est pas dans `suite-tauri` (propre à Zachar’t) ; une
+  app déclare directement les plugins dont sa capability utilise les permissions,
+  et `serde_json`. Le `Cargo.lock` et `bun.lock` sont uniques à la racine ; l'ancien
+  `bun.lock` a été conservé (le régénérer cassait des tests de dépendances).
+- **Releases.** Les secrets de Zachar’t gardent leurs noms d'origine ; les autres
+  apps sont publiées en pré-release. La bascule de l'endpoint de Zachar’t vers la
+  release roulante n'est **pas** faite : voir `docs/RELEASE.md`.
+- **Points ouverts fermés.** Tri de `index.css` fait (jetons génériques dans
+  `theme.css`, le reste dans l'app) ; `beforeBuildCommand` s'exécute bien dans le
+  dossier de l'app (vérifié sur les deux apps) ; `beforeDevCommand` relève du même mécanisme mais n'a pas été lancé ; `tauri-action` : les entrées utilisées existent, non vérifiées
+  en conditions réelles tant qu'un tag n'a pas été poussé.
+- **Reste ouvert.** `origin/claude/nifty-carson-ionw1j` (synchro `newMapOwner`) et
+  les branches distantes fusionnées, dont la suppression a été refusée par
+  l'environnement.
