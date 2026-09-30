@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sanitizeShortcutSettings } from './shortcutSettings'
+import { sanitizeShortcutSettings } from '@suite/shared/commands'
 
 describe('sanitizeShortcutSettings', () => {
   it('keeps the overrides it can act on, normalised', () => {

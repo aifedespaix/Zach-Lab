@@ -1,8 +1,7 @@
 import { Slider } from '@suite/shared/ui'
 import type { QuizSettings } from '../../types/quizSettings'
 import { slotsOf, revealedSet } from '../../quiz/blanks'
-import { SettingsSection } from './SettingsSection'
-import { SettingToggle } from './SettingToggle'
+import { SettingsSection, SettingToggle } from '@suite/shared/settings'
 
 /** The word the difficulty preview is drawn from — long enough to show the spread. */
 const PREVIEW_ANSWER = 'Photosynthèse'

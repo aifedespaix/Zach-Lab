@@ -1,4 +1,4 @@
-import { Switch } from '@suite/shared/ui'
+import { Switch } from '../ui'
 
 interface SettingToggleProps {
   label: string

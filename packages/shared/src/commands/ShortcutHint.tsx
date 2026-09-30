@@ -1,4 +1,4 @@
-import { formatBinding } from '../../shortcuts/keys'
+import { formatBinding } from './keys'
 
 interface ShortcutHintProps {
   binding: string | null

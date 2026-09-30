@@ -8,8 +8,7 @@ import { formatRelativeTime } from '../../utils/relativeTime'
 import { formatSyncMoment } from '../../utils/syncMoment'
 import { usePublishMindMap } from '../../hooks/usePublishMindMap'
 import { clearSyncLog, openSyncLog, revealSyncLog } from '../../persistence/syncLog'
-import { SettingsSection } from './SettingsSection'
-import { SettingToggle } from './SettingToggle'
+import { SettingsSection, SettingToggle } from '@suite/shared/settings'
 import { Button } from '@suite/shared/ui'
 
 const inputStyle = {

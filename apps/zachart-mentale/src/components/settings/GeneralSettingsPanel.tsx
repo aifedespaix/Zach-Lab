@@ -2,7 +2,7 @@ import { Sun, Moon, Monitor, type LucideIcon } from 'lucide-react'
 import type { AppearanceSettings, ThemeMode } from '../../types/appearanceSettings'
 import { FONT_OPTIONS } from '../../types/appearanceSettings'
 import type { UpdateCheckHandle, UpdateCheckStatus } from '@suite/shared/update'
-import { SettingsSection } from './SettingsSection'
+import { SettingsSection } from '@suite/shared/settings'
 import { Button } from '@suite/shared/ui'
 
 const UPDATE_STATUS_LABEL: Partial<Record<UpdateCheckStatus, string>> = {

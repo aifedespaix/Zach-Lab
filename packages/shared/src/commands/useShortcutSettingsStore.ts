@@ -1,15 +1,16 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import type { ShortcutSettings } from '../types/shortcutSettings'
-import { DEFAULT_SHORTCUT_SETTINGS } from '../types/shortcutSettings'
-import { loadShortcutSettings, saveShortcutSettings } from '../persistence/shortcutSettings'
-import { COMMAND_LIST, DEFAULT_BINDINGS, type CommandId } from '../types/commands'
-import { normalizeBinding } from '../shortcuts/keys'
+import type { ShortcutSettings } from './shortcutSettingsTypes'
+import { DEFAULT_SHORTCUT_SETTINGS } from './shortcutSettingsTypes'
+import { loadShortcutSettings, saveShortcutSettings } from './shortcutSettingsPersistence'
+import { commandList, defaultBindings, subscribeCatalog } from './catalog'
+import { normalizeBinding } from './keys'
 
 /** The effective binding of every command: the catalogue's default, then the user's overrides on top. */
-export function resolveBindings(overrides: Record<string, string | null>): Record<CommandId, string | null> {
-  const resolved = { ...DEFAULT_BINDINGS }
+export function resolveBindings(overrides: Record<string, string | null>): Record<string, string | null> {
+  const resolved = defaultBindings()
   for (const [id, binding] of Object.entries(overrides)) {
-    if (id in resolved) resolved[id as CommandId] = binding
+    // `hasOwnProperty`, not `in`: `"constructor" in {}` is true.
+    if (Object.prototype.hasOwnProperty.call(resolved, id)) resolved[id] = binding
   }
   return resolved
 }
@@ -26,13 +27,13 @@ export function resolveBindings(overrides: Record<string, string | null>): Recor
  * catalogue order wins the lookup, and `conflictsIn` below is what the
  * settings panel uses to show the collision rather than let it stay silent.
  */
-export function buildLookup(bindings: Record<CommandId, string | null>): Map<string, CommandId> {
-  const lookup = new Map<string, CommandId>()
-  for (const command of COMMAND_LIST) {
+export function buildLookup(bindings: Record<string, string | null>): Map<string, string> {
+  const lookup = new Map<string, string>()
+  for (const command of commandList()) {
     const binding = bindings[command.id]
-    if (binding !== null && !lookup.has(binding)) lookup.set(binding, command.id)
+    if (binding !== null && binding !== undefined && !lookup.has(binding)) lookup.set(binding, command.id)
   }
-  for (const command of COMMAND_LIST) {
+  for (const command of commandList()) {
     for (const alias of command.aliases ?? []) {
       if (!lookup.has(alias)) lookup.set(alias, command.id)
     }
@@ -41,11 +42,11 @@ export function buildLookup(bindings: Record<CommandId, string | null>): Map<str
 }
 
 /** Every command sharing its binding with another one, grouped by binding. */
-export function conflictsIn(bindings: Record<CommandId, string | null>): Map<string, CommandId[]> {
-  const byBinding = new Map<string, CommandId[]>()
-  for (const command of COMMAND_LIST) {
+export function conflictsIn(bindings: Record<string, string | null>): Map<string, string[]> {
+  const byBinding = new Map<string, string[]>()
+  for (const command of commandList()) {
     const binding = bindings[command.id]
-    if (binding === null) continue
+    if (binding === null || binding === undefined) continue
     const group = byBinding.get(binding)
     if (group) group.push(command.id)
     else byBinding.set(binding, [command.id])
@@ -60,8 +61,8 @@ interface ShortcutSettingsState {
   /** The user's differences from the catalogue — what gets written to disk. */
   overrides: Record<string, string | null>
   /** The effective table, recomputed on every change so components can read it directly. */
-  bindings: Record<CommandId, string | null>
-  lookup: Map<string, CommandId>
+  bindings: Record<string, string | null>
+  lookup: Map<string, string>
   init: () => Promise<void>
   /**
    * Assigns a binding (or `null` to unbind), in memory only.
@@ -72,16 +73,16 @@ interface ShortcutSettingsState {
    * displacement; `conflictsIn` still exists for collisions that arrive from
    * a hand-edited file rather than through here.
    */
-  setBinding: (id: CommandId, binding: string | null) => void
+  setBinding: (id: string, binding: string | null) => void
   /** Drops the override for one command, so it goes back to the catalogue's default. */
-  resetCommand: (id: CommandId) => void
+  resetCommand: (id: string) => void
   /** Drops every override — the "tout réinitialiser" button. */
   resetAll: () => void
   applyDraft: (settings: ShortcutSettings) => void
   commit: () => Promise<void>
   snapshot: () => ShortcutSettings
   /** The command currently holding `binding`, ignoring `except`. */
-  commandHolding: (binding: string, except?: CommandId) => CommandId | null
+  commandHolding: (binding: string, except?: string) => string | null
 }
 
 export type ShortcutSettingsStore = UseBoundStore<StoreApi<ShortcutSettingsState>>
@@ -92,7 +93,7 @@ function derive(overrides: Record<string, string | null>) {
 }
 
 export function createShortcutSettingsStore(): ShortcutSettingsStore {
-  return create<ShortcutSettingsState>((set, get) => ({
+  const store = create<ShortcutSettingsState>((set, get) => ({
     ...derive(DEFAULT_SHORTCUT_SETTINGS.bindings),
 
     // Same contract as the other settings stores: an unreadable or corrupt
@@ -124,7 +125,7 @@ export function createShortcutSettingsStore(): ShortcutSettingsStore {
       // An override equal to the default is not stored: it would pin that
       // command to today's key forever, past any later change to the
       // catalogue. `resetCommand` and this branch converge on the same state.
-      if (normalized === DEFAULT_BINDINGS[id]) delete next[id]
+      if (normalized === defaultBindings()[id]) delete next[id]
       else next[id] = normalized
 
       set(derive(next))
@@ -155,13 +156,20 @@ export function createShortcutSettingsStore(): ShortcutSettingsStore {
 
     commandHolding: (binding, except) => {
       const bindings = get().bindings
-      for (const command of COMMAND_LIST) {
+      for (const command of commandList()) {
         if (command.id === except) continue
         if (bindings[command.id] === binding) return command.id
       }
       return null
     },
   }))
+
+  // The store is created when this module loads, which can be BEFORE the app has
+  // registered its catalogue: recompute the effective table when it does, or
+  // every binding would stay empty until the user touched a setting.
+  subscribeCatalog(() => store.setState(derive(store.getState().overrides)))
+
+  return store
 }
 
 export const useShortcutSettingsStore = createShortcutSettingsStore()

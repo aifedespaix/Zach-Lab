@@ -1,9 +1,9 @@
 import { exists, readTextFile, writeTextFile, mkdir } from '@tauri-apps/plugin-fs'
 import { appConfigDir, join } from '@tauri-apps/api/path'
-import type { ShortcutSettings } from '../types/shortcutSettings'
-import { DEFAULT_SHORTCUT_SETTINGS } from '../types/shortcutSettings'
-import { isCommandId } from '../types/commands'
-import { normalizeBinding } from '../shortcuts/keys'
+import type { ShortcutSettings } from './shortcutSettingsTypes'
+import { DEFAULT_SHORTCUT_SETTINGS } from './shortcutSettingsTypes'
+import { isCommandId } from './catalog'
+import { normalizeBinding } from './keys'
 
 const SETTINGS_FILE_NAME = 'shortcuts.json'
 

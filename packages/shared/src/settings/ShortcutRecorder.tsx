@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { bindingFromEvent, formatBinding } from '../../shortcuts/keys'
+import { bindingFromEvent, formatBinding } from '../commands/keys'
 
 interface ShortcutRecorderProps {
   /** The binding currently assigned, shown while not recording. */

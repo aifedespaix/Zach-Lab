@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react'
 import { RotateCcw, Search, X } from 'lucide-react'
-import { Button } from '@suite/shared/ui'
+import { Button } from '../ui'
 import { SettingsSection } from './SettingsSection'
 import { ShortcutRecorder } from './ShortcutRecorder'
-import { CATEGORY_LABELS, COMMAND_LIST, DEFAULT_BINDINGS, commandsByCategory, type CommandId } from '../../types/commands'
-import { formatBinding } from '../../shortcuts/keys'
-import { conflictsIn, useShortcutSettingsStore } from '../../state/useShortcutSettingsStore'
+import { categoryLabel, commandById, commandsByCategory, defaultBindings } from '../commands/catalog'
+import { formatBinding } from '../commands/keys'
+import { conflictsIn, useShortcutSettingsStore } from '../commands/useShortcutSettingsStore'
 
 /** Accent- and case-insensitive, so « Créer » is found by typing "creer". */
 function fold(text: string): string {
@@ -35,7 +35,7 @@ export function ShortcutSettingsPanel() {
   const bindings = useShortcutSettingsStore(s => s.bindings)
   const overrides = useShortcutSettingsStore(s => s.overrides)
   const [query, setQuery] = useState('')
-  const [recording, setRecording] = useState<CommandId | null>(null)
+  const [recording, setRecording] = useState<string | null>(null)
   /** « Ctrl+D était sur "Dupliquer la carte" » — the last displacement, so it is never silent. */
   const [displaced, setDisplaced] = useState<{ command: string; binding: string } | null>(null)
 
@@ -49,9 +49,9 @@ export function ShortcutSettingsPanel() {
         ...group,
         commands: group.commands.filter(command => {
           if (needle === '') return true
-          const binding = bindings[command.id as CommandId]
+          const binding = bindings[command.id]
           return fold(
-            `${command.label} ${command.description} ${CATEGORY_LABELS[command.category]} ${
+            `${command.label} ${command.description} ${categoryLabel(command.category)} ${
               binding === null ? '' : formatBinding(binding)
             }`
           ).includes(needle)
@@ -60,7 +60,7 @@ export function ShortcutSettingsPanel() {
       .filter(group => group.commands.length > 0)
   }, [query, bindings])
 
-  function assign(id: CommandId, binding: string) {
+  function assign(id: string, binding: string) {
     const store = useShortcutSettingsStore.getState()
     const holder = store.commandHolding(binding, id)
     store.setBinding(id, binding)
@@ -70,7 +70,7 @@ export function ShortcutSettingsPanel() {
     setDisplaced(
       holder === null
         ? null
-        : { command: COMMAND_LIST.find(command => command.id === holder)?.label ?? holder, binding }
+        : { command: commandById(holder)?.label ?? holder, binding }
     )
   }
 
@@ -138,12 +138,12 @@ export function ShortcutSettingsPanel() {
       )}
 
       {groups.map(group => (
-        <SettingsSection key={group.category} title={CATEGORY_LABELS[group.category]}>
+        <SettingsSection key={group.category} title={categoryLabel(group.category)}>
           <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
             {group.commands.map(command => {
-              const id = command.id as CommandId
+              const id = command.id
               const binding = bindings[id]
-              const isDefault = binding === DEFAULT_BINDINGS[id]
+              const isDefault = binding === defaultBindings()[id]
               const conflicting = binding !== null && (conflicts.get(binding)?.length ?? 0) > 1
 
               return (

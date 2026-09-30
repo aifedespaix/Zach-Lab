@@ -1,8 +1,8 @@
 import { render, screen, fireEvent, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach } from 'vitest'
-import { ShortcutSettingsPanel } from './ShortcutSettingsPanel'
-import { useShortcutSettingsStore } from '../../state/useShortcutSettingsStore'
+import { ShortcutSettingsPanel } from '@suite/shared/settings'
+import { useShortcutSettingsStore } from '@suite/shared/commands'
 
 /** The row of the list whose action is `label`. */
 function rowFor(label: string): HTMLElement {

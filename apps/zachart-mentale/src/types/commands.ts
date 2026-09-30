@@ -12,6 +12,8 @@
  * in every menu at the same time, because they all read the same source.
  */
 
+import { defineCommandCatalog, type CommandDefinition } from '@suite/shared/commands'
+
 /** The groups the shortcuts settings tab (and the palette) shows. */
 export type CommandCategory = 'file' | 'edit' | 'card' | 'navigation' | 'view' | 'app'
 
@@ -22,42 +24,6 @@ export const CATEGORY_LABELS: Record<CommandCategory, string> = {
   navigation: 'Navigation',
   view: 'Affichage',
   app: 'Application',
-}
-
-/**
- * Where a shortcut is allowed to fire.
- *
- * `global` works wherever focus happens to be; `canvas` only fires while the
- * mind map itself has focus. That distinction is what makes bare keys usable
- * as shortcuts at all: `Entrée` may create a sibling card on the canvas, but
- * it must still activate a focused toolbar button, and `Suppr` must still
- * delete a character in the rename field. See `useGlobalShortcuts`.
- */
-export type CommandScope = 'global' | 'canvas'
-
-export interface CommandDefinition {
-  readonly id: string
-  /** Imperative, in the app's language — this is the menu entry and the tooltip. */
-  readonly label: string
-  /** One sentence, for the settings list and the palette. Never a repeat of the label. */
-  readonly description: string
-  readonly category: CommandCategory
-  /** `null` means "no key by default" — the action exists, the user may bind it. */
-  readonly defaultBinding: string | null
-  /**
-   * Extra, non-editable bindings that always work alongside the configured
-   * one. Only for genuine synonyms every app accepts (Ctrl+Y for redo).
-   */
-  readonly aliases?: readonly string[]
-  /** Fires even while a text field has focus — `Ctrl+S` must, `Ctrl+Z` must not. */
-  readonly allowInEditable?: boolean
-  /** Fires during a quiz. Almost nothing does: no card may change under a quiz. */
-  readonly allowInQuiz?: boolean
-  /** Skipped when the user has an actual text selection — the clipboard trio. */
-  readonly skipWhenTextSelected?: boolean
-  readonly scope?: CommandScope
-  /** Rendered in red in menus, and given no default binding when it deletes a file. */
-  readonly destructive?: boolean
 }
 
 export const COMMANDS = [
@@ -368,7 +334,7 @@ export const COMMANDS = [
     description: 'Rapproche la vue de la carte mentale.',
     category: 'view',
     defaultBinding: 'Mod+Plus',
-    allowInQuiz: true,
+    allowWhenSuspended: true,
   },
   {
     id: 'view.zoomOut',
@@ -376,7 +342,7 @@ export const COMMANDS = [
     description: 'Éloigne la vue de la carte mentale.',
     category: 'view',
     defaultBinding: 'Mod+Minus',
-    allowInQuiz: true,
+    allowWhenSuspended: true,
   },
   {
     id: 'view.zoomReset',
@@ -384,7 +350,7 @@ export const COMMANDS = [
     description: 'Remet le zoom à sa taille réelle.',
     category: 'view',
     defaultBinding: 'Mod+0',
-    allowInQuiz: true,
+    allowWhenSuspended: true,
   },
   {
     id: 'view.fitView',
@@ -392,7 +358,7 @@ export const COMMANDS = [
     description: 'Cadre toute la carte mentale dans la fenêtre.',
     category: 'view',
     defaultBinding: 'Mod+9',
-    allowInQuiz: true,
+    allowWhenSuspended: true,
   },
   {
     id: 'view.toggleSidebar',
@@ -443,7 +409,7 @@ export const COMMANDS = [
     description: 'Passe le thème de l’application en clair ou en sombre.',
     category: 'view',
     defaultBinding: 'Mod+Shift+T',
-    allowInQuiz: true,
+    allowWhenSuspended: true,
   },
 
   // ── Application ───────────────────────────────────────────────────────────
@@ -453,7 +419,7 @@ export const COMMANDS = [
     description: 'Cherche et lance n’importe quelle action de l’application au clavier.',
     category: 'app',
     defaultBinding: 'Mod+K',
-    allowInQuiz: true,
+    allowWhenSuspended: true,
   },
   {
     id: 'app.settings',
@@ -468,7 +434,7 @@ export const COMMANDS = [
     description: 'Ouvre la liste des raccourcis, pour les consulter ou les modifier.',
     category: 'app',
     defaultBinding: 'F1',
-    allowInQuiz: true,
+    allowWhenSuspended: true,
   },
   {
     id: 'app.quiz',
@@ -485,7 +451,7 @@ export const COMMANDS = [
     category: 'app',
     defaultBinding: 'Mod+F',
     allowInEditable: true,
-    allowInQuiz: true,
+    allowWhenSuspended: true,
   },
   {
     id: 'sync.publish',
@@ -506,40 +472,16 @@ export const COMMANDS = [
     // one the user expects elsewhere. They may bind it from the settings.
     defaultBinding: null,
   },
-] as const satisfies readonly CommandDefinition[]
+] as const satisfies readonly (CommandDefinition & { category: CommandCategory })[]
 
 export type CommandId = (typeof COMMANDS)[number]['id']
 
 /**
- * The same catalogue, widened to the interface.
- *
- * `COMMANDS` is a `const` tuple so `CommandId` can be a union of literals, but
- * that also means each entry's type only carries the optional fields it
- * actually sets — iterating it and reading `aliases` would not type-check.
- * Anything that walks the catalogue reads it through here.
+ * Hands the catalogue to the shared framework (registry, shortcut settings,
+ * dispatcher, palette, settings panel), which only knows commands by id.
+ * `CommandId` above is what keeps the app's own call sites typed.
  */
-export const COMMAND_LIST: readonly (CommandDefinition & { id: CommandId })[] = COMMANDS
-
-const COMMANDS_BY_ID = new Map<string, CommandDefinition>(COMMANDS.map(command => [command.id, command]))
-
-export function commandById(id: string): CommandDefinition | undefined {
-  return COMMANDS_BY_ID.get(id)
-}
-
-/** Whether `id` is one of the catalogue's commands — the guard a settings file needs. */
-export function isCommandId(id: string): id is CommandId {
-  return COMMANDS_BY_ID.has(id)
-}
-
-export const DEFAULT_BINDINGS: Record<CommandId, string | null> = Object.fromEntries(
-  COMMANDS.map(command => [command.id, command.defaultBinding])
-) as Record<CommandId, string | null>
-
-/** The catalogue grouped for display, in the order the categories are declared above. */
-export function commandsByCategory(): { category: CommandCategory; commands: CommandDefinition[] }[] {
-  const order: CommandCategory[] = ['file', 'edit', 'card', 'navigation', 'view', 'app']
-  return order.map(category => ({
-    category,
-    commands: COMMANDS.filter(command => command.category === category),
-  }))
-}
+defineCommandCatalog({
+  categories: (Object.keys(CATEGORY_LABELS) as CommandCategory[]).map(id => ({ id, label: CATEGORY_LABELS[id] })),
+  commands: COMMANDS,
+})

@@ -1,27 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@suite/shared/ui'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui'
 import { ShortcutHint } from './ShortcutHint'
-import { CATEGORY_LABELS, COMMAND_LIST, type CommandDefinition, type CommandId } from '../../types/commands'
-import { useCommandRegistry } from '../../state/useCommandRegistry'
-import { useShortcutSettingsStore } from '../../state/useShortcutSettingsStore'
-import { runCommand } from '../../hooks/useCommand'
-import { rankedScore } from '../../search/textSearch'
+import { categoryLabel, commandList } from './catalog'
+import { useCommandRegistry } from './useCommandRegistry'
+import { useShortcutSettingsStore } from './useShortcutSettingsStore'
+import { runCommand } from './useCommand'
+import { rankCommandsByText, type CommandRanker } from './rankCommandsByText'
 
-interface CommandPaletteProps {
+export interface CommandPaletteProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-}
-
-
-/**
- * Ranks a command against a query. `null` means "no match".
- *
- * A hit on the LABEL outranks one on the description or the category, and an
- * earlier hit outranks a later one, so typing "supp" puts « Supprimer la
- * carte » above a command that merely mentions suppression in its explanation.
- */
-export function scoreCommand(command: CommandDefinition, query: string): number | null {
-  return rankedScore(command.label, `${command.description} ${CATEGORY_LABELS[command.category]}`, query)
+  /**
+   * How a query is matched against the commands. Defaults to a plain
+   * accent-insensitive substring match; an app with a real search engine
+   * plugs it in here.
+   */
+  rank?: CommandRanker
 }
 
 /**
@@ -36,7 +30,7 @@ export function scoreCommand(command: CommandDefinition, query: string): number 
  * missing from the list looks like a missing feature; « Coller la carte »
  * greyed out says the clipboard is empty.
  */
-export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
+export function CommandPalette({ open, onOpenChange, rank = rankCommandsByText }: CommandPaletteProps) {
   const [query, setQuery] = useState('')
   const [highlighted, setHighlighted] = useState(0)
   const registrations = useCommandRegistry(state => state.registrations)
@@ -53,10 +47,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   }, [open])
 
   const results = useMemo(() => {
-    const scored = COMMAND_LIST.map(command => ({ command, score: scoreCommand(command, query) })).filter(
-      (entry): entry is { command: CommandDefinition & { id: CommandId }; score: number } => entry.score !== null
-    )
-    return scored
+    return rank(query, commandList())
       .sort((a, b) => {
         if (a.score !== b.score) return a.score - b.score
         // Available actions first on an equal match: what you can do now is
@@ -67,7 +58,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         return 0
       })
       .map(entry => entry.command)
-  }, [query, registrations])
+  }, [query, registrations, rank])
 
   const active = results[Math.min(highlighted, results.length - 1)]
 
@@ -78,7 +69,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     if (active instanceof HTMLElement) active.scrollIntoView?.({ block: 'nearest' })
   }, [highlighted, query])
 
-  function launch(id: CommandId) {
+  function launch(id: string) {
     onOpenChange(false)
     // After the dialog closes, for the same focus reason the menus defer: a
     // command that opens another dialog would otherwise fight this one's
@@ -181,7 +172,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                           marginTop: 1,
                         }}
                       >
-                        {CATEGORY_LABELS[command.category]} · {command.description}
+                        {categoryLabel(command.category)} · {command.description}
                       </span>
                     </span>
                     <ShortcutHint binding={bindings[command.id]} />

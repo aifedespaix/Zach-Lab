@@ -1,10 +1,13 @@
 import { render, screen, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { CommandPalette, scoreCommand } from './CommandPalette'
-import { useCommandRegistry } from '../../state/useCommandRegistry'
-import { useShortcutSettingsStore } from '../../state/useShortcutSettingsStore'
-import { commandById } from '../../types/commands'
+import {
+  CommandPalette,
+  commandById,
+  useCommandRegistry,
+  useShortcutSettingsStore,
+} from '@suite/shared/commands'
+import { rankCommands, scoreCommand } from './rankCommands'
 
 function publish(id: string, run: () => void, enabled = true) {
   act(() => useCommandRegistry.getState().register(id as never, { run, enabled }))
@@ -34,7 +37,7 @@ describe('CommandPalette', () => {
 
   it('shows each action with its category and its current shortcut', async () => {
     const user = userEvent.setup()
-    render(<CommandPalette open onOpenChange={() => {}} />)
+    render(<CommandPalette open onOpenChange={() => {}} rank={rankCommands} />)
 
     await user.type(screen.getByLabelText('Rechercher une commande'), 'annuler')
     const option = screen.getByRole('option', { name: /Annuler/ })
@@ -49,7 +52,7 @@ describe('CommandPalette', () => {
     publish('edit.undo', undo)
     vi.useFakeTimers({ shouldAdvanceTime: true })
     try {
-      render(<CommandPalette open onOpenChange={onOpenChange} />)
+      render(<CommandPalette open onOpenChange={onOpenChange} rank={rankCommands} />)
       await user.type(screen.getByLabelText('Rechercher une commande'), 'annuler')
       await user.keyboard('{Enter}')
       expect(onOpenChange).toHaveBeenCalledWith(false)
@@ -68,7 +71,7 @@ describe('CommandPalette', () => {
     const user = userEvent.setup()
     const paste = vi.fn()
     publish('edit.paste', paste, false)
-    render(<CommandPalette open onOpenChange={() => {}} />)
+    render(<CommandPalette open onOpenChange={() => {}} rank={rankCommands} />)
 
     await user.type(screen.getByLabelText('Rechercher une commande'), 'coller')
     expect(screen.getByRole('option', { name: /Coller la carte/ })).toBeDisabled()
@@ -76,7 +79,7 @@ describe('CommandPalette', () => {
 
   it('says so when nothing matches', async () => {
     const user = userEvent.setup()
-    render(<CommandPalette open onOpenChange={() => {}} />)
+    render(<CommandPalette open onOpenChange={() => {}} rank={rankCommands} />)
     await user.type(screen.getByLabelText('Rechercher une commande'), 'xyzzy')
     expect(screen.getByText(/Aucune commande ne correspond/)).toBeInTheDocument()
   })

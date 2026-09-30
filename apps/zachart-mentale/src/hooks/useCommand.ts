@@ -1,51 +1,49 @@
-import { useEffect, useMemo, useRef } from 'react'
-import { useCommandRegistry, type CommandRegistration } from '../state/useCommandRegistry'
-import { useShortcutSettingsStore } from '../state/useShortcutSettingsStore'
-import { formatBinding } from '../shortcuts/keys'
+import {
+  runCommand as runSharedCommand,
+  useBinding as useSharedBinding,
+  useCommand as useSharedCommand,
+  useCommandEnabled as useSharedCommandEnabled,
+  useCommandLabel as useSharedCommandLabel,
+  useShortcutLabel as useSharedShortcutLabel,
+} from '@suite/shared/commands'
 import type { CommandId } from '../types/commands'
+
+/*
+ * The command framework is shared and knows ids only as strings. These wrappers
+ * put the app's `CommandId` union back on every entry point, so a mistyped id
+ * (`'card.edt'`) is still a compile error here rather than a menu entry that
+ * silently never does anything.
+ */
 
 /**
  * Publishes `run` as the handler for `id` for as long as the component is
- * mounted.
- *
- * `run` is read through a ref, so a component may pass an inline arrow without
- * re-registering on every render — the registration only changes when the
- * command's availability (or its contextual label) actually changes.
+ * mounted. See the shared `useCommand`.
  */
 export function useCommand(id: CommandId, run: () => void, enabled = true, label?: string): void {
-  const runRef = useRef(run)
-  runRef.current = run
-
-  useEffect(() => {
-    const registration: CommandRegistration = { run: () => runRef.current(), enabled, label }
-    const { register, unregister } = useCommandRegistry.getState()
-    register(id, registration)
-    return () => unregister(id, registration)
-  }, [id, enabled, label])
+  useSharedCommand(id, run, enabled, label)
 }
 
 /** Whether the command can be run right now — what a menu entry disables itself on. */
 export function useCommandEnabled(id: CommandId): boolean {
-  return useCommandRegistry(state => state.registrations[id]?.enabled === true)
+  return useSharedCommandEnabled(id)
 }
 
 /** The contextual label a handler published, falling back to the catalogue's. */
 export function useCommandLabel(id: CommandId): string | undefined {
-  return useCommandRegistry(state => state.registrations[id]?.label)
+  return useSharedCommandLabel(id)
 }
 
 /** Runs a command by id — the same entry point a keystroke, a menu and the palette all use. */
 export function runCommand(id: CommandId): boolean {
-  return useCommandRegistry.getState().run(id)
+  return runSharedCommand(id)
 }
 
 /** The command's binding as configured, or `null` when it has none. */
 export function useBinding(id: CommandId): string | null {
-  return useShortcutSettingsStore(state => state.bindings[id])
+  return useSharedBinding(id)
 }
 
 /** The binding spelled for a human — « Ctrl + Maj + Z » — or `''` when unbound. */
 export function useShortcutLabel(id: CommandId): string {
-  const binding = useBinding(id)
-  return useMemo(() => formatBinding(binding), [binding])
+  return useSharedShortcutLabel(id)
 }

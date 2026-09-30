@@ -3,7 +3,7 @@ import type { CardLevel } from '../../types/card'
 import type { AppearanceSettings, LevelAppearance } from '../../types/appearanceSettings'
 import { defaultLevelAppearances } from '../../types/appearanceSettings'
 import { LevelAppearanceEditor } from '../appearance/LevelAppearanceEditor'
-import { SettingsSection } from './SettingsSection'
+import { SettingsSection } from '@suite/shared/settings'
 import { Button } from '@suite/shared/ui'
 
 interface AppearanceSettingsPanelProps {

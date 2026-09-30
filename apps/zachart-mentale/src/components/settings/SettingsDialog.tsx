@@ -17,10 +17,10 @@ import type { UpdateCheckHandle } from '@suite/shared/update'
 import { GeneralSettingsPanel } from './GeneralSettingsPanel'
 import { AppearanceSettingsPanel } from './AppearanceSettingsPanel'
 import { QuizSettingsPanel } from './QuizSettingsPanel'
-import { ShortcutSettingsPanel } from './ShortcutSettingsPanel'
+import { ShortcutSettingsPanel } from '@suite/shared/settings'
 import { SyncSettingsPanel } from './SyncSettingsPanel'
-import { useShortcutSettingsStore } from '../../state/useShortcutSettingsStore'
-import type { ShortcutSettings } from '../../types/shortcutSettings'
+import { useShortcutSettingsStore } from '@suite/shared/commands'
+import type { ShortcutSettings } from '@suite/shared/commands'
 
 export type SettingsTab = 'general' | 'appearance' | 'quiz' | 'shortcuts' | 'sync'
 

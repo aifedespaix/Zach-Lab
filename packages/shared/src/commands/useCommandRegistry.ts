@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import type { CommandId } from '../types/commands'
 
 export interface CommandRegistration {
   run: () => void
@@ -19,24 +18,24 @@ export interface CommandRegistration {
 }
 
 interface CommandRegistryState {
-  registrations: Partial<Record<CommandId, CommandRegistration>>
+  registrations: Record<string, CommandRegistration | undefined>
   /**
    * Publishes a handler for `id`. The component that owns the state an action
    * needs is the one that registers it: the canvas owns "add a sub-card", the
    * sidebar owns "toggle the tree", so no store has to grow a mirror of a
    * component's local state just to be reachable from a keystroke.
    */
-  register: (id: CommandId, registration: CommandRegistration) => void
+  register: (id: string, registration: CommandRegistration) => void
   /**
    * Removes `registration` — but only if it is still the current one. Two
    * components can hold the same command across a remount (the new one
    * registers before the old one's cleanup runs), and an unconditional delete
    * would leave the command dead until the next render.
    */
-  unregister: (id: CommandId, registration: CommandRegistration) => void
+  unregister: (id: string, registration: CommandRegistration) => void
   /** Runs the command if something registered it and it is currently enabled. */
-  run: (id: CommandId) => boolean
-  isEnabled: (id: CommandId) => boolean
+  run: (id: string) => boolean
+  isEnabled: (id: string) => boolean
 }
 
 export const useCommandRegistry = create<CommandRegistryState>((set, get) => ({

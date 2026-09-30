@@ -1,13 +1,32 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('../persistence/shortcutSettings', () => ({
+vi.mock('./shortcutSettingsPersistence', () => ({
   loadShortcutSettings: vi.fn(),
   saveShortcutSettings: vi.fn(),
 }))
 
-import { createShortcutSettingsStore, conflictsIn, resolveBindings, buildLookup } from './useShortcutSettingsStore'
-import { loadShortcutSettings, saveShortcutSettings } from '../persistence/shortcutSettings'
-import { DEFAULT_BINDINGS } from '../types/commands'
+import { defaultBindings, defineCommandCatalog, resetCommandCatalog, type CommandCatalog } from './catalog'
+import { loadShortcutSettings, saveShortcutSettings } from './shortcutSettingsPersistence'
+import { buildLookup, conflictsIn, createShortcutSettingsStore, resolveBindings } from './useShortcutSettingsStore'
+
+const CATALOG: CommandCatalog = {
+  categories: [{ id: 'edit', label: 'Édition' }],
+  commands: [
+    { id: 'edit.undo', label: 'Annuler', description: 'Annule.', category: 'edit', defaultBinding: 'Mod+Z' },
+    {
+      id: 'edit.redo',
+      label: 'Rétablir',
+      description: 'Rétablit.',
+      category: 'edit',
+      defaultBinding: 'Mod+Shift+Z',
+      aliases: ['Mod+Y'],
+    },
+    { id: 'card.openFiche', label: 'Ouvrir la fiche', description: 'Ouvre.', category: 'edit', defaultBinding: null },
+  ],
+}
+
+beforeEach(() => defineCommandCatalog(CATALOG))
+afterEach(() => resetCommandCatalog())
 
 describe('useShortcutSettingsStore', () => {
   beforeEach(() => {
@@ -59,7 +78,7 @@ describe('useShortcutSettingsStore', () => {
     // change to the catalogue.
     const store = createShortcutSettingsStore()
     store.getState().setBinding('edit.undo', 'Mod+U')
-    store.getState().setBinding('edit.undo', DEFAULT_BINDINGS['edit.undo']!)
+    store.getState().setBinding('edit.undo', defaultBindings()['edit.undo']!)
     expect(store.getState().overrides).not.toHaveProperty('edit.undo')
     expect(store.getState().bindings['edit.undo']).toBe('Mod+Z')
   })
@@ -84,6 +103,30 @@ describe('useShortcutSettingsStore', () => {
     store.getState().resetAll()
     expect(store.getState().overrides).toEqual({})
     expect(store.getState().bindings['edit.redo']).toBe('Mod+Shift+Z')
+  })
+
+  it('recomputes its bindings when the app registers its catalogue after the store exists', () => {
+    // The store is created when its module loads — before main.tsx has had a
+    // chance to register anything. Left alone it would keep an empty table.
+    resetCommandCatalog()
+    const store = createShortcutSettingsStore()
+    expect(store.getState().bindings).toEqual({})
+    defineCommandCatalog(CATALOG)
+    expect(store.getState().bindings['edit.undo']).toBe('Mod+Z')
+    expect(store.getState().lookup.get('Mod+Z')).toBe('edit.undo')
+  })
+
+  it('keeps the overrides of the user when the catalogue is registered again', () => {
+    const store = createShortcutSettingsStore()
+    store.getState().setBinding('edit.undo', 'Mod+U')
+    defineCommandCatalog(CATALOG)
+    expect(store.getState().bindings['edit.undo']).toBe('Mod+U')
+  })
+
+  it('ignores an override for a command the catalogue does not have', () => {
+    const bindings = resolveBindings({ 'constructor': 'Mod+K', 'edit.gone': 'Mod+G' })
+    expect(bindings).not.toHaveProperty('edit.gone')
+    expect(Object.keys(bindings).sort()).toEqual(['card.openFiche', 'edit.redo', 'edit.undo'])
   })
 
   it('falls back to the defaults rather than throwing when the file is unreadable', () => {
@@ -120,9 +163,7 @@ describe('useShortcutSettingsStore', () => {
 })
 
 describe('conflictsIn', () => {
-  it('finds nothing to report in the shipped catalogue', () => {
-    // A default that shadows another default would make one of the two dead on
-    // a fresh install, which no user could diagnose.
+  it('finds nothing to report when no default shadows another', () => {
     expect([...conflictsIn(resolveBindings({})).keys()]).toEqual([])
   })
 

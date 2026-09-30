@@ -1,6 +1,10 @@
 import { vi } from 'vitest'
 import '@testing-library/jest-dom/vitest'
 
+// The shared command framework knows no command until the app registers its
+// catalogue; every test that touches a shortcut, a menu or the palette needs it.
+import '../types/commands'
+
 /*
  * @testing-library/react's async event wrapper (used by userEvent's `await user.click(...)`
  * etc.) drains the microtask queue with a real `setTimeout(fn, 0)`, then flushes it itself —
