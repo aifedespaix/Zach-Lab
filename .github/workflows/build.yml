@@ -24,17 +24,17 @@ jobs:
         uses: oven-sh/setup-bun@v2
 
       - name: install admin dependencies
-        working-directory: admin
+        working-directory: apps/zachart-mentale/admin
         run: bun install --frozen-lockfile
 
       - name: run admin tests
-        working-directory: admin
+        working-directory: apps/zachart-mentale/admin
         run: bun run test
 
       # Exactement ce que fait `infra/Dockerfile` : `tsc && vite build`. Si ça
       # passe ici, l'image se construira.
       - name: build the admin bundle
-        working-directory: admin
+        working-directory: apps/zachart-mentale/admin
         run: bun run build
 
   build-windows:
@@ -51,7 +51,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: '. -> target'
 
       - name: install frontend dependencies
         run: bun install
@@ -60,20 +60,32 @@ jobs:
         run: bun run test
 
       - name: run Rust tests
-        working-directory: src-tauri
-        run: cargo test
+        run: cargo test --workspace
+
+      # Les scripts du dépôt (new-app, bump-version) ont leurs propres tests, hors
+      # de vitest.
+      - name: run the repository scripts tests
+        run: bun test scripts
 
       # Pas de `createUpdaterArtifacts` ici : signer demanderait
       # TAURI_SIGNING_PRIVATE_KEY, indisponible sur une PR venue d'un fork. Ce
       # qu'on veut valider — que makensis produit bien l'installeur — n'en
       # dépend pas.
-      - name: build the NSIS installer
+      - name: build the NSIS installer of Zachar’t Mentale
         shell: bash
+        working-directory: apps/zachart-mentale
         run: bun tauri build --config '{"bundle":{"createUpdaterArtifacts":false}}'
 
-      - name: upload the installer
+      # Base est le gabarit de toutes les futures apps : s'il ne se construit plus,
+      # `bun run new-app` fabriquerait des apps cassées.
+      - name: build the NSIS installer of Base
+        shell: bash
+        working-directory: apps/base
+        run: bun tauri build --config '{"bundle":{"createUpdaterArtifacts":false}}'
+
+      - name: upload the installers
         uses: actions/upload-artifact@v4
         with:
-          name: installer
-          path: src-tauri/target/release/bundle/nsis/*-setup.exe
+          name: installers
+          path: target/release/bundle/nsis/*-setup.exe
           if-no-files-found: error

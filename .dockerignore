@@ -15,16 +15,16 @@
 .worktrees/
 
 node_modules/
-admin/node_modules/
-admin/dist/
+**/node_modules/
+**/dist/
 dist/
 
 # Le backend Rust n'entre pas dans cette image, et sa cible pèse des gigaoctets.
-src-tauri/target/
-src-tauri/
+**/src-tauri/target/
+**/src-tauri/
 
-infra/backups/
-infra/.env
+apps/*/infra/backups/
+apps/*/infra/.env
 
 graphify-out/
 docs/

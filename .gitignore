@@ -33,8 +33,8 @@ dist-ssr
 *.sw?
 
 # Rust / Tauri
-src-tauri/target/
-src-tauri/gen/schemas
+/target/
+apps/*/src-tauri/gen/schemas
 
 # Isolated worktrees for subagent-driven-development
 .worktrees/
@@ -44,10 +44,10 @@ src-tauri/gen/schemas
 .cartes-mentales/
 
 # PocketBase deployment credentials (superuser email/password) — see infra/.env.example
-infra/.env
+apps/*/infra/.env
 
 # PocketBase backups downloaded by infra/backup-pocketbase.mjs — data, not code
-infra/backups/
+apps/*/infra/backups/
 
 # Etat runtime de headroom, regenere a chaque lancement
 .claude/.headroom_*

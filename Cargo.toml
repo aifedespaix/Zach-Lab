@@ -1,0 +1,12 @@
+[workspace]
+resolver = "2"
+members = ["apps/zachart-mentale/src-tauri", "apps/base/src-tauri", "crates/suite-tauri"]
+
+# Les profils ne sont lus que depuis la racine du workspace.
+# Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true

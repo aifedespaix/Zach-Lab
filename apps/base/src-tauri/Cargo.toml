@@ -1,0 +1,29 @@
+[package]
+name = "base"
+version = "0.1.0"
+description = "Point de départ des logiciels de la suite éducative"
+authors = ["aifedespaix"]
+edition = "2021"
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "base_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+suite-tauri = { path = "../../../crates/suite-tauri" }
+# `tauri::generate_context!()` expands to code that names this crate.
+serde_json = "1"
+
+# `suite-tauri` is what registers these plugins, but `tauri-build` discovers a
+# plugin's permissions (`fs:allow-*`, `updater:default`…) only from the app
+# crate's DIRECT dependencies: `capabilities/default.json` fails to build
+# without the plugin it names. Declare here every plugin the capability uses.
+tauri-plugin-fs = "2"
+tauri-plugin-updater = "2"

@@ -1,0 +1,801 @@
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react'
+import { open } from '@tauri-apps/plugin-dialog'
+import { revealItemInDir } from '@tauri-apps/plugin-opener'
+import { CloudSync, Eye, EyeOff, FolderPlus, FolderSearch, FoldVertical, PanelLeftClose, PanelLeftOpen, RefreshCw, Search, ClipboardCopy, X } from 'lucide-react'
+import {
+  Button,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuContent,
+  ContextMenuItem,
+} from '@suite/shared/ui'
+import { CommandButton } from '../commands/CommandButton'
+import { useWorkspaceStore, describeError } from '../../state/useWorkspaceStore'
+import { useSyncStore } from '../../state/useSyncStore'
+import { syncOutcomeSummary, syncResultDetailLines, syncResultLabel } from '../../sync/syncResultLabel'
+import { SyncDetailDialog } from '../SyncDetailDialog'
+import { formatRelativeTime } from '../../utils/relativeTime'
+import { FileTreeRow } from './FileTreeRow'
+import { TreeDragGhost } from './TreeDragGhost'
+import { filterTree } from './treeFilter'
+import { useMindMapTypeIndex } from '../../hooks/useMindMapTypeIndex'
+import { prefersReducedMotion } from '@suite/shared/theme'
+import { PanelResizeHandle, usePanelResize } from '@suite/shared/shell'
+import { sidebarWidthStorage } from '../../persistence/sidebarWidth'
+import { loadShowUnreadableFiles, saveShowUnreadableFiles } from '../../persistence/showUnreadableFiles'
+import { createSubfolder, freeSiblingPath } from '../../persistence/fileOps'
+import { fileNameOf, parentDirOf } from '../../persistence/paths'
+import { NameDialog } from './NameDialog'
+import { useFolderCreation } from './useFolderCreation'
+import { useCommand } from '../../hooks/useCommand'
+import type { FileTreeNode } from '../../types/workspace'
+import { MAP_TYPES, MAP_TYPE_LABELS, type MapType } from '../../types/mapType'
+
+function folderDisplayName(path: string): string {
+  const segments = path.split(/[\\/]/).filter(Boolean)
+  return segments[segments.length - 1] ?? path
+}
+
+/**
+ * One icon in the sidebar's action bar, for the actions that are NOT commands.
+ *
+ * `CommandButton` covers everything the app catalogues; this is its counterpart
+ * for the toggle that only exists here (« fichiers non lisibles ») — same
+ * tooltip contract (the label, plus a one-line hint), without a command id the
+ * catalogue would then have to grow.
+ */
+function SidebarIconButton({
+  label,
+  hint,
+  active = false,
+  onClick,
+  children,
+}: {
+  label: string
+  hint?: string
+  active?: boolean
+  onClick: () => void
+  children: ReactNode
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant={active ? 'secondary' : 'ghost'}
+          size="icon-sm"
+          aria-label={label}
+          aria-pressed={active}
+          onClick={onClick}
+        >
+          {children}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>
+        {label}
+        {hint && <span style={{ opacity: 0.7, marginLeft: 8 }}>{hint}</span>}
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
+interface FileSidebarProps {
+  onOpenFile: (path: string) => void
+}
+
+export function FileSidebar({ onOpenFile }: FileSidebarProps) {
+  const rootFolders = useWorkspaceStore(s => s.rootFolders)
+  const init = useWorkspaceStore(s => s.init)
+  const addRootFolder = useWorkspaceStore(s => s.addRootFolder)
+  const removeRootFolder = useWorkspaceStore(s => s.removeRootFolder)
+  const refreshAll = useWorkspaceStore(s => s.refreshAll)
+  const workspaceError = useWorkspaceStore(s => s.workspaceError)
+  // Le fichier ouvert : le compteur « à envoyer » l'exclut (voir
+  // `surveySyncFolder`), donc le badge doit se recalculer quand on l'ouvre ou
+  // le referme, sans quoi il resterait figé sur l'état précédent.
+  const currentFilePath = useWorkspaceStore(s => s.currentFilePath)
+  const refreshFolder = useWorkspaceStore(s => s.refreshFolder)
+  const expandPaths = useWorkspaceStore(s => s.expandPaths)
+  const collapseAllFolders = useWorkspaceStore(s => s.collapseAllFolders)
+  const setWorkspaceError = useWorkspaceStore(s => s.setWorkspaceError)
+  const syncStatus = useSyncStore(s => s.status)
+  const syncError = useSyncStore(s => s.error)
+  const syncErrorDetail = useSyncStore(s => s.errorDetail)
+  const lastResult = useSyncStore(s => s.lastResult)
+  const syncNow = useSyncStore(s => s.syncNow)
+  const syncProgress = useSyncStore(s => s.progress)
+  const cancelSync = useSyncStore(s => s.cancelSync)
+  const pendingCount = useSyncStore(s => s.pendingCount)
+  const localOnlyCount = useSyncStore(s => s.localOnlyCount)
+  const lastSuccessAt = useSyncStore(s => s.lastSuccessAt)
+  const refreshPendingCount = useSyncStore(s => s.refreshPendingCount)
+  // The username, not the object: a fresh `{username, role}` on every auth tick
+  // would make the effect below walk the sync folder for nothing.
+  const syncUserName = useSyncStore(s => s.currentUser?.username ?? null)
+  const syncFolderPath = useSyncStore(s => s.syncFolderPath)
+  const [collapsed, setCollapsed] = useState(false)
+  /** What the search field holds. A view over the tree — never persisted. */
+  const [search, setSearch] = useState('')
+  /**
+   * Le type retenu dans le filtre. `'all'` = pas de filtre. Comme la recherche,
+   * c'est une VUE sur l'arbre : rien n'est écrit, ni dans le fichier ni dans
+   * `expandedPaths`.
+   */
+  const [typeFilter, setTypeFilter] = useState<MapType | 'all'>('all')
+  /**
+   * Bumped by « Mod + F ». A counter rather than a boolean, so pressing the
+   * shortcut twice re-focuses and re-selects the field instead of being a no-op
+   * the second time.
+   */
+  const [searchFocusRequest, setSearchFocusRequest] = useState(0)
+  /**
+   * Bumped when a publish or a pull rewrote a `.zmap`'s header: the type index
+   * has to re-read then, or the filter would keep classing a map under the type
+   * it no longer has.
+   */
+  const fileMetaRevision = useWorkspaceStore(s => s.fileMetaRevision)
+  // One flat list of every row in the workspace, stable across renders unless the
+  // tree itself changed — the index keys its reads off it.
+  const mindMapNodes = useMemo(() => rootFolders.flatMap(folder => folder.tree), [rootFolders])
+  const typeIndex = useMindMapTypeIndex(mindMapNodes, typeFilter !== 'all', fileMetaRevision)
+  /** The folder « Nouveau dossier » is about to create in — `null` when the dialog is closed. */
+  const [newFolderParent, setNewFolderParent] = useState<string | null>(null)
+  // Same reason as the width below: read synchronously so the tree doesn't
+  // flash unreadable files for a frame before hiding them again.
+  const [showUnreadable, setShowUnreadable] = useState(loadShowUnreadableFiles)
+  const resize = usePanelResize({ storage: sidebarWidthStorage, side: 'left' })
+  const { width, resizing } = resize
+  /**
+   * Hides the sync feedback the user has already read. Local state, not a store
+   * field: the settings panel shows the same result as its own record of the
+   * run, and closing the sidebar's copy must not blank it there.
+   */
+  const [syncFeedbackDismissed, setSyncFeedbackDismissed] = useState(false)
+  /** Ouvre la modale des détails de la dernière exécution. */
+  const [syncDetailsOpen, setSyncDetailsOpen] = useState(false)
+  /** Hovering the sync banner holds off the auto-hide timer below. */
+  const [syncFeedbackHovered, setSyncFeedbackHovered] = useState(false)
+  const searchInputRef = useRef<HTMLInputElement>(null)
+
+  const syncRunning = syncStatus === 'syncing'
+  // While a run is in flight, the running banner IS the message: showing last
+  // run's result beside it would describe a state that no longer holds.
+  const showSyncError = syncError !== null && !syncFeedbackDismissed && !syncRunning
+  const showSyncResult =
+    syncError === null && lastResult !== null && !syncFeedbackDismissed && !syncRunning
+
+  // Reads and dismisses only — the settings panel keeps the store's own record
+  // of the run, so this timer never touches anything the settings panel shows.
+  // Not the workspace error banner: that one names a problem the user has to
+  // act on (a missing folder, a permission failure), not a transient result.
+  useEffect(() => {
+    if ((!showSyncError && !showSyncResult) || syncFeedbackHovered) return
+    const timer = setTimeout(() => setSyncFeedbackDismissed(true), 5000)
+    return () => clearTimeout(timer)
+  }, [showSyncError, showSyncResult, syncFeedbackHovered])
+
+  // Selecting what is already there is what makes the shortcut a REPLACEMENT:
+  // pressing it again retypes the query from scratch rather than appending to
+  // the last one.
+  useEffect(() => {
+    if (searchFocusRequest === 0) return
+    searchInputRef.current?.focus()
+    searchInputRef.current?.select()
+  }, [searchFocusRequest])
+
+  // Right-clicking the sidebar's own empty space (the header, the gap under the
+  // tree, the footer bar) targets the FIRST configured folder: it is the one
+  // the user is implicitly working in, and it is the only folder a menu with no
+  // row under the cursor can name. Folder rows keep their own menu, richer
+  // because they know which folder they are.
+  const firstRoot = rootFolders[0]
+  const folderCreation = useFolderCreation(firstRoot?.path ?? '', onOpenFile)
+
+  // A new failure, or a new result, is news again — the dismissal only ever
+  // covers the run it was clicked on.
+  useEffect(() => {
+    setSyncFeedbackDismissed(false)
+  }, [syncError, lastResult])
+
+  useEffect(() => {
+    // Recompute the « à envoyer » count on the events that can change it: the
+    // account, the folder, a re-scanned tree, a finished sync. The walk reads
+    // one header per .zmap, so it is deliberately NOT run on every render —
+    // publishing refreshes it itself, from the hook that changed the file.
+    void refreshPendingCount()
+  }, [refreshPendingCount, syncFolderPath, syncUserName, rootFolders, lastResult, currentFilePath])
+
+  useEffect(() => {
+    // The store already reports its own failures; this catch covers anything
+    // unexpected so a rejected init can never end as an unhandled rejection
+    // with nothing on screen.
+    init().catch(error => setWorkspaceError(`Impossible de charger la liste des dossiers : ${describeError(error)}`))
+  }, [init, setWorkspaceError])
+
+  async function handleAddFolder() {
+    try {
+      const selected = await open({ directory: true })
+      if (typeof selected === 'string') await addRootFolder(selected)
+    } catch (error) {
+      setWorkspaceError(`Impossible d’ajouter le dossier : ${describeError(error)}`)
+    }
+  }
+
+  async function handleRefreshAll() {
+    try {
+      await refreshAll()
+    } catch (error) {
+      setWorkspaceError(`Impossible de rafraîchir les dossiers : ${describeError(error)}`)
+    }
+  }
+
+  /**
+   * The sync button, and nothing more.
+   *
+   * Following what a run relocated — re-pointing `currentFilePath`, refreshing
+   * the tree — belongs to `App`, which already owns the open path and the
+   * pending autosave, and which is the one place all THREE sync triggers reach
+   * (this button, the background timer, the settings panel). Doing it here left
+   * an automatic run recreating the old file through the debounced autosave.
+   * `syncNow` reports its own failures through the store's `error`, shown in the
+   * banner above the buttons, so a dead network is a banner rather than a crash.
+   */
+  function handleSync() {
+    void syncNow()
+  }
+
+  function handleToggleShowUnreadable() {
+    const next = !showUnreadable
+    setShowUnreadable(next)
+    saveShowUnreadableFiles(next)
+  }
+
+  /** Opens the OS file explorer on the first configured folder — see `firstRoot` above. */
+  function handleRevealFirstRoot() {
+    if (firstRoot === undefined) return
+    void revealItemInDir(firstRoot.path).catch(error =>
+      setWorkspaceError(`Impossible d’ouvrir l’explorateur : ${describeError(error)}`)
+    )
+  }
+
+  function handleCopyFirstRootPath() {
+    if (firstRoot === undefined) return
+    void navigator.clipboard?.writeText(firstRoot.path).catch(() => {})
+  }
+
+  function handleRemoveRoot(path: string) {
+    removeRootFolder(path).catch(error =>
+      setWorkspaceError(`Impossible de retirer le dossier : ${describeError(error)}`)
+    )
+  }
+
+  /**
+   * Where « Nouveau dossier » creates, when it is invoked from the keyboard
+   * rather than from a folder's own right-click menu: beside the map you have
+   * open, or failing that in the first configured root.
+   *
+   * A folder row knows its own path; a shortcut does not, and asking « dans
+   * quel dossier ? » for the commonest case — a sibling of what you are
+   * working on — would be a dialog spent on a question with an obvious answer.
+   */
+  function defaultFolderTarget(): string | null {
+    const openFile = useWorkspaceStore.getState().currentFilePath
+    const beside = openFile === null ? '' : parentDirOf(openFile)
+    if (beside !== '') return beside
+    return rootFolders[0]?.path ?? null
+  }
+
+  async function submitNewFolder(name: string) {
+    const parent = newFolderParent
+    setNewFolderParent(null)
+    if (parent === null) return
+    try {
+      const path = await freeSiblingPath(parent, name, true)
+      await createSubfolder(parent, fileNameOf(path))
+      await refreshFolder(parent)
+      // So a folder created several levels down is actually visible, rather
+      // than added to a branch that happens to be collapsed.
+      expandPaths([parent])
+    } catch (error) {
+      setWorkspaceError(`Impossible de créer le dossier : ${describeError(error)}`)
+    }
+  }
+
+  // Registered before the collapsed early-return below, so folding the sidebar
+  // away does not take « Ctrl + B » — the very shortcut that unfolds it — with it.
+  useCommand(
+    'view.toggleSidebar',
+    () => setCollapsed(current => !current),
+    true,
+    collapsed ? 'Afficher l’arborescence' : 'Masquer l’arborescence'
+  )
+  useCommand('view.findInTree', () => {
+    // Unfold first: the field only exists in the unfolded bar, so focusing it
+    // while the tree is folded away would do nothing at all.
+    setCollapsed(false)
+    setSearchFocusRequest(request => request + 1)
+  })
+  useCommand('file.addRootFolder', () => void handleAddFolder())
+  useCommand('file.refresh', () => void handleRefreshAll())
+  useCommand('view.collapseFolders', () => collapseAllFolders(), rootFolders.length > 0)
+  useCommand(
+    'file.newFolder',
+    () => setNewFolderParent(defaultFolderTarget()),
+    rootFolders.length > 0
+  )
+  // Also registered before the early return: the sync button only exists in the
+  // unfolded bar, but the shortcut and the command palette should still reach it
+  // while the tree is folded away.
+  useCommand(
+    'sync.now',
+    () => void handleSync(),
+    syncStatus !== 'syncing',
+    syncStatus === 'syncing' ? 'Synchronisation…' : undefined
+  )
+
+  const newFolderDialog = newFolderParent !== null && (
+    <NameDialog
+      title="Nouveau dossier"
+      inputLabel="Nom du dossier"
+      initialName="Nouveau dossier"
+      confirmLabel="Créer"
+      onCancel={() => setNewFolderParent(null)}
+      onConfirm={name => void submitNewFolder(name)}
+    />
+  )
+
+  // Le résumé de la dernière exécution, indépendant du fait que la bannière ait
+  // été masquée : la modale « Détails » peut lui survivre. Un lot avec des ratés
+  // se lit en deux nombres — « X fichiers synchronisés, Y non synchronisés » —
+  // le détail par fichier vivant dans la modale, pas dans une colonne de 240 px.
+  const syncSummary =
+    syncError !== null
+      ? syncError
+      : lastResult === null
+        ? ''
+        : lastResult.errors.length > 0
+          ? syncOutcomeSummary(lastResult)
+          : syncResultLabel(lastResult)
+  // Une erreur levée n'a pas de résultat à détailler : c'est son texte BRUT qui
+  // part dans la modale.
+  const syncDetailLines =
+    syncError !== null
+      ? syncErrorDetail === null
+        ? []
+        : [syncErrorDetail]
+      : lastResult === null
+        ? []
+        : syncResultDetailLines(lastResult)
+
+  const syncDetailsDialog = syncDetailsOpen && (
+    <SyncDetailDialog
+      summary={syncSummary}
+      lines={syncDetailLines}
+      onClose={() => setSyncDetailsOpen(false)}
+    />
+  )
+
+  /**
+   * What the sync button's tooltip adds to its name: the two facts the footer
+   * would otherwise make the user click to discover. Each part is dropped when
+   * it cannot be known, and the count is also on the badge, for the glance that
+   * does not hover anything.
+   */
+  // « à publier » comes first and matters most: those maps need a gesture, and
+  // without them a folder full of chapters happily reports « rien à envoyer ».
+  const localOnlyDetail =
+    localOnlyCount === null || localOnlyCount === 0
+      ? null
+      : `${localOnlyCount} carte${localOnlyCount > 1 ? 's' : ''} à publier`
+  const pendingDetail =
+    pendingCount === null
+      ? null
+      : pendingCount === 0
+        ? 'rien à envoyer'
+        : `${pendingCount} carte${pendingCount > 1 ? 's' : ''} à envoyer`
+  const lastSyncDetail =
+    lastSuccessAt === null
+      ? syncUserName === null
+        ? null
+        : 'jamais synchronisé'
+      : `dernière synchro ${formatRelativeTime(lastSuccessAt) ?? 'inconnue'}`
+  const syncTooltipDetail =
+    syncRunning || (localOnlyDetail === null && pendingDetail === null && lastSyncDetail === null)
+      ? undefined
+      : [localOnlyDetail, pendingDetail, lastSyncDetail].filter(part => part !== null).join(' · ')
+
+  /**
+   * The search is a VIEW over the tree, never a mutation of it: nothing here
+   * touches `expandedPaths` or the filesystem, so clearing the field puts back
+   * exactly the tree the user had.
+   *
+   * Each root goes through `filterTree` WHOLE rather than only its children, so
+   * a root that matches by NAME keeps its whole subtree like any other folder —
+   * and a root with no match disappears instead of sitting there empty.
+   *
+   * Le filtre de type est la seconde contrainte, indépendante du nom : une carte
+   * doit satisfaire les deux, et les dossiers ne restent que pour y mener.
+   */
+  const query = search.trim()
+  const searching = query !== ''
+  const filteringByType = typeFilter !== 'all'
+  /**
+   * Le prédicat n'est appliqué que lorsque l'index est prêt : tant que les
+   * en-têtes se lisent, l'arbre reste filtré par la seule recherche au lieu de se
+   * vider le temps d'un rendu — puis le type s'applique d'un coup, quand il sait
+   * de quoi il parle.
+   */
+  const fileMatches =
+    filteringByType && typeIndex.ready
+      ? (node: FileTreeNode) => node.type === 'mindmap' && (typeIndex.types.get(node.path) ?? 'default') === typeFilter
+      : undefined
+  const filtering = searching || fileMatches !== undefined
+  const typeFilterLabel = typeFilter === 'all' ? 'Tous types' : MAP_TYPE_LABELS[typeFilter]
+  const visibleRoots = rootFolders.map(root => {
+    const rootNode: FileTreeNode = {
+      type: 'folder',
+      name: folderDisplayName(root.path),
+      path: root.path,
+      children: root.tree,
+    }
+    if (!filtering) return { root, node: rootNode, forcedExpanded: undefined, matches: 0 }
+    const result = filterTree([rootNode], query, showUnreadable, fileMatches)
+    return { root, node: result.nodes[0], forcedExpanded: result.expanded, matches: result.count }
+  })
+  const matchCount = visibleRoots.reduce((total, entry) => total + entry.matches, 0)
+
+  return (
+    <TooltipProvider>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <div
+            data-testid="file-sidebar"
+            style={{
+              // `flexShrink: 0` so the canvas beside it, not the sidebar, gives way
+              // when the window gets narrow — otherwise a drag to 500px would be
+              // silently undone by the flex layout the moment the window shrank.
+              width: collapsed ? 32 : width,
+              flexShrink: 0,
+              borderRight: '1px solid var(--border)',
+              display: 'flex',
+              flexDirection: collapsed ? undefined : 'column',
+              // Collapsed centers the single toggle button instead of laying out
+              // a column; bottom-aligned so folding/unfolding does not make the
+              // control jump to a different corner of the screen.
+              justifyContent: collapsed ? 'center' : undefined,
+              alignItems: collapsed ? 'flex-end' : undefined,
+              paddingBottom: collapsed ? 8 : undefined,
+              position: collapsed ? undefined : 'relative',
+              // Off during a drag — a drag fires this every pointer move, and
+              // animating each of those would make the border visibly lag
+              // behind the cursor instead of following it — and off for a
+              // system-level "reduce motion" request.
+              transition: resizing || prefersReducedMotion() ? 'none' : 'width 220ms ease',
+            }}
+          >
+            {collapsed ? (
+              <CommandButton
+                command="view.toggleSidebar"
+                icon={PanelLeftOpen}
+                label="Déplier la barre latérale"
+                variant="ghost"
+                size="icon-sm"
+              />
+            ) : (
+              <>
+            {/*
+              The header is the title and nothing else. Every action lives in the
+              footer bar below, so the tree starts right under the heading that
+              names it and the buttons sit where the file rows end — one bar, one
+              place to look, instead of a header cluster and a footer one.
+            */}
+            <div style={{ padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={{ fontWeight: 600, fontSize: 13 }}>Cartes mentales</span>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
+                  <Search
+                    size={13}
+                    style={{ position: 'absolute', left: 7, color: 'var(--muted-foreground)', pointerEvents: 'none' }}
+                  />
+                  <input
+                    ref={searchInputRef}
+                    className="sidebar-search"
+                    type="text"
+                    value={search}
+                    placeholder="Rechercher…"
+                    aria-label="Rechercher une carte ou un dossier"
+                    onChange={event => setSearch(event.target.value)}
+                    onKeyDown={event => {
+                      // Échap hands the keyboard back to the tree without leaving
+                      // the field through a second, different gesture.
+                      if (event.key !== 'Escape') return
+                      setSearch('')
+                      event.currentTarget.blur()
+                    }}
+                    style={{ paddingLeft: 24, paddingRight: search === '' ? 8 : 26 }}
+                  />
+                  {search !== '' && (
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Effacer la recherche"
+                      onClick={() => setSearch('')}
+                      style={{ position: 'absolute', right: 2 }}
+                    >
+                      <X size={13} />
+                    </Button>
+                  )}
+                </div>
+                <select
+                  className="sidebar-search sidebar-type-filter"
+                  aria-label="Filtrer par type"
+                  title="Filtrer par type"
+                  value={typeFilter}
+                  onChange={event => setTypeFilter(event.target.value as MapType | 'all')}
+                >
+                  <option value="all">Tous types</option>
+                  {MAP_TYPES.map(type => (
+                    <option key={type} value={type}>
+                      {MAP_TYPE_LABELS[type]}
+                    </option>
+                  ))}
+                  <option value="default">{MAP_TYPE_LABELS.default}</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Portalled to `document.body`, so its place in this tree is only
+                a matter of keeping it near the state it renders. */}
+            <TreeDragGhost />
+
+            <div data-testid="file-tree" style={{ overflowY: 'auto', flex: 1 }}>
+              {rootFolders.length === 0 && (
+                <p style={{ padding: 8, fontSize: 13, color: 'var(--muted-foreground)' }}>Aucun dossier configuré.</p>
+              )}
+              {filteringByType && !typeIndex.ready && (
+                <p role="status" style={{ padding: 8, fontSize: 13, color: 'var(--muted-foreground)' }}>
+                  Analyse des types…
+                </p>
+              )}
+              {filtering && matchCount === 0 && (
+                <p role="status" style={{ padding: 8, fontSize: 13, color: 'var(--muted-foreground)' }}>
+                  {searching && filteringByType
+                    ? `Aucune carte « ${typeFilterLabel} » ne correspond à « ${query} ».`
+                    : searching
+                      ? `Aucun résultat pour « ${query} ».`
+                      : `Aucune carte « ${typeFilterLabel} ».`}
+                </p>
+              )}
+              {visibleRoots.map(({ root, node, forcedExpanded }) =>
+                node === undefined ? null : (
+                  <FileTreeRow
+                    key={root.path}
+                    node={node}
+                    depth={0}
+                    onOpenFile={onOpenFile}
+                    isRoot
+                    onRemoveRoot={handleRemoveRoot}
+                    showUnreadable={showUnreadable}
+                    forcedExpanded={forcedExpanded}
+                  />
+                )
+              )}
+            </div>
+
+            {/*
+              Messages sit immediately above the bar that produced them — a failed
+              sync is explained next to the button that was clicked, not at the far
+              end of the panel from it.
+            */}
+            {(workspaceError !== null || syncRunning || showSyncError || showSyncResult) && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '0 8px 6px', flexShrink: 0 }}>
+                {syncRunning && (
+                  <div role="status" className="status-banner status-banner--info" style={{ margin: 0 }}>
+                    <span style={{ flex: 1 }}>
+                      {syncProgress === null
+                        ? 'Synchronisation…'
+                        : `Synchronisation ${syncProgress.done}/${syncProgress.total}…`}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Annuler la synchronisation"
+                      onClick={cancelSync}
+                    >
+                      <X size={14} />
+                    </Button>
+                  </div>
+                )}
+                {workspaceError && (
+                  <div role="alert" className="status-banner" style={{ margin: 0 }}>
+                    <span style={{ flex: 1 }}>{workspaceError}</span>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Masquer le message d’erreur"
+                      onClick={() => setWorkspaceError(null)}
+                    >
+                      <X size={14} />
+                    </Button>
+                  </div>
+                )}
+                {showSyncError && (
+                  <div
+                    role="alert"
+                    className="status-banner"
+                    style={{ margin: 0 }}
+                    onMouseEnter={() => setSyncFeedbackHovered(true)}
+                    onMouseLeave={() => setSyncFeedbackHovered(false)}
+                  >
+                    <span style={{ flex: 1 }}>{syncError}</span>
+                    {syncDetailLines.length > 0 && (
+                      <Button
+                        variant="outline"
+                        size="xs"
+                        onClick={() => setSyncDetailsOpen(true)}
+                      >
+                        Détails
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Masquer le message de synchronisation"
+                      onClick={() => setSyncFeedbackDismissed(true)}
+                    >
+                      <X size={14} />
+                    </Button>
+                  </div>
+                )}
+                {showSyncResult && (
+                  <div
+                    role="status"
+                    className={
+                      lastResult.conflicts.length > 0 || lastResult.errors.length > 0
+                        ? 'status-banner'
+                        : 'status-banner status-banner--info'
+                    }
+                    style={{ margin: 0 }}
+                    onMouseEnter={() => setSyncFeedbackHovered(true)}
+                    onMouseLeave={() => setSyncFeedbackHovered(false)}
+                  >
+                    <span style={{ flex: 1 }}>{syncSummary}</span>
+                    {syncDetailLines.length > 0 && (
+                      <Button
+                        variant="outline"
+                        size="xs"
+                        onClick={() => setSyncDetailsOpen(true)}
+                      >
+                        Détails
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Masquer le message de synchronisation"
+                      onClick={() => setSyncFeedbackDismissed(true)}
+                    >
+                      <X size={14} />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/*
+              The action bar, at the bottom rather than in the header: read left to
+              right it is « what the tree shows », then « exchange with the server »,
+              then the panel control, each group separated by a hairline. The sync
+              button is the one boxed control — it is the deliberate, occasional
+              action of the bar, and the only one that can take noticeable time.
+            */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                rowGap: 4,
+                // A safety net for the 180 px minimum width: wrapping onto a second
+                // line beats clipping a button the user cannot reach.
+                flexWrap: 'wrap',
+                padding: '6px 8px',
+                borderTop: '1px solid var(--border)',
+                flexShrink: 0,
+              }}
+            >
+              <CommandButton command="file.addRootFolder" icon={FolderPlus} variant="ghost" size="icon-sm" />
+              <CommandButton command="file.refresh" icon={RefreshCw} variant="ghost" size="icon-sm" />
+              <CommandButton command="view.collapseFolders" icon={FoldVertical} variant="ghost" size="icon-sm" />
+              <SidebarIconButton
+                label={showUnreadable ? 'Masquer les fichiers non lisibles' : 'Afficher les fichiers non lisibles'}
+                hint="Fichiers que l’application ne peut pas ouvrir"
+                active={showUnreadable}
+                onClick={handleToggleShowUnreadable}
+              >
+                {showUnreadable ? <Eye size={16} /> : <EyeOff size={16} />}
+              </SidebarIconButton>
+
+              <span className="toolbar-separator" aria-hidden />
+
+              {/*
+                The badge sits OUTSIDE the button (absolutely positioned over it) so
+                the button's own hit area, its accessible name and its tooltip are
+                untouched by a number that changes on its own.
+              */}
+              <span style={{ position: 'relative', display: 'inline-flex' }}>
+                <CommandButton
+                  command="sync.now"
+                  icon={CloudSync}
+                  variant="outline"
+                  size="icon-sm"
+                  spinning={syncRunning}
+                  tooltipDetail={syncTooltipDetail}
+                />
+                {(pendingCount ?? 0) + (localOnlyCount ?? 0) > 0 && (
+                  <span
+                    role="status"
+                    style={{
+                      position: 'absolute',
+                      top: -4,
+                      right: -4,
+                      minWidth: 14,
+                      height: 14,
+                      padding: '0 3px',
+                      borderRadius: 999,
+                      background: 'var(--primary)',
+                      color: 'var(--primary-foreground)',
+                      fontSize: 9,
+                      fontWeight: 600,
+                      lineHeight: '14px',
+                      textAlign: 'center',
+                      pointerEvents: 'none',
+                    }}
+                  >
+                    {(pendingCount ?? 0) + (localOnlyCount ?? 0)}
+                  </span>
+                )}
+              </span>
+
+              <span style={{ marginLeft: 'auto' }} aria-hidden />
+
+              <CommandButton
+                command="view.toggleSidebar"
+                icon={PanelLeftClose}
+                label="Replier la barre latérale"
+                variant="ghost"
+                size="icon-sm"
+              />
+            </div>
+
+            <PanelResizeHandle resize={resize} side="left" label="Redimensionner la barre latérale" />
+            {newFolderDialog}
+            {syncDetailsDialog}
+            {folderCreation.dialog}
+              </>
+            )}
+          </div>
+        </ContextMenuTrigger>
+        {firstRoot !== undefined && (
+          <ContextMenuContent>
+            {folderCreation.menuItems}
+            <ContextMenuItem onSelect={handleRevealFirstRoot}>
+              <FolderSearch size={14} /> Afficher dans l’explorateur
+            </ContextMenuItem>
+            <ContextMenuItem onSelect={handleCopyFirstRootPath}>
+              <ClipboardCopy size={14} /> Copier le chemin
+            </ContextMenuItem>
+          </ContextMenuContent>
+        )}
+      </ContextMenu>
+    </TooltipProvider>
+  )
+}

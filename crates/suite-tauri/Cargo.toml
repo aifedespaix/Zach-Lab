@@ -1,0 +1,17 @@
+[package]
+name = "suite-tauri"
+version = "0.1.0"
+description = "Socle Tauri commun aux logiciels de la suite éducative"
+edition = "2021"
+
+[dependencies]
+tauri = "2"
+tauri-plugin-opener = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-updater = "2"
+
+# Desktop-only, as the plugin requires: there is no second process to fold back
+# into a running one on mobile.
+[target.'cfg(any(target_os = "macos", windows, target_os = "linux"))'.dependencies]
+tauri-plugin-single-instance = "2"
