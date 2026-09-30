@@ -5,7 +5,7 @@ description = "Socle Tauri commun aux logiciels de la suite éducative"
 edition = "2021"
 
 [dependencies]
-tauri = { version = "2", features = ["protocol-asset"] }
+tauri = "2"
 tauri-plugin-opener = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"
