@@ -48,3 +48,6 @@ infra/.env
 
 # PocketBase backups downloaded by infra/backup-pocketbase.mjs — data, not code
 infra/backups/
+
+# Etat runtime de headroom, regenere a chaque lancement
+.claude/.headroom_*
