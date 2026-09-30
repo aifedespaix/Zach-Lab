@@ -27,8 +27,8 @@ function writeJson(path, data) {
   writeFileSync(path, JSON.stringify(data, null, 2) + '\n')
 }
 
-const packageJsonPath = join(root, 'package.json')
-const tauriConfPath = join(root, 'src-tauri', 'tauri.conf.json')
+const packageJsonPath = join(root, 'apps', 'zachart-mentale', 'package.json')
+const tauriConfPath = join(root, 'apps', 'zachart-mentale', 'src-tauri', 'tauri.conf.json')
 
 const current = readJson(packageJsonPath).version
 

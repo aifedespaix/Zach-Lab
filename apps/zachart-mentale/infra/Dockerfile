@@ -30,22 +30,22 @@ WORKDIR /build
 # package.json, et cette couche se garde en cache d'une image à l'autre. Copier
 # les sources avant ferait réinstaller tout `node_modules` à chaque virgule
 # changée dans un composant.
-COPY admin/package.json admin/bun.lock ./admin/
-RUN cd admin && bun install --frozen-lockfile
+COPY apps/zachart-mentale/admin/package.json apps/zachart-mentale/admin/bun.lock ./apps/zachart-mentale/admin/
+RUN cd apps/zachart-mentale/admin && bun install --frozen-lockfile
 
 # `src/` est indispensable : l'interface d'administration importe le code PUR de
 # l'application de bureau (types des cartes, validation structurelle,
 # sérialisation) via son alias `@app`. C'est délibéré — un validateur recopié
 # finirait par accepter ce que l'application refuse d'ouvrir.
-COPY admin ./admin
-COPY src ./src
+COPY apps/zachart-mentale/admin ./apps/zachart-mentale/admin
+COPY apps/zachart-mentale/src ./apps/zachart-mentale/src
 
 # `bun run build` = `tsc && vite build` : la compilation ÉCHOUE sur une erreur de
 # types. Une image qui se construit quand même sur du code cassé ne rend service
 # à personne.
-RUN cd admin && bun run build
+RUN cd apps/zachart-mentale/admin && bun run build
 
 FROM ghcr.io/muchobien/pocketbase:0.40.3
 
 # Servi à la racine du domaine pour tout ce qui n'est pas `/api/…` ni `/_/…`.
-COPY --from=build /build/admin/dist /pb_public
+COPY --from=build /build/apps/zachart-mentale/admin/dist /pb_public

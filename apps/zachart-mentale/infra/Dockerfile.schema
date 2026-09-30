@@ -23,8 +23,7 @@ FROM oven/bun:1.3-alpine AS deps
 
 WORKDIR /app
 
-COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile
+RUN echo "{\"dependencies\":{\"pocketbase\":\"0.28.1\"}}" > package.json && bun install
 
 FROM oven/bun:1.3-alpine
 
@@ -38,7 +37,7 @@ COPY --from=deps /app/node_modules/pocketbase ./node_modules/pocketbase
 # `infra/.env` et `infra/backups/` sont exclus par le .dockerignore de la racine :
 # les identifiants arrivent par l'environnement du conteneur, jamais dans une
 # couche d'image.
-COPY infra ./infra
+COPY apps/zachart-mentale/infra ./infra
 
 # Sans argument, le script lit PB_URL / PB_ADMIN_EMAIL / PB_ADMIN_PASSWORD dans
 # l'environnement — ce que le compose lui fournit.

@@ -10,9 +10,9 @@ name: infra-pocketbase
 on:
   pull_request:
     paths:
-      - 'infra/**'
-      - 'src/sync/**'
-      - 'src/persistence/**'
+      - 'apps/zachart-mentale/infra/**'
+      - 'apps/zachart-mentale/src/sync/**'
+      - 'apps/zachart-mentale/src/persistence/**'
       - '.github/workflows/infra-pocketbase.yml'
   workflow_dispatch:
 
@@ -43,9 +43,9 @@ jobs:
       - name: read the pinned PocketBase version
         id: pocketbase
         run: |
-          version=$(grep -oP '^FROM ghcr\.io/muchobien/pocketbase:\K[0-9.]+' infra/Dockerfile)
+          version=$(grep -oP '^FROM ghcr\.io/muchobien/pocketbase:\K[0-9.]+' apps/zachart-mentale/infra/Dockerfile)
           if [ -z "$version" ]; then
-            echo "::error::Version PocketBase introuvable dans infra/Dockerfile"
+            echo "::error::Version PocketBase introuvable dans apps/zachart-mentale/infra/Dockerfile"
             exit 1
           fi
           echo "Version épinglée : $version"
@@ -70,28 +70,28 @@ jobs:
 
       - name: a fresh server is NOT conform yet (exit code 1)
         run: |
-          if bun run infra/setup-pocketbase.mjs --check; then
+          if bun run apps/zachart-mentale/infra/setup-pocketbase.mjs --check; then
             echo "::error::--check aurait dû signaler un serveur non configuré"
             exit 1
           fi
 
       - name: configure the server
-        run: bun run infra/setup-pocketbase.mjs
+        run: bun run apps/zachart-mentale/infra/setup-pocketbase.mjs
 
       - name: a second run is a no-op
         run: |
-          output=$(bun run infra/setup-pocketbase.mjs)
+          output=$(bun run apps/zachart-mentale/infra/setup-pocketbase.mjs)
           echo "$output"
           grep -q "déjà à jour" <<< "$output"
           grep -q "Rien à faire" <<< "$output"
 
       - name: the server is conform now (exit code 0)
-        run: bun run infra/setup-pocketbase.mjs --check
+        run: bun run apps/zachart-mentale/infra/setup-pocketbase.mjs --check
 
       - name: export the applied schema
         run: |
-          bun run infra/setup-pocketbase.mjs --export /tmp/schema-applied.json
-          bun run infra/setup-pocketbase.mjs --export /tmp/schema-applied-2.json
+          bun run apps/zachart-mentale/infra/setup-pocketbase.mjs --export /tmp/schema-applied.json
+          bun run apps/zachart-mentale/infra/setup-pocketbase.mjs --export /tmp/schema-applied-2.json
           # Deux exports du même serveur doivent décrire la MÊME configuration :
           # le diff d'une PR ne doit montrer qu'une vraie dérive.
           #
@@ -106,12 +106,12 @@ jobs:
 
       - name: an ordinary account can publish, read and delete its file
         run: |
-          bun run infra/setup-pocketbase.mjs --add-user 'eleve1:eleve:MotDePasse1234!'
-          bun run infra/setup-pocketbase.mjs --verify 'eleve1:MotDePasse1234!'
+          bun run apps/zachart-mentale/infra/setup-pocketbase.mjs --add-user 'eleve1:eleve:MotDePasse1234!'
+          bun run apps/zachart-mentale/infra/setup-pocketbase.mjs --verify 'eleve1:MotDePasse1234!'
 
       - name: a backup can be taken and downloaded
         run: |
-          bun run infra/backup-pocketbase.mjs --out /tmp/backups
+          bun run apps/zachart-mentale/infra/backup-pocketbase.mjs --out /tmp/backups
           ls -l /tmp/backups/*.zip
 
       - name: show the server log when something failed

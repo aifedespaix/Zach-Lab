@@ -15,8 +15,8 @@ services:
     # besoin de `admin/` et de `src/` (l'admin importe le code pur de
     # l'application de bureau).
     build:
-      context: ..
-      dockerfile: infra/Dockerfile
+      context: ../../..
+      dockerfile: apps/zachart-mentale/infra/Dockerfile
     restart: unless-stopped
     environment:
       # L'image crée (ou met à jour) ce superutilisateur au démarrage via
@@ -61,8 +61,8 @@ services:
   # `bun run infra:apply` depuis votre poste fait exactement la même chose.
   schema:
     build:
-      context: ..
-      dockerfile: infra/Dockerfile.schema
+      context: ../../..
+      dockerfile: apps/zachart-mentale/infra/Dockerfile.schema
     depends_on:
       pocketbase:
         # Pas « démarré » mais « sain » : le script échouerait sur une API qui

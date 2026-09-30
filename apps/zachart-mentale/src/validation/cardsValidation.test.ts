@@ -270,7 +270,7 @@ describe('repairCards', () => {
  * worse than none, since it would block real files behind a repair dialog.
  */
 describe('the mind maps present in the working copy', () => {
-  const files = import.meta.glob('../../.cartes-mentales/**/*.json', { eager: true, import: 'default' })
+  const files = import.meta.glob('../../../../.cartes-mentales/**/*.json', { eager: true, import: 'default' })
   const paths = Object.keys(files)
 
   // `.cartes-mentales/` is the user's own course material: gitignored, absent

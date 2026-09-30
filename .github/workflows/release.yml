@@ -22,7 +22,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: './apps/zachart-mentale/src-tauri -> target'
 
       - name: install frontend dependencies
         run: bun install
@@ -36,6 +36,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
+          projectPath: apps/zachart-mentale
           tagName: v__VERSION__
           releaseName: 'Zachar’t Mentale v__VERSION__'
           releaseBody: 'Voir les fichiers attachés pour installer cette version.'

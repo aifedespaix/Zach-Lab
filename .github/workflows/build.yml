@@ -24,17 +24,17 @@ jobs:
         uses: oven-sh/setup-bun@v2
 
       - name: install admin dependencies
-        working-directory: admin
+        working-directory: apps/zachart-mentale/admin
         run: bun install --frozen-lockfile
 
       - name: run admin tests
-        working-directory: admin
+        working-directory: apps/zachart-mentale/admin
         run: bun run test
 
       # Exactement ce que fait `infra/Dockerfile` : `tsc && vite build`. Si ça
       # passe ici, l'image se construira.
       - name: build the admin bundle
-        working-directory: admin
+        working-directory: apps/zachart-mentale/admin
         run: bun run build
 
   build-windows:
@@ -51,7 +51,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: './apps/zachart-mentale/src-tauri -> target'
 
       - name: install frontend dependencies
         run: bun install
@@ -60,7 +60,7 @@ jobs:
         run: bun run test
 
       - name: run Rust tests
-        working-directory: src-tauri
+        working-directory: apps/zachart-mentale/src-tauri
         run: cargo test
 
       # Pas de `createUpdaterArtifacts` ici : signer demanderait
@@ -69,11 +69,12 @@ jobs:
       # dépend pas.
       - name: build the NSIS installer
         shell: bash
+        working-directory: apps/zachart-mentale
         run: bun tauri build --config '{"bundle":{"createUpdaterArtifacts":false}}'
 
       - name: upload the installer
         uses: actions/upload-artifact@v4
         with:
           name: installer
-          path: src-tauri/target/release/bundle/nsis/*-setup.exe
+          path: apps/zachart-mentale/src-tauri/target/release/bundle/nsis/*-setup.exe
           if-no-files-found: error
