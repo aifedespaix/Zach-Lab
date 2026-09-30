@@ -1,4 +1,9 @@
 // src/App.tsx
+// Registers the command catalogue with the shared framework, as a side effect of
+// loading the file. It must be a VALUE import: every other import of this module
+// is `import type`, which the build erases, and without the catalogue there is
+// no shortcut, no palette entry and no toolbar button (see catalogRegistration.test.ts).
+import './types/commands'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { MindMapCanvas } from './components/MindMapCanvas'
 import { CanvasErrorBoundary } from './components/CanvasErrorBoundary'
