@@ -31,7 +31,7 @@ import { mimeForPath } from './content/pickImage'
 import { contentOf } from './content/blocks'
 import { readFile } from '@tauri-apps/plugin-fs'
 import { AppToolbar } from './components/toolbar/AppToolbar'
-import { BootScreen } from './components/BootScreen'
+import { AppShell, BootScreen } from '@suite/shared/shell'
 import { ClosingSyncScreen } from './components/ClosingSyncScreen'
 import { AnimatedLogo } from './components/AnimatedLogo'
 import { RecentFilesList } from './components/RecentFilesList'
@@ -402,207 +402,210 @@ function App() {
 
 
   return (
-    <div style={{ display: 'flex', height: '100vh' }}>
-      {showBootScreen && <BootScreen />}
-      {/* La synchronisation de fermeture couvre tout : on ne veut pas qu'un clic
-          atterrisse dans un canevas pendant qu'il est en train de partir. */}
-      {closing && <ClosingSyncScreen progress={syncProgress} />}
-      {/*
-        The file tree is gone for the duration of a quiz. Leaving it there let
-        the user switch mind maps mid-quiz — which silently answers nothing,
-        loses the round, and is never what clicking a file during a quiz was
-        meant to do. "Terminer le quiz", in the frame's header, is the way back
-        to the editor and to the rest of the workspace.
-      */}
-      {!quizActive && <FileSidebar onOpenFile={requestOpenFile} />}
-      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
-        <header style={{ padding: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
-          {/*
-            The whole toolbar is gone for the duration of a quiz, like the file
-            tree beside it: every action on it edits the map, and no card may
-            change under a quiz in progress. The commands it registers go with
-            it, so their shortcuts stop firing too.
+    <AppShell
+      // The file tree and the fiches panel are gone for the duration of a quiz: leaving the tree there
+      // let the user switch mind maps mid-quiz — which silently answers nothing, loses the round, and is
+      // never what clicking a file during a quiz was meant to do. "Terminer le quiz", in the frame's
+      // header, is the way back to the editor and to the rest of the workspace. The fiches panel sits
+      // outside the canvas column so it spans the full height and takes its width out of the canvas
+      // rather than covering it — nothing is hidden, and the tree stays readable beside the fiche it
+      // explains.
+      left={!quizActive ? <FileSidebar onOpenFile={requestOpenFile} /> : undefined}
+      right={!quizActive ? <CardDetailPanel /> : undefined}
+      toolbar={
+        <>
+        {/*
+          The whole toolbar is gone for the duration of a quiz, like the file
+          tree beside it: every action on it edits the map, and no card may
+          change under a quiz in progress. The commands it registers go with
+          it, so their shortcuts stop firing too.
 
-            The cards handed to it are the ones in memory, not the file on disk:
-            those are what the user is looking at, and they are already
-            validated (nothing reaches the canvas otherwise).
-          */}
-          {!quizActive && (
-            <AppToolbar
-              filePath={loadedPath}
-              cards={cards}
-              meta={loadedMeta}
-              onOpenFile={requestOpenFile}
-              onRequestFork={() => setForkPromptOpen(true)}
-              flush={flush}
-              updateCheck={{ status: updateStatus, checkNow: checkForUpdates, updateReady, applyUpdate }}
-            />
+          The cards handed to it are the ones in memory, not the file on disk:
+          those are what the user is looking at, and they are already
+          validated (nothing reaches the canvas otherwise).
+        */}
+        {!quizActive && (
+          <AppToolbar
+            filePath={loadedPath}
+            cards={cards}
+            meta={loadedMeta}
+            onOpenFile={requestOpenFile}
+            onRequestFork={() => setForkPromptOpen(true)}
+            flush={flush}
+            updateCheck={{ status: updateStatus, checkNow: checkForUpdates, updateReady, applyUpdate }}
+          />
+        )}
+        <span
+          title={currentFilePath ?? undefined}
+          style={{
+            fontSize: 13,
+            fontWeight: 500,
+            // The name yields before the toolbar does. Without `minWidth: 0`
+            // its floor is the whole string, which pushes the header past the
+            // window edge and turns into a horizontal scrollbar instead of an
+            // ellipsis; with it, the name absorbs the squeeze and ends in "…".
+            minWidth: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {currentFileName ?? 'Aucun fichier ouvert'}
+        </span>
+        {saveFailed && (
+          <span role="status" style={{ color: 'var(--warning-fg)', fontSize: 13 }}>
+            ⚠ Erreur de sauvegarde
+          </span>
+        )}
+        </>
+      }
+      overlays={
+        <>
+          {showBootScreen && (
+            <BootScreen>
+              <AnimatedLogo mode="draw-fade" size={120} />
+            </BootScreen>
           )}
-          <span
-            title={currentFilePath ?? undefined}
+          {/* La synchronisation de fermeture couvre tout : on ne veut pas qu'un clic
+              atterrisse dans un canevas pendant qu'il est en train de partir. */}
+          {closing && <ClosingSyncScreen progress={syncProgress} />}
+        {pendingRepair && (
+          <CorruptedMapDialog
+            fileName={pendingRepair.fileName}
+            repairedFileName={fileNameOf(repairedCopyPath(pendingRepair.path))}
+            issues={pendingRepair.issues}
+            repairing={repairing}
+            error={repairError}
+            onCancel={() => setPendingRepair(null)}
+            onRepair={handleRepair}
+          />
+        )}
+
+        {prompt && (
+          <SaveFailedDialog
+            message={prompt.message}
+            detail={prompt.detail}
+            continueLabel={prompt.continueLabel}
+            onCancel={dismissPrompt}
+            onContinue={prompt.onContinue}
+          />
+        )}
+        </>
+      }
+    >
+      {loadError && (
+        <div role="alert" className="status-banner">
+          <span style={{ flex: 1 }}>⚠ {loadError}</span>
+          <button
+            type="button"
+            aria-label="Masquer le message d’erreur"
+            onClick={() => setLoadError(null)}
+            style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: 15 }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+      {dropError && (
+        <div role="alert" className="status-banner">
+          <span style={{ flex: 1 }}>⚠ {dropError}</span>
+        </div>
+      )}
+      {!loadError && !dropError && updateReady && !dismissed && (
+        <UpdateReadyBanner onApply={applyUpdate} onDismiss={dismissUpdate} />
+      )}
+      <main ref={mainRef} style={{ flex: 1, position: 'relative' }}>
+        {isDragActive && (
+          <div
             style={{
-              fontSize: 13,
+              position: 'absolute',
+              inset: 8,
+              zIndex: 10,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '2px dashed var(--primary)',
+              borderRadius: 8,
+              background: 'color-mix(in oklch, var(--primary), transparent 90%)',
+              color: 'var(--primary)',
+              fontSize: 16,
               fontWeight: 500,
-              // The name yields before the toolbar does. Without `minWidth: 0`
-              // its floor is the whole string, which pushes the header past the
-              // window edge and turns into a horizontal scrollbar instead of an
-              // ellipsis; with it, the name absorbs the squeeze and ends in "…".
-              minWidth: 0,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
+              pointerEvents: 'none',
             }}
           >
-            {currentFileName ?? 'Aucun fichier ouvert'}
-          </span>
-          {saveFailed && (
-            <span role="status" style={{ color: 'var(--warning-fg)', fontSize: 13 }}>
-              ⚠ Erreur de sauvegarde
-            </span>
-          )}
-        </header>
-        {loadError && (
-          <div role="alert" className="status-banner">
-            <span style={{ flex: 1 }}>⚠ {loadError}</span>
-            <button
-              type="button"
-              aria-label="Masquer le message d’erreur"
-              onClick={() => setLoadError(null)}
-              style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: 15 }}
-            >
-              ×
-            </button>
+            Déposez la carte mentale ici pour l’ouvrir
           </div>
         )}
-        {dropError && (
-          <div role="alert" className="status-banner">
-            <span style={{ flex: 1 }}>⚠ {dropError}</span>
+        {loadedPath ? (
+          // Keyed by the loaded file: switching maps REMOUNTS the canvas
+          // instead of feeding a new card set to the previous one. React Flow
+          // seeds its node array and runs `fitView` once, on mount — reusing
+          // the instance left the viewport framing the file that was open
+          // before (often nowhere near the new cards), which is what made a
+          // map look like it opened and then vanished.
+          <QuizFrame>
+            <CanvasErrorBoundary key={loadedPath} onClose={() => setCurrentFile(null)}>
+              <MindMapCanvas />
+            </CanvasErrorBoundary>
+          </QuizFrame>
+        ) : currentFilePath ? (
+          <div
+            style={{
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 20,
+              padding: 24,
+              textAlign: 'center',
+            }}
+          >
+            <AnimatedLogo mode="draw-fade" size={120} />
+            <p style={{ margin: 0, maxWidth: 380, color: 'var(--muted-foreground)', fontSize: 14, lineHeight: 1.5 }}>
+              Ouverture de {currentFileName}…
+            </p>
+          </div>
+        ) : (
+          <div
+            style={{
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 20,
+              padding: 24,
+              textAlign: 'center',
+            }}
+          >
+            <AnimatedLogo mode="draw-pulse" size={openableRecentFiles.length > 0 ? 120 : 160} />
+            <p style={{ margin: 0, maxWidth: 380, color: 'var(--muted-foreground)', fontSize: 14, lineHeight: 1.5 }}>
+              Sélectionnez ou créez une carte mentale dans la barre latérale, ou glissez-déposez un fichier ici pour
+              l’ouvrir.
+            </p>
+            <RecentFilesList files={openableRecentFiles} onOpen={requestOpenFile} />
           </div>
         )}
-        {!loadError && !dropError && updateReady && !dismissed && (
-          <UpdateReadyBanner onApply={applyUpdate} onDismiss={dismissUpdate} />
+        {forkPromptOpen && isReadOnly && loadedPath && loadedMeta && (
+          <ReadOnlyMapDialog
+            author={loadedMeta.author}
+            onContinue={() => setForkPromptOpen(false)}
+            onDuplicate={
+              currentUser === null
+                ? null
+                : async () => {
+                    const newPath = await duplicateMap(loadedPath, currentUser.username, currentUser.role)
+                    await refreshFolder(parentDirOf(loadedPath))
+                    setForkPromptOpen(false)
+                    setCurrentFile(newPath)
+                  }
+            }
+          />
         )}
-        <main ref={mainRef} style={{ flex: 1, position: 'relative' }}>
-          {isDragActive && (
-            <div
-              style={{
-                position: 'absolute',
-                inset: 8,
-                zIndex: 10,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: '2px dashed var(--primary)',
-                borderRadius: 8,
-                background: 'color-mix(in oklch, var(--primary), transparent 90%)',
-                color: 'var(--primary)',
-                fontSize: 16,
-                fontWeight: 500,
-                pointerEvents: 'none',
-              }}
-            >
-              Déposez la carte mentale ici pour l’ouvrir
-            </div>
-          )}
-          {loadedPath ? (
-            // Keyed by the loaded file: switching maps REMOUNTS the canvas
-            // instead of feeding a new card set to the previous one. React Flow
-            // seeds its node array and runs `fitView` once, on mount — reusing
-            // the instance left the viewport framing the file that was open
-            // before (often nowhere near the new cards), which is what made a
-            // map look like it opened and then vanished.
-            <QuizFrame>
-              <CanvasErrorBoundary key={loadedPath} onClose={() => setCurrentFile(null)}>
-                <MindMapCanvas />
-              </CanvasErrorBoundary>
-            </QuizFrame>
-          ) : currentFilePath ? (
-            <div
-              style={{
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 20,
-                padding: 24,
-                textAlign: 'center',
-              }}
-            >
-              <AnimatedLogo mode="draw-fade" size={120} />
-              <p style={{ margin: 0, maxWidth: 380, color: 'var(--muted-foreground)', fontSize: 14, lineHeight: 1.5 }}>
-                Ouverture de {currentFileName}…
-              </p>
-            </div>
-          ) : (
-            <div
-              style={{
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 20,
-                padding: 24,
-                textAlign: 'center',
-              }}
-            >
-              <AnimatedLogo mode="draw-pulse" size={openableRecentFiles.length > 0 ? 120 : 160} />
-              <p style={{ margin: 0, maxWidth: 380, color: 'var(--muted-foreground)', fontSize: 14, lineHeight: 1.5 }}>
-                Sélectionnez ou créez une carte mentale dans la barre latérale, ou glissez-déposez un fichier ici pour
-                l’ouvrir.
-              </p>
-              <RecentFilesList files={openableRecentFiles} onOpen={requestOpenFile} />
-            </div>
-          )}
-          {forkPromptOpen && isReadOnly && loadedPath && loadedMeta && (
-            <ReadOnlyMapDialog
-              author={loadedMeta.author}
-              onContinue={() => setForkPromptOpen(false)}
-              onDuplicate={
-                currentUser === null
-                  ? null
-                  : async () => {
-                      const newPath = await duplicateMap(loadedPath, currentUser.username, currentUser.role)
-                      await refreshFolder(parentDirOf(loadedPath))
-                      setForkPromptOpen(false)
-                      setCurrentFile(newPath)
-                    }
-              }
-            />
-          )}
-          <QuizSummaryModal />
-        </main>
-      </div>
-
-      {/* Outside the canvas column, so it spans the full height and takes its
-          width out of the canvas rather than covering it — nothing is hidden,
-          and the tree stays readable beside the fiche it explains.
-          Hidden outright during a quiz, per the effect above. */}
-      {!quizActive && <CardDetailPanel />}
-
-      {pendingRepair && (
-        <CorruptedMapDialog
-          fileName={pendingRepair.fileName}
-          repairedFileName={fileNameOf(repairedCopyPath(pendingRepair.path))}
-          issues={pendingRepair.issues}
-          repairing={repairing}
-          error={repairError}
-          onCancel={() => setPendingRepair(null)}
-          onRepair={handleRepair}
-        />
-      )}
-
-      {prompt && (
-        <SaveFailedDialog
-          message={prompt.message}
-          detail={prompt.detail}
-          continueLabel={prompt.continueLabel}
-          onCancel={dismissPrompt}
-          onContinue={prompt.onContinue}
-        />
-      )}
-    </div>
+        <QuizSummaryModal />
+      </main>
+    </AppShell>
   )
 }
 

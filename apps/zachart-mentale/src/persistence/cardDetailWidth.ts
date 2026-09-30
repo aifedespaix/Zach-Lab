@@ -1,4 +1,4 @@
-import { createPanelWidthStorage } from './panelWidth'
+import { createPanelWidthStorage } from '@suite/shared/shell'
 
 /**
  * The bounds for the fiche panel on the right.
@@ -26,3 +26,6 @@ const storage = createPanelWidthStorage({
 export const clampCardDetailWidth = storage.clamp
 export const loadCardDetailWidth = storage.load
 export const saveCardDetailWidth = storage.save
+
+/** The storage itself, for the resize hook — the exports above are its parts. */
+export const cardDetailWidthStorage = storage

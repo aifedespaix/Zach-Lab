@@ -3,8 +3,6 @@ import {
   useEffect,
   useRef,
   useState,
-  type KeyboardEvent as ReactKeyboardEvent,
-  type PointerEvent as ReactPointerEvent,
 } from 'react'
 import {
   ChevronDown,
@@ -25,7 +23,7 @@ import { useCardHoverStore } from '../../state/useCardHoverStore'
 import { useCardSelectionStore } from '../../state/useCardSelectionStore'
 import { useWorkspaceStore } from '../../state/useWorkspaceStore'
 import { useAppearanceSettingsStore } from '../../state/useAppearanceSettingsStore'
-import { useResolvedTheme, toCss } from '@suite/shared/theme'
+import { useResolvedTheme, toCss, prefersReducedMotion } from '@suite/shared/theme'
 import { useCommand } from '../../hooks/useCommand'
 import { ancestorTitles, siblingsOf, childrenOf } from '../../state/cardsReducer'
 import { clampCardLevel, detachedColors } from '../../colors/levelColors'
@@ -36,15 +34,9 @@ import { DescriptionDialog, type NavSide, type TitleChipColors } from '../../con
 import { imageBlockFrom } from '../../content/imageBlock'
 import { pickImageFile } from '../../content/pickImage'
 import { assetSrc } from '../../persistence/assets'
-import { prefersReducedMotion } from '../../utils/prefersReducedMotion'
 import { normalizeForComparison } from '../../utils/textSimilarity'
-import {
-  clampCardDetailWidth,
-  loadCardDetailWidth,
-  saveCardDetailWidth,
-  MAX_CARD_DETAIL_WIDTH,
-  MIN_CARD_DETAIL_WIDTH,
-} from '../../persistence/cardDetailWidth'
+import { cardDetailWidthStorage } from '../../persistence/cardDetailWidth'
+import { PanelResizeHandle, usePanelResize } from '@suite/shared/shell'
 import {
   Button,
   Dialog,
@@ -63,9 +55,6 @@ import {
   TooltipTrigger,
 } from '@suite/shared/ui'
 import { CommandButton } from '../commands/CommandButton'
-
-/** How far one arrow-key press moves the border, matching the file sidebar. */
-const KEYBOARD_RESIZE_STEP = 16
 
 /**
  * The fiche of a card: its title, where it sits in the tree, and its
@@ -136,9 +125,8 @@ export function CardDetailPanel() {
     [setEditing]
   )
 
-  const [width, setWidth] = useState(loadCardDetailWidth)
-  const [resizing, setResizing] = useState(false)
-  const handleRef = useRef<HTMLDivElement>(null)
+  const resize = usePanelResize({ storage: cardDetailWidthStorage, side: 'right' })
+  const { width, resizing } = resize
   /** What the search field holds. A view over the open fiches — never persisted. */
   const [search, setSearch] = useState('')
   /**
@@ -248,52 +236,6 @@ export function CardDetailPanel() {
     if (fiche === undefined) return
     fiche.scrollIntoView?.({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'nearest' })
   }, [selectedCardId])
-
-  // Same rationale as the file sidebar's: writing on every pointer move would
-  // hammer `localStorage` a hundred times a drag for a value only the next
-  // launch reads.
-  const commitWidth = useCallback((next: number) => {
-    const clamped = clampCardDetailWidth(next)
-    setWidth(clamped)
-    saveCardDetailWidth(clamped)
-  }, [])
-
-  function handleResizeStart(event: ReactPointerEvent<HTMLDivElement>) {
-    event.preventDefault()
-    // Called optionally: jsdom has no pointer-capture API, and the drag works
-    // without it (only the "cursor outruns the border" case degrades).
-    handleRef.current?.setPointerCapture?.(event.pointerId)
-    setResizing(true)
-  }
-
-  function handleResizeMove(event: ReactPointerEvent<HTMLDivElement>) {
-    if (!resizing) return
-    // Measured from the panel's RIGHT edge, mirrored from the file sidebar's
-    // left-edge measurement: this panel grows leftwards, so the width is the
-    // distance from the pointer to that edge.
-    const right = handleRef.current?.parentElement?.getBoundingClientRect().right ?? 0
-    setWidth(clampCardDetailWidth(right - event.clientX))
-  }
-
-  function handleResizeEnd(event: ReactPointerEvent<HTMLDivElement>) {
-    if (!resizing) return
-    handleRef.current?.releasePointerCapture?.(event.pointerId)
-    setResizing(false)
-    saveCardDetailWidth(width)
-  }
-
-  function handleResizeKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
-    // Left widens: the panel's border is on its left, so the directions are
-    // the mirror of the file sidebar's.
-    if (event.key === 'ArrowLeft') {
-      event.preventDefault()
-      commitWidth(width + KEYBOARD_RESIZE_STEP)
-    }
-    if (event.key === 'ArrowRight') {
-      event.preventDefault()
-      commitWidth(width - KEYBOARD_RESIZE_STEP)
-    }
-  }
 
   // Registered unconditionally (like the file sidebar's own fold command), so
   // the shortcut still reaches the panel while it is folded away — only
@@ -408,32 +350,11 @@ export function CardDetailPanel() {
               transition: resizing || prefersReducedMotion() ? 'none' : 'width 220ms ease',
             }}
           >
-            {/* Straddles the border, like the file sidebar's handle, so the grab
-                target is bigger than the 1px line it moves. */}
-            <div
-              ref={handleRef}
-              role="separator"
-              aria-orientation="vertical"
-              aria-label="Redimensionner le panneau des fiches"
-              aria-valuenow={width}
-              aria-valuemin={MIN_CARD_DETAIL_WIDTH}
-              aria-valuemax={MAX_CARD_DETAIL_WIDTH}
-              tabIndex={0}
-              onPointerDown={handleResizeStart}
-              onPointerMove={handleResizeMove}
-              onPointerUp={handleResizeEnd}
-              onPointerCancel={handleResizeEnd}
-              onKeyDown={handleResizeKeyDown}
-              style={{
-                position: 'absolute',
-                top: 0,
-                bottom: 0,
-                left: -2,
-                width: 5,
-                zIndex: 2,
-                cursor: 'col-resize',
-                background: resizing ? 'var(--primary)' : 'transparent',
-              }}
+            <PanelResizeHandle
+              resize={resize}
+              side="right"
+              label="Redimensionner le panneau des fiches"
+              activeColor="var(--primary)"
             />
 
             {/* Same split as the file sidebar: the header names the panel, every

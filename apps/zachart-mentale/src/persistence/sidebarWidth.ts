@@ -1,4 +1,4 @@
-import { createPanelWidthStorage } from './panelWidth'
+import { createPanelWidthStorage } from '@suite/shared/shell'
 
 /**
  * The bounds a drag on the sidebar's right border may land in. Below the
@@ -24,3 +24,6 @@ export const clampSidebarWidth = storage.clamp
 export const loadSidebarWidth = storage.load
 
 export const saveSidebarWidth = storage.save
+
+/** The storage itself, for the resize hook — the exports above are its parts. */
+export const sidebarWidthStorage = storage

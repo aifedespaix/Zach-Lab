@@ -9,7 +9,8 @@
     "./ui": "./src/ui/index.ts",
     "./update": "./src/update/index.ts",
     "./commands": "./src/commands/index.ts",
-    "./settings": "./src/settings/index.ts"
+    "./settings": "./src/settings/index.ts",
+    "./shell": "./src/shell/index.ts"
   },
   "scripts": {
     "test": "vitest run"

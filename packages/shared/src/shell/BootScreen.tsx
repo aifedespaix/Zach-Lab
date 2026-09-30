@@ -1,12 +1,13 @@
-// src/components/BootScreen.tsx
-import { AnimatedLogo } from './AnimatedLogo'
+import type { ReactNode } from 'react'
 
 /**
  * Full-screen cover shown while the workspace is loading. Sits on top of the
  * rest of the app rather than replacing it, so nothing underneath has to wait
  * for this to unmount before it can start its own work.
+ *
+ * The app draws its own mark inside it.
  */
-export function BootScreen() {
+export function BootScreen({ children }: { children?: ReactNode }) {
   return (
     <div
       role="status"
@@ -21,7 +22,7 @@ export function BootScreen() {
         background: 'var(--background)',
       }}
     >
-      <AnimatedLogo mode="draw-fade" size={120} />
+      {children}
     </div>
   )
 }
