@@ -1,5 +1,10 @@
 # Déployer PocketBase pour la synchronisation
 
+> **Où lancer ces commandes.** Ce dossier est `apps/zachart-mentale/infra/` : les chemins
+> `infra/…` des exemples ci-dessous sont relatifs à `apps/zachart-mentale/`. Depuis la racine
+> du dépôt, `bun run infra:plan`, `infra:apply` et `infra:check` font la même chose ; les
+> scripts retrouvent leur `.env` à côté d’eux, d’où qu’on les lance.
+
 Une seule image, ARM64 compatible (Raspberry Pi), SQLite embarqué — pas de base
 de données séparée. Toute la configuration des collections est **automatique** :
 il n'y a plus rien à créer à la main dans le tableau de bord.
