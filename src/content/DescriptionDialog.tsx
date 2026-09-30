@@ -1126,6 +1126,14 @@ const NAV_RELATION: Record<NavSide, string> = {
   right: 'Sous-partie',
 }
 
+/** Where each edge sits in the sidebar's "+"-shaped pad — see `DescriptionSidebar`. */
+const CROSS_AREA: Record<NavSide, string> = {
+  top: '1 / 2',
+  bottom: '3 / 2',
+  left: '2 / 1',
+  right: '2 / 3',
+}
+
 /** What each edge CREATES when it has no neighbour to jump to. */
 const NAV_CREATE_LABEL: Record<NavSide, string> = {
   top: 'Nouvelle carte avant',
@@ -1189,17 +1197,18 @@ function NavArrow({
   onNavigate?: (id: string) => void
   /** Opens the title prompt instead of creating blind — see `createPrompt` on the dialog. */
   onOpenCreatePrompt: (side: NavSide) => void
-  /** Pushes the button further outside the dialog's border — see `navPosition`. Unused in `'row'`. */
+  /** Pushes the button further outside the dialog's border — see `navPosition`. Unused in `'cross'`. */
   narrow: boolean
   /**
    * `'floating'` (the default) is the narrow dialog's circular edge button.
-   * `'row'` is the wide dialog's sidebar: a full-width row, its relation and
-   * destination spelled out instead of left for the hover card alone — see
-   * `DescriptionSidebar`.
+   * `'cross'` is the wide dialog's sidebar: a smaller icon-only button placed
+   * in a "+"-shaped pad, so the four directions read as directions at a glance
+   * without four full-width rows eating the sidebar — see `DescriptionSidebar`.
    */
-  layout?: 'floating' | 'row'
+  layout?: 'floating' | 'cross'
 }) {
   const Icon = NAV_ICON[side]
+  const iconSize = layout === 'cross' ? 13 : 16
 
   if (target !== undefined && onNavigate !== undefined) {
     // More than one child: naming one of them would be picking for the user, so
@@ -1223,9 +1232,8 @@ function NavArrow({
         ariaLabel={`Aller à « ${target.title} »`}
         onActivate={() => onNavigate(target.id)}
         tip={label}
-        rowLabel={label}
       >
-        <Icon size={16} />
+        <Icon size={iconSize} />
       </EdgeButton>
     )
   }
@@ -1241,9 +1249,8 @@ function NavArrow({
         ariaLabel={NAV_CREATE_LABEL[side]}
         onActivate={() => onOpenCreatePrompt(side)}
         tip={label}
-        rowLabel={label}
       >
-        <Plus size={16} />
+        <Plus size={iconSize} />
       </EdgeButton>
     )
   }
@@ -1268,18 +1275,15 @@ function EdgeButton({
   ariaLabel,
   onActivate,
   tip,
-  rowLabel,
   children,
 }: {
   side: NavSide
   narrow: boolean
-  layout?: 'floating' | 'row'
+  layout?: 'floating' | 'cross'
   colors?: TitleChipColors
   ariaLabel: string
   onActivate: () => void
   tip: ReactNode
-  /** What a `'row'` layout writes out next to the icon — see `NavArrow`. Ignored when floating. */
-  rowLabel?: ReactNode
   children: ReactNode
 }) {
   // `reduceMotion ? undefined` is load-bearing: motion does NOT consult
@@ -1287,7 +1291,7 @@ function EdgeButton({
   // `"never"`), so without the gate this would animate for the users who asked
   // it not to.
   const reduceMotion = useReducedMotion()
-  const isRow = layout === 'row'
+  const isCross = layout === 'cross'
 
   return (
     <Tooltip>
@@ -1300,26 +1304,26 @@ function EdgeButton({
           // own keys did — so the four controls that move you around the map were
           // the only ones that did not look clickable. This is the app's existing
           // feel for a small action chip (the spring `CardNode`'s edge buttons
-          // use), with a slightly firmer scale now that the chip is round. A row
-          // never grows on hover — scaling a full-width sidebar row reads as a
-          // glitch, not as feedback — but it still dips on press.
-          whileHover={reduceMotion || isRow ? undefined : { scale: 1.12 }}
-          whileTap={reduceMotion ? undefined : { scale: isRow ? 0.98 : 0.94 }}
+          // use), with a slightly firmer scale now that the chip is round.
+          whileHover={reduceMotion ? undefined : { scale: 1.12 }}
+          whileTap={reduceMotion ? undefined : { scale: 0.94 }}
           transition={{ type: 'spring', stiffness: 500, damping: 25 }}
           style={
-            isRow
+            isCross
               ? {
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  width: '100%',
-                  padding: '6px 8px',
-                  borderRadius: 8,
-                  border: `1px solid ${colors?.border ?? 'var(--border)'}`,
+                  // Its own cell of the pad's 3×3 grid, so an edge with nothing
+                  // to show leaves a hole instead of sliding the others over.
+                  gridArea: CROSS_AREA[side],
+                  display: 'grid',
+                  placeItems: 'center',
+                  width: 26,
+                  height: 26,
+                  padding: 0,
+                  borderRadius: 7,
+                  border: `1.5px solid ${colors?.border ?? 'var(--border)'}`,
                   background: colors?.bg ?? 'var(--popover)',
                   color: colors?.text ?? 'inherit',
                   cursor: 'pointer',
-                  textAlign: 'left',
                 }
               : {
                   position: 'absolute',
@@ -1340,11 +1344,14 @@ function EdgeButton({
           }
         >
           {children}
-          {isRow && rowLabel}
         </motion.button>
       </TooltipTrigger>
       <TooltipContent
         arrow={false}
+        // In the pad, the hover card opens the way the button points — the
+        // bottom arrow's card below it, the parent's to its left — so the
+        // title lands where the jump goes rather than over a neighbouring key.
+        side={isCross ? side : undefined}
         sideOffset={8}
         className="z-[60] max-w-xs"
         style={{
@@ -1436,11 +1443,22 @@ function DescriptionSidebar({
       {hasNav && (
         <div>
           <SidebarHeading>Naviguer</SidebarHeading>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <NavArrow layout="row" side="left" target={parentTarget} create={onCreate?.left} onNavigate={onNavigate} onOpenCreatePrompt={onOpenCreatePrompt} narrow={false} />
-            <NavArrow layout="row" side="right" target={childTarget} create={onCreate?.right} onNavigate={onNavigate} onOpenCreatePrompt={onOpenCreatePrompt} narrow={false} />
-            <NavArrow layout="row" side="top" target={prevSibling} create={onCreate?.top} onNavigate={onNavigate} onOpenCreatePrompt={onOpenCreatePrompt} narrow={false} />
-            <NavArrow layout="row" side="bottom" target={nextSibling} create={onCreate?.bottom} onNavigate={onNavigate} onOpenCreatePrompt={onOpenCreatePrompt} narrow={false} />
+          {/* A "+" of icon-only keys: up/down/left/right on screen ARE the
+              directions on the map, so the layout says where each one goes
+              and the hover card only has to name the destination. */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 26px)',
+              gridTemplateRows: 'repeat(3, 26px)',
+              gap: 3,
+              justifyContent: 'center',
+            }}
+          >
+            <NavArrow layout="cross" side="top" target={prevSibling} create={onCreate?.top} onNavigate={onNavigate} onOpenCreatePrompt={onOpenCreatePrompt} narrow={false} />
+            <NavArrow layout="cross" side="left" target={parentTarget} create={onCreate?.left} onNavigate={onNavigate} onOpenCreatePrompt={onOpenCreatePrompt} narrow={false} />
+            <NavArrow layout="cross" side="right" target={childTarget} create={onCreate?.right} onNavigate={onNavigate} onOpenCreatePrompt={onOpenCreatePrompt} narrow={false} />
+            <NavArrow layout="cross" side="bottom" target={nextSibling} create={onCreate?.bottom} onNavigate={onNavigate} onOpenCreatePrompt={onOpenCreatePrompt} narrow={false} />
           </div>
         </div>
       )}
