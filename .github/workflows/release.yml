@@ -1,9 +1,14 @@
 name: publish
 
+# Un tag = une app = une release. `zachart-v1.2.3` construit Zachar’t Mentale,
+# `base-v0.1.0` construit Base ; chaque app a sa propre version (voir
+# docs/RELEASE.md). Les tags historiques `v*` restent en place et ne relancent
+# rien.
 on:
   push:
     tags:
-      - 'v*'
+      - 'zachart-v*'
+      - 'base-v*'
 
 jobs:
   publish-tauri:
@@ -12,6 +17,48 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
+
+      # Le tag dit quelle app construire. Une seule ligne par app à ajouter ici
+      # quand la suite en gagne une (avec `bun run new-app`).
+      #   app        dossier sous apps/
+      #   prefix     préfixe du tag, et nom de la release roulante `updater-<prefix>`
+      #   title      nom affiché de la release
+      #   updater    true si l'app signe ses mises à jour (produit un latest.json)
+      #   prerelease true pour toute app sauf Zachar’t : `releases/latest` sert
+      #              encore de point d'entrée aux installations de Zachar’t
+      #              existantes, une release d'une autre app ne doit pas le voler.
+      #   key/pass   noms des secrets de signature de l'app
+      - name: pick the app from the tag
+        id: app
+        shell: bash
+        run: |
+          case "$GITHUB_REF_NAME" in
+            zachart-v*)
+              app=zachart-mentale prefix=zachart title='Zachar’t Mentale' updater=true prerelease=false
+              key=TAURI_SIGNING_PRIVATE_KEY pass=TAURI_SIGNING_PRIVATE_KEY_PASSWORD ;;
+            base-v*)
+              app=base prefix=base title='Base' updater=false prerelease=true
+              key=TAURI_SIGNING_PRIVATE_KEY_BASE pass=TAURI_SIGNING_PRIVATE_KEY_BASE_PASSWORD ;;
+            *)
+              echo "::error::Le tag $GITHUB_REF_NAME ne correspond à aucune app." ; exit 1 ;;
+          esac
+          {
+            echo "app=$app"; echo "prefix=$prefix"; echo "title=$title"
+            echo "updater=$updater"; echo "prerelease=$prerelease"
+            echo "key=$key"; echo "pass=$pass"
+          } >> "$GITHUB_OUTPUT"
+
+      # Un tag posé sur une version qui n'est pas celle du code publierait un
+      # installeur sous un faux numéro — et l'updater comparerait ce numéro.
+      - name: check the tag matches the app version
+        shell: bash
+        run: |
+          version=$(node -p "require('./apps/${{ steps.app.outputs.app }}/src-tauri/tauri.conf.json').version")
+          expected="${{ steps.app.outputs.prefix }}-v$version"
+          if [ "$GITHUB_REF_NAME" != "$expected" ]; then
+            echo "::error::Le tag $GITHUB_REF_NAME ne correspond pas à la version $version de l'app (attendu : $expected)."
+            exit 1
+          fi
 
       - name: setup bun
         uses: oven-sh/setup-bun@v2
@@ -33,12 +80,35 @@ jobs:
       - uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # Les secrets sont choisis par NOM : la clé d'une app ne signe jamais
+          # celle d'une autre, et la fuite de l'une ne compromet pas les autres.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets[steps.app.outputs.key] }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets[steps.app.outputs.pass] }}
         with:
-          projectPath: apps/zachart-mentale
-          tagName: v__VERSION__
-          releaseName: 'Zachar’t Mentale v__VERSION__'
+          projectPath: apps/${{ steps.app.outputs.app }}
+          tagName: ${{ steps.app.outputs.prefix }}-v__VERSION__
+          releaseName: '${{ steps.app.outputs.title }} v__VERSION__'
           releaseBody: 'Voir les fichiers attachés pour installer cette version.'
           releaseDraft: false
-          prerelease: false
+          prerelease: ${{ steps.app.outputs.prerelease == 'true' }}
+
+      # Le latest.json d'une app doit être trouvable à une adresse qui ne dépend
+      # pas de « la dernière release du dépôt » (toutes apps confondues). Il est
+      # donc recopié sur une release roulante `updater-<app>`, réécrite à chaque
+      # publication. Voir docs/RELEASE.md pour la migration des installations
+      # existantes de Zachar’t Mentale.
+      - name: publish latest.json on the rolling updater release
+        if: steps.app.outputs.updater == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          rolling="updater-${{ steps.app.outputs.prefix }}"
+          if ! gh release view "$rolling" > /dev/null 2>&1; then
+            gh release create "$rolling" \
+              --prerelease --latest=false \
+              --title "Mises à jour de ${{ steps.app.outputs.title }}" \
+              --notes "Release technique : elle porte le latest.json que l'application interroge. Ne pas la supprimer."
+          fi
+          gh release download "$GITHUB_REF_NAME" --pattern latest.json --clobber
+          gh release upload "$rolling" latest.json --clobber

@@ -68,3 +68,40 @@ describe('asset protocol', () => {
     expect(tauriDependency).toContain('protocol-asset')
   })
 })
+
+/**
+ * The app checks for updates against `plugins.updater.endpoints`, and installs
+ * in the field poll whatever THEIR version shipped with. A release built with a
+ * wrong endpoint strands every user of that version: they never see another
+ * update, and nothing on their screen says so.
+ */
+describe('updater', () => {
+  const updater = tauriConfig.plugins.updater
+
+  it('verifies updates against a public key', () => {
+    // An empty key would make the plugin accept nothing — or, worse, depending
+    // on the version, skip the check.
+    expect(updater.pubkey.length).toBeGreaterThan(40)
+  })
+
+  it('only polls over HTTPS', () => {
+    expect(updater.endpoints.length).toBeGreaterThan(0)
+    for (const endpoint of updater.endpoints) expect(endpoint).toMatch(/^https:\/\//)
+  })
+
+  it('produces the signed artifacts the updater needs', () => {
+    expect(tauriConfig.bundle.createUpdaterArtifacts).toBe(true)
+  })
+
+  it('still polls the legacy endpoint: moving it is a decision of its own (docs/RELEASE.md)', () => {
+    // `releases/latest` means « the newest release of the WHOLE repository ». It
+    // works only while Zachar’t Mentale is the one app published as a normal
+    // release (the others are pre-releases). Installs already in the field
+    // depend on it, so the endpoint changes only WITH a transition release that
+    // lists the new one first and this one after — docs/RELEASE.md, « Migration
+    // de l’endpoint ». Change both this test and that document together.
+    expect(updater.endpoints).toEqual([
+      'https://github.com/aifedespaix/Zachar-t-Mentale/releases/latest/download/latest.json',
+    ])
+  })
+})
