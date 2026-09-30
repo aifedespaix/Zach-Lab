@@ -5,7 +5,7 @@ import { FileTreeRow, RENAME_CLICK_GRACE_MS } from './FileTreeRow'
 import { useWorkspaceStore, createWorkspaceStore } from '../../state/useWorkspaceStore'
 import type { FileTreeNode } from '../../types/workspace'
 import type { MindMapMeta } from '../../types/card'
-import { TooltipProvider } from '../ui/tooltip'
+import { TooltipProvider } from '@suite/shared/ui'
 import type { ReactElement } from 'react'
 
 /**

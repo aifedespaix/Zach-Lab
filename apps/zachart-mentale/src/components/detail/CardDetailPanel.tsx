@@ -29,7 +29,7 @@ import { useResolvedTheme } from '../../hooks/useResolvedTheme'
 import { useCommand } from '../../hooks/useCommand'
 import { ancestorTitles, siblingsOf, childrenOf } from '../../state/cardsReducer'
 import { clampCardLevel, detachedColors } from '../../colors/levelColors'
-import { toCss } from '../../colors/contrast'
+import { toCss } from '@suite/shared/theme'
 import { contentOf, blocksToPlainText } from '../../content/blocks'
 import { BlockView } from '../../content/BlockView'
 import { ContentKindBadges } from '../../content/ContentKindBadges'
@@ -46,17 +46,24 @@ import {
   MAX_CARD_DETAIL_WIDTH,
   MIN_CARD_DETAIL_WIDTH,
 } from '../../persistence/cardDetailWidth'
-import { Button } from '../ui/button'
-import { CommandButton } from '../commands/CommandButton'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog'
 import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
   ContextMenu,
   ContextMenuTrigger,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
-} from '../ui/context-menu'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip'
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@suite/shared/ui'
+import { CommandButton } from '../commands/CommandButton'
 
 /** How far one arrow-key press moves the border, matching the file sidebar. */
 const KEYBOARD_RESIZE_STEP = 16

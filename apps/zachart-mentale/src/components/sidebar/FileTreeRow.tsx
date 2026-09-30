@@ -14,10 +14,14 @@ import { renameLinkedGroup, unlinkIfAlone } from '../../persistence/copyLinkOps'
 import { beginTreeDrag, consumeSwallowedClick, isValidDropTarget } from './treeDrag'
 import { flattenFolders, isRowVisible, type FolderOption } from './treeFilter'
 import { validateCards } from '../../validation/cardsValidation'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog'
-import { Button } from '../ui/button'
-import { Hint } from '../ui/hint'
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  Button,
+  Hint,
   ContextMenu,
   ContextMenuTrigger,
   ContextMenuContent,
@@ -26,7 +30,7 @@ import {
   ContextMenuSub,
   ContextMenuSubTrigger,
   ContextMenuSubContent,
-} from '../ui/context-menu'
+} from '@suite/shared/ui'
 import { ExportDialog } from './ExportDialog'
 import { NameDialog } from './NameDialog'
 import { useFolderCreation } from './useFolderCreation'

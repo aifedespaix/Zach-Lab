@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { oklchWcagContrast } from './contrast'
+import { oklchWcagContrast } from '@suite/shared/theme'
 import { detachedColors, levelColor, levelColors } from './levelColors'
 
 describe('levelColors', () => {

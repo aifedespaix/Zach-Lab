@@ -1,7 +1,7 @@
 import { fireEvent, render as rtlRender, screen, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { FileTreeRow, RENAME_CLICK_GRACE_MS } from './FileTreeRow'
-import { TooltipProvider } from '../ui/tooltip'
+import { TooltipProvider } from '@suite/shared/ui'
 import type { ReactElement } from 'react'
 
 /** Même raison que dans `FileTreeRow.test.tsx` : le `Hint` de la ligne exige le provider de la sidebar. */

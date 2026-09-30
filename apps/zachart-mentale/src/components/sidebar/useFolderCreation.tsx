@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { FilePlus, FileUp, FolderPlus } from 'lucide-react'
-import { ContextMenuItem } from '../ui/context-menu'
+import { ContextMenuItem } from '@suite/shared/ui'
 import { NameDialog } from './NameDialog'
 import { useWorkspaceStore, describeError } from '../../state/useWorkspaceStore'
 import { createMindMapFile, createSubfolder, freeMindMapPath, freeSiblingPath } from '../../persistence/fileOps'

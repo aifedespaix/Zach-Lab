@@ -1,13 +1,11 @@
 @import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
+@import "@suite/shared/theme.css";
+@source "../../../packages/shared/src";
 /* Through the bundler, NEVER a CDN: html-to-image can only embed the KaTeX
    fonts into an export capture if it can read the stylesheet's cssRules,
    which a cross-origin sheet forbids. See the spike's résultat 1. */
 @import "katex/dist/katex.min.css";
 
-@custom-variant dark (&:is(.dark *));
 
 /*
  * The 4 card level palettes live in src/colors/levelColors.ts, which CardNode
@@ -15,46 +13,6 @@
  * CSS custom properties: that copy was unused and would drift.
  */
 :root {
-  /* Tells the engine which built-in light/dark rendering to use for anything
-     the app does not paint itself — native scrollbars above all, but also
-     form controls and the canvas behind the page. Without it a dark theme
-     still got light-grey system scrollbars glued to its dark panels. */
-  color-scheme: light;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-  --warning-bg: oklch(0.94 0.06 85);
-  --warning-border: oklch(0.72 0.14 70);
-  --warning-fg: oklch(0.4 0.12 60);
   /* « Locked » is ONE state, worn both by the row in the tree and by the padlock
      in the toolbar, so the colour alone says the two are the same thing. It is
      the app logo's own orange (#F97316). The surfaces are that orange diluted —
@@ -63,9 +21,6 @@
   --locked: oklch(0.7 0.19 48);
   --locked-surface: color-mix(in oklch, var(--locked), transparent 91%);
   --locked-surface-hover: color-mix(in oklch, var(--locked), transparent 84%);
-  --info-bg: oklch(0.94 0.03 240);
-  --info-border: oklch(0.7 0.1 240);
-  --info-fg: oklch(0.35 0.08 240);
   /* Quiz mode. The gold frames the graph while a quiz is on, so the mode is
      legible before reading a single word; the "pending" trio paints a card
      that is still waiting for an answer as a blank slate rather than as one
@@ -75,103 +30,16 @@
   --quiz-pending-bg: oklch(0.97 0.004 90);
   --quiz-pending-border: oklch(0.87 0.02 90);
   --quiz-pending-fg: oklch(0.28 0.01 90);
-  /* Scrollbars. `color-scheme` above already repaints the native ones; these
-     tokens drive the explicit rules in the base layer below, which is what
-     WebKitGTK (Linux) and WebView2 (Windows) actually honour. */
-  --scrollbar-thumb: oklch(0.8 0 0);
-  --scrollbar-thumb-hover: oklch(0.65 0 0);
-  --scrollbar-track: transparent;
   /* `**keyword**` highlight in a card's definition (src/content/highlight.tsx). */
   --highlight-color: oklch(0.55 0.18 40);
 }
 
-@theme inline {
-  --font-heading: var(--font-sans);
-  --font-sans: 'Geist Variable', sans-serif;
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --color-foreground: var(--foreground);
-  --color-background: var(--background);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
-}
-
 .dark {
-  color-scheme: dark;
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
-  --warning-bg: oklch(0.28 0.05 75);
-  --warning-border: oklch(0.55 0.14 70);
-  --warning-fg: oklch(0.9 0.08 80);
   /* Dark needs a brighter, less saturated orange and a stronger wash: the same
      dilution that reads as a hint on white vanishes on a dark surface. */
   --locked: oklch(0.76 0.16 55);
   --locked-surface: color-mix(in oklch, var(--locked), transparent 86%);
   --locked-surface-hover: color-mix(in oklch, var(--locked), transparent 76%);
-  --info-bg: oklch(0.28 0.05 240);
-  --info-border: oklch(0.5 0.12 240);
-  --info-fg: oklch(0.88 0.06 240);
   /* Quiz mode, dark. A "blank" card cannot be white here — it would glare
      against the dark canvas — so the same idea is carried by a raised,
      colourless surface instead. */
@@ -180,61 +48,9 @@
   --quiz-pending-bg: oklch(0.3 0.004 90);
   --quiz-pending-border: oklch(0.62 0.02 90);
   --quiz-pending-fg: oklch(0.97 0.005 90);
-  --scrollbar-thumb: oklch(0.38 0 0);
-  --scrollbar-thumb-hover: oklch(0.52 0 0);
-  --scrollbar-track: transparent;
   /* Lighter + slightly less saturated than the light-mode value: the same
      oklch(0.55 ...) reads as dull, low-contrast rust against a dark canvas. */
   --highlight-color: oklch(0.75 0.15 40);
-}
-
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-  html {
-    @apply font-sans;
-  }
-
-  /*
-   * Every scrollable surface in the app — the file tree, a long definition
-   * popover, a settings panel — scrolls in the theme's own colours rather
-   * than in the platform's default light grey. Both syntaxes are set on
-   * purpose: `scrollbar-*` is the standard one (and the only one recent
-   * WebKitGTK reads), `::-webkit-scrollbar` is what Chromium-based WebView2
-   * still styles from.
-   */
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
-  }
-
-  ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
-
-  ::-webkit-scrollbar-track,
-  ::-webkit-scrollbar-corner {
-    background: var(--scrollbar-track);
-  }
-
-  /* The transparent border + `background-clip` is what insets the thumb from
-     the track edge; a plain `margin` does not apply to this pseudo-element. */
-  ::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb);
-    background-clip: padding-box;
-    border: 2px solid transparent;
-    border-radius: 9999px;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--scrollbar-thumb-hover);
-    background-clip: padding-box;
-  }
 }
 
 /*
@@ -623,42 +439,6 @@
   white-space: nowrap;
 }
 
-/* Shared style for the loadError/dropError banners in App.tsx — themed via
-   the warning tokens above so they repaint correctly in dark mode. */
-.status-banner {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 8px 8px;
-  padding: 6px 8px;
-  border: 1px solid var(--warning-border);
-  border-radius: 4px;
-  background: var(--warning-bg);
-  color: var(--warning-fg);
-  font-size: 13px;
-}
-
-/* A hairline divider between groups of toolbar buttons: the header holds three
-   kinds of action (file, edition, application) and, without a break, reads as
-   one undifferentiated row of icons. */
-.toolbar-separator {
-  display: inline-block;
-  width: 1px;
-  height: 20px;
-  flex-shrink: 0;
-  margin: 0 2px;
-  background: var(--border);
-}
-
-/* Modifier for a neutral/informational banner (e.g. update-ready) sharing
-   .status-banner's layout but themed via the info tokens instead of the
-   warning ones. */
-.status-banner--info {
-  border-color: var(--info-border);
-  background: var(--info-bg);
-  color: var(--info-fg);
-}
-
 /* Les trois issues d'un conflit. La couleur est ici le message : on lit la
    rangée avant de lire les mots, et chacune doit dire ce qu'elle fait sans
    être lue. Bleu = accepter ce qui vient d'ailleurs (les mêmes jetons `info`
@@ -736,16 +516,6 @@
   font-weight: 600;
   line-height: 14px;
   white-space: nowrap;
-}
-
-/* The circular theme-toggle transition (see src/theme/circularReveal.ts)
-   animates `clip-path` itself — the View Transitions API's default
-   cross-fade between old/new snapshots would show through underneath and
-   spoil the effect. */
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation: none;
-  mix-blend-mode: normal;
 }
 
 /*

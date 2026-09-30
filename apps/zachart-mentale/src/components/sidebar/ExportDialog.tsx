@@ -6,8 +6,7 @@ import { writeXmindFile } from '../../xmind/exportXmind'
 import { saveBytesAs, dataUrlToBytes } from '../../persistence/exportIO'
 import { describeExportError } from '../../export/describeExportError'
 import { mindMapBaseName } from '../../persistence/paths'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog'
-import { Button } from '../ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Button } from '@suite/shared/ui'
 
 type ExportFormat = 'pdf' | 'image' | 'xmind'
 

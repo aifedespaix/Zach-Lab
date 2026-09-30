@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { RotateCcw, Search, X } from 'lucide-react'
-import { Button } from '../ui/button'
+import { Button } from '@suite/shared/ui'
 import { SettingsSection } from './SettingsSection'
 import { ShortcutRecorder } from './ShortcutRecorder'
 import { CATEGORY_LABELS, COMMAND_LIST, DEFAULT_BINDINGS, commandsByCategory, type CommandId } from '../../types/commands'

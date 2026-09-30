@@ -22,7 +22,7 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
   ContextMenuTrigger,
-} from '../components/ui/context-menu'
+} from '@suite/shared/ui'
 import { LanguageFlag } from './LanguageHelpPalette'
 import { SYMBOL_TABS } from './symbolTabs'
 import { MenuShortcut } from './descriptionMenuKit'

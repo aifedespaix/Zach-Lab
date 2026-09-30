@@ -3,7 +3,7 @@ import type { AppearanceSettings, ThemeMode } from '../../types/appearanceSettin
 import { FONT_OPTIONS } from '../../types/appearanceSettings'
 import type { UpdateCheckHandle, UpdateCheckStatus } from '../../hooks/useAppUpdater'
 import { SettingsSection } from './SettingsSection'
-import { Button } from '../ui/button'
+import { Button } from '@suite/shared/ui'
 
 const UPDATE_STATUS_LABEL: Partial<Record<UpdateCheckStatus, string>> = {
   checking: 'Vérification en cours…',

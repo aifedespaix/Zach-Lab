@@ -1,5 +1,5 @@
-import { Slider } from '../ui/slider'
-import type { Oklch } from '../../colors/contrast'
+import { Slider } from '@suite/shared/ui'
+import type { Oklch } from '@suite/shared/theme'
 
 interface OklchSliderGroupProps {
   label: string

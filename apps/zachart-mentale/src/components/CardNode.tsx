@@ -29,11 +29,23 @@ import { revealedSet, slotsOf } from '../quiz/blanks'
 import { clampCardLevel, detachedColors } from '../colors/levelColors'
 import { useAppearanceSettingsStore } from '../state/useAppearanceSettingsStore'
 import { useResolvedTheme } from '../hooks/useResolvedTheme'
-import { toCss } from '../colors/contrast'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog'
-import { Button } from './ui/button'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from './ui/dropdown-menu'
+import { toCss } from '@suite/shared/theme'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  Button,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@suite/shared/ui'
 import { QcmDialog } from './quiz/QcmDialog'
 import { RecallDialog } from './quiz/RecallDialog'
 import { useCardDetailStore } from '../state/useCardDetailStore'

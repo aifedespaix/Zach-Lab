@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { SlidersHorizontal, Palette, GraduationCap, Keyboard, RefreshCw, type LucideIcon } from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog'
-import { Button } from '../ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  Button,
+} from '@suite/shared/ui'
 import { useAppearanceSettingsStore } from '../../state/useAppearanceSettingsStore'
 import { useQuizSettingsStore } from '../../state/useQuizSettingsStore'
 import type { AppearanceSettings } from '../../types/appearanceSettings'

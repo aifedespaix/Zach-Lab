@@ -1,6 +1,6 @@
 import type { Card } from '../types/card'
 import { clampCardLevel, detachedColors } from '../colors/levelColors'
-import { toCss } from '../colors/contrast'
+import { toCss } from '@suite/shared/theme'
 import { useAppearanceSettingsStore } from '../state/useAppearanceSettingsStore'
 import { contentOf } from '../content/blocks'
 import { BlockView } from '../content/BlockView'

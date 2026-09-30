@@ -2,16 +2,22 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { Sprout, Zap, Flame, Check, type LucideIcon } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog'
-import { Button } from '../ui/button'
-import { Hint } from '../ui/hint'
-import { TooltipProvider } from '../ui/tooltip'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  Button,
+  Hint,
+  TooltipProvider,
+} from '@suite/shared/ui'
 import { useQuizStore } from '../../state/useQuizStore'
 import { useCardsStore } from '../../state/useCardsStore'
 import { useAppearanceSettingsStore } from '../../state/useAppearanceSettingsStore'
 import { useQuizSettingsStore } from '../../state/useQuizSettingsStore'
 import { useResolvedTheme } from '../../hooks/useResolvedTheme'
-import { toCss, pickReadableTextColor } from '../../colors/contrast'
+import { toCss, pickReadableTextColor } from '@suite/shared/theme'
 import { presentLevels } from '../../quiz/levels'
 import { ALL_CARD_LEVELS, type CardLevel } from '../../types/card'
 import type { QuizDifficulty } from '../../types/quiz'

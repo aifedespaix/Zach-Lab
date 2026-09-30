@@ -12,8 +12,14 @@ import type { RecentFile } from '../persistence/sessionState'
 import { useMindMapAuthor } from '../hooks/useMindMapAuthor'
 import { useWorkspaceStore, describeError } from '../state/useWorkspaceStore'
 import { MapTypeBadge } from './sidebar/MapTypeBadge'
-import { TooltipProvider } from './ui/tooltip'
-import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem, ContextMenuSeparator } from './ui/context-menu'
+import {
+  TooltipProvider,
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+} from '@suite/shared/ui'
 import { MoveToSubmenu } from './sidebar/FileTreeRow'
 import { flattenFolders } from './sidebar/treeFilter'
 import { isValidDropTarget } from './sidebar/treeDrag'

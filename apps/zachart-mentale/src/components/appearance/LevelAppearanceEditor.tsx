@@ -1,5 +1,5 @@
-import { oklchWcagContrast, toCss } from '../../colors/contrast'
-import type { Oklch } from '../../colors/contrast'
+import { oklchWcagContrast, toCss } from '@suite/shared/theme'
+import type { Oklch } from '@suite/shared/theme'
 import type { CardLevel } from '../../types/card'
 import type { LevelAppearance } from '../../types/appearanceSettings'
 import { OklchSliderGroup } from './OklchSliderGroup'

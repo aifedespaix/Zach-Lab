@@ -11,10 +11,18 @@ import {
 import { open } from '@tauri-apps/plugin-dialog'
 import { revealItemInDir } from '@tauri-apps/plugin-opener'
 import { CloudSync, Eye, EyeOff, FolderPlus, FolderSearch, FoldVertical, PanelLeftClose, PanelLeftOpen, RefreshCw, Search, ClipboardCopy, X } from 'lucide-react'
-import { Button } from '../ui/button'
-import { Hint } from '../ui/hint'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip'
-import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem } from '../ui/context-menu'
+import {
+  Button,
+  Hint,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuContent,
+  ContextMenuItem,
+} from '@suite/shared/ui'
 import { CommandButton } from '../commands/CommandButton'
 import { useWorkspaceStore, describeError } from '../../state/useWorkspaceStore'
 import { useSyncStore } from '../../state/useSyncStore'

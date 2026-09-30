@@ -1,4 +1,4 @@
-import { toCss } from '../../colors/contrast'
+import { toCss } from '@suite/shared/theme'
 import { mapTypeColor } from '../../colors/mapTypeColors'
 import { useResolvedTheme } from '../../hooks/useResolvedTheme'
 import {
@@ -8,7 +8,7 @@ import {
   type CategorizedMapType,
   type MapType,
 } from '../../types/mapType'
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@suite/shared/ui'
 
 /**
  * Le tag coloré d’une carte, dans l’arborescence. `default` (ou absent) ne rend

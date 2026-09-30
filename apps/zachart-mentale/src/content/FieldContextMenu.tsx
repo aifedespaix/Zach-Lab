@@ -7,7 +7,7 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuTrigger,
-} from '../components/ui/context-menu'
+} from '@suite/shared/ui'
 import type { MathfieldElement } from './MathFieldEditor'
 import { MenuShortcut } from './descriptionMenuKit'
 

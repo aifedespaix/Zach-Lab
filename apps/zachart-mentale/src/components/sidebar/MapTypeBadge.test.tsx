@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { TooltipProvider } from '../ui/tooltip'
+import { TooltipProvider } from '@suite/shared/ui'
 import { MapTypeBadge } from './MapTypeBadge'
 
 function show(type: string | undefined) {

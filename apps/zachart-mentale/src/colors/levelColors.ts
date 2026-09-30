@@ -1,4 +1,4 @@
-import type { Oklch } from './contrast'
+import type { Oklch } from '@suite/shared/theme'
 import type { CardLevel } from '../types/card'
 
 export interface LevelColor {

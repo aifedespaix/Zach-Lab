@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@suite/shared/ui'
 import { ShortcutHint } from './ShortcutHint'
 import { CATEGORY_LABELS, COMMAND_LIST, type CommandDefinition, type CommandId } from '../../types/commands'
 import { useCommandRegistry } from '../../state/useCommandRegistry'

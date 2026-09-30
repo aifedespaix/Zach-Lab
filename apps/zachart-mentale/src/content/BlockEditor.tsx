@@ -32,9 +32,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '../components/ui/dropdown-menu'
-import { Hint } from '../components/ui/hint'
-import { TooltipProvider } from '../components/ui/tooltip'
+  Hint,
+  TooltipProvider,
+} from '@suite/shared/ui'
 import { EmptyAreaContextMenu, type EmptyAreaMenuActions } from './EmptyAreaContextMenu'
 import { BlockContextMenu } from './BlockContextMenu'
 import { FieldContextMenu } from './FieldContextMenu'

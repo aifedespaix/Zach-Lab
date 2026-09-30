@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { iconBadgeFill } from './iconBadge'
-import { oklchWcagContrast } from './contrast'
+import { oklchWcagContrast } from '@suite/shared/theme'
 import { levelColors } from './levelColors'
 import type { CardLevel } from '../types/card'
 

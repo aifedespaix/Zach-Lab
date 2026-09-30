@@ -1,6 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
-import { ContextMenuItem } from '../ui/context-menu'
-import { DropdownMenuItem } from '../ui/dropdown-menu'
+import { ContextMenuItem, DropdownMenuItem } from '@suite/shared/ui'
 import { ShortcutHint } from './ShortcutHint'
 import { commandById, type CommandId } from '../../types/commands'
 import { runCommand, useBinding, useCommandEnabled, useCommandLabel } from '../../hooks/useCommand'

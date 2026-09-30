@@ -8,9 +8,7 @@ import { BlockEditor, KIND_LABEL, type BlockEditorProps } from './BlockEditor'
 import { BandOptionsOverlay } from './BandOptionsOverlay'
 import { loadHiddenFamilies, saveHiddenFamilies } from '../persistence/bandFamilies'
 import { loadDescriptionNarrow, saveDescriptionNarrow } from '../persistence/descriptionNarrow'
-import { Button } from '../components/ui/button'
-import { Hint } from '../components/ui/hint'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip'
+import { Button, Hint, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@suite/shared/ui'
 import { isTypingTarget } from '../hooks/useGlobalShortcuts'
 import {
   ensureDescriptionHistory,

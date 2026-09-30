@@ -1,7 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import type { ComponentProps } from 'react'
-import { Button } from '../ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
+import { Button, Tooltip, TooltipContent, TooltipTrigger } from '@suite/shared/ui'
 import { formatBinding } from '../../shortcuts/keys'
 import { commandById, type CommandId } from '../../types/commands'
 import { runCommand, useBinding, useCommandEnabled, useCommandLabel } from '../../hooks/useCommand'

@@ -1,4 +1,4 @@
-import type { Oklch } from './contrast'
+import type { Oklch } from '@suite/shared/theme'
 import type { MapType } from '../types/mapType'
 
 export interface MapTypeColor {

@@ -1,6 +1,6 @@
 import { Link2 } from 'lucide-react'
 import { copyLinkBadgeText, copyLinkLabel, type CopyLink } from '../../sync/copyLink'
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@suite/shared/ui'
 
 /**
  * L'indice visuel du LIEN DE COPIE, dans l'arborescence.

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { GraduationCap } from 'lucide-react'
-import { Button } from '../ui/button'
+import { Button } from '@suite/shared/ui'
 import { useQuizStore } from '../../state/useQuizStore'
 import { computeScore } from '../../state/quizReducer'
 

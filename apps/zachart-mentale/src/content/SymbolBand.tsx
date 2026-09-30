@@ -2,7 +2,7 @@ import { memo, type CSSProperties } from 'react'
 import { EyeOff } from 'lucide-react'
 import type { CardBlockKind } from '../types/cardBlock'
 import type { BandTabId, PaletteSymbol } from '../types/symbolBand'
-import { Hint } from '../components/ui/hint'
+import { Hint } from '@suite/shared/ui'
 import { GROUP_TONES, LanguageFlag, tint } from './LanguageHelpPalette'
 import { SYMBOL_TABS } from './symbolTabs'
 

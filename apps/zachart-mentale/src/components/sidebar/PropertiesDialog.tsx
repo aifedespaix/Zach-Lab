@@ -11,9 +11,15 @@ import { formatFileSize, formatDateTime, tallyCards, tallyTree } from '../../per
 import { useWorkspaceStore } from '../../state/useWorkspaceStore'
 import { formatRelativeTime } from '../../utils/relativeTime'
 import { MAP_TYPE_LABELS, isKnownMapType, type MapType } from '../../types/mapType'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog'
-import { Button } from '../ui/button'
-import { TooltipProvider } from '../ui/tooltip'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  Button,
+  TooltipProvider,
+} from '@suite/shared/ui'
 import { MapTypeBadge } from './MapTypeBadge'
 
 /** One line of the sheet: a label on the left, the value on the right. */

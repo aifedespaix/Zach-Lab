@@ -14,7 +14,7 @@ import { useWorkspaceStore } from '../state/useWorkspaceStore'
 import { useQuizStore, createQuizStore } from '../state/useQuizStore'
 import { useCardSelectionStore } from '../state/useCardSelectionStore'
 import { levelColor, detachedColors } from '../colors/levelColors'
-import { toCss } from '../colors/contrast'
+import { toCss } from '@suite/shared/theme'
 import type { Node } from '@xyflow/react'
 import type { Card } from '../types/card'
 

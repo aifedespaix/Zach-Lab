@@ -1,7 +1,6 @@
 import { motion } from 'motion/react'
 import { Trophy, Sparkles, Check, X, LifeBuoy, RotateCcw } from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog'
-import { Button } from '../ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, Button } from '@suite/shared/ui'
 import { useQuizStore } from '../../state/useQuizStore'
 import { useCardsStore } from '../../state/useCardsStore'
 import { computeScore } from '../../state/quizReducer'

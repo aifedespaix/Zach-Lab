@@ -32,10 +32,25 @@ import {
   ArrowLeft,
   ArrowRight,
 } from 'lucide-react'
-import { ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuSub, ContextMenuSubTrigger, ContextMenuSubContent } from './ui/context-menu'
+import {
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuSub,
+  ContextMenuSubTrigger,
+  ContextMenuSubContent,
+  TooltipProvider,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  Button,
+} from '@suite/shared/ui'
 import { CommandButton } from './commands/CommandButton'
 import { CommandMenuItem } from './commands/CommandMenuItem'
-import { TooltipProvider } from './ui/tooltip'
 import { useCanvasCommands } from '../hooks/useCanvasCommands'
 import { useCardSelectionStore } from '../state/useCardSelectionStore'
 import { useWorkspaceStore } from '../state/useWorkspaceStore'
@@ -53,9 +68,7 @@ import { CardNode, CARD_WIDTH } from './CardNode'
 import { clampCardLevel, detachedColors, levelColor } from '../colors/levelColors'
 import { useAppearanceSettingsStore } from '../state/useAppearanceSettingsStore'
 import { useResolvedTheme } from '../hooks/useResolvedTheme'
-import { toCss } from '../colors/contrast'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog'
-import { Button } from './ui/button'
+import { toCss } from '@suite/shared/theme'
 
 // Nominal card size. The width is the card's own fixed width (`CARD_WIDTH`),
 // shared rather than re-declared so the pre-measurement fallback and the real

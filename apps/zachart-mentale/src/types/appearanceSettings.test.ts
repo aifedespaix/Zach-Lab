@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { oklchWcagContrast } from '../colors/contrast'
+import { oklchWcagContrast } from '@suite/shared/theme'
 import { DEFAULT_APPEARANCE_SETTINGS, defaultLevelAppearances, mergeAppearanceSettings } from './appearanceSettings'
 
 describe('DEFAULT_APPEARANCE_SETTINGS', () => {

@@ -21,7 +21,7 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
   ContextMenuTrigger,
-} from '../components/ui/context-menu'
+} from '@suite/shared/ui'
 import { MenuShortcut } from './descriptionMenuKit'
 
 export interface BlockContextMenuProps {

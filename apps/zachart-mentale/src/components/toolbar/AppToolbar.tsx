@@ -30,15 +30,23 @@ import {
 } from 'lucide-react'
 import type { Card, MindMapMeta } from '../../types/card'
 import type { FileTreeNode } from '../../types/workspace'
-import { Button } from '../ui/button'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip'
 import {
+  Button,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuSeparator,
   DropdownMenuLabel,
-} from '../ui/dropdown-menu'
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@suite/shared/ui'
 import { CommandButton } from '../commands/CommandButton'
 import { CommandDropdownItem } from '../commands/CommandMenuItem'
 import { CommandPalette } from '../commands/CommandPalette'
@@ -47,7 +55,6 @@ import { NameDialog } from '../sidebar/NameDialog'
 import { ExportDialog } from '../sidebar/ExportDialog'
 import { QuizConfigModal } from '../quiz/QuizConfigModal'
 import { SettingsDialog, type SettingsTab } from '../settings/SettingsDialog'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog'
 import { useCommand } from '../../hooks/useCommand'
 import { useCardsStore } from '../../state/useCardsStore'
 import { useCardDetailStore } from '../../state/useCardDetailStore'
@@ -57,7 +64,7 @@ import { usePublishMindMap } from '../../hooks/usePublishMindMap'
 import { useDeleteMindMap, type DeletePlan } from '../../hooks/useDeleteMindMap'
 import { DeletePlanSummary } from '../sidebar/DeletePlanSummary'
 import { useResolvedTheme } from '../../hooks/useResolvedTheme'
-import { startCircularThemeTransition } from '../../theme/circularReveal'
+import { startCircularThemeTransition } from '@suite/shared/theme'
 import { duplicatePath, freeSiblingPath, renamePath } from '../../persistence/fileOps'
 import { fileNameOf, mindMapBaseName, parentDirOf, separatorOf, withMindMapExtension } from '../../persistence/paths'
 import { quickExport } from '../../export/quickExport'

@@ -1,6 +1,6 @@
 // src/colors/mapTypeColors.test.ts
 import { describe, it, expect } from 'vitest'
-import { oklchWcagContrast } from './contrast'
+import { oklchWcagContrast } from '@suite/shared/theme'
 import { mapTypeColor, mapTypeColors, neutralMapTypeColors } from './mapTypeColors'
 
 describe('mapTypeColors', () => {

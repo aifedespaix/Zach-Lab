@@ -1,4 +1,4 @@
-import { Slider } from '../ui/slider'
+import { Slider } from '@suite/shared/ui'
 import type { QuizSettings } from '../../types/quizSettings'
 import { slotsOf, revealedSet } from '../../quiz/blanks'
 import { SettingsSection } from './SettingsSection'

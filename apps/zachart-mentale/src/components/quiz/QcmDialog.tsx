@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { Check, X, Lightbulb } from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@suite/shared/ui'
 
 interface QcmDialogProps {
   open: boolean

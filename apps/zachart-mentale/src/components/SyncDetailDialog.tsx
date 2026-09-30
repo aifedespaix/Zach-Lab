@@ -1,5 +1,12 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogFooter, DialogTitle } from './ui/dialog'
-import { Button } from './ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  Button,
+} from '@suite/shared/ui'
 
 interface SyncDetailDialogProps {
   /** Le résumé déjà affiché dans le bandeau — on n'en réécrit pas un second. */

@@ -1,6 +1,13 @@
 import { AlertTriangle } from 'lucide-react'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog'
-import { Button } from './ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  Button,
+} from '@suite/shared/ui'
 
 interface SaveFailedDialogProps {
   /** e.g. "La sauvegarde a échoué : disque plein". */

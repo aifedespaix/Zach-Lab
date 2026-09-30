@@ -26,7 +26,7 @@ import {
   ContextMenuSub,
   ContextMenuSubTrigger,
   ContextMenuSubContent,
-} from '../ui/context-menu'
+} from '@suite/shared/ui'
 import { CommandMenuItem } from './CommandMenuItem'
 import { useCardSelectionStore } from '../../state/useCardSelectionStore'
 

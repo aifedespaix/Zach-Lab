@@ -1,7 +1,14 @@
 import { useState } from 'react'
 import { Lock } from 'lucide-react'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog'
-import { Button } from './ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Button,
+} from '@suite/shared/ui'
 
 interface ReadOnlyMapDialogProps {
   author: string

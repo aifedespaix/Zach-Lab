@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { X } from 'lucide-react'
-import { Button } from '../components/ui/button'
+import { Button } from '@suite/shared/ui'
 import { SYMBOL_FAMILIES } from './symbolSets'
 
 export interface BandOptionsOverlayProps {

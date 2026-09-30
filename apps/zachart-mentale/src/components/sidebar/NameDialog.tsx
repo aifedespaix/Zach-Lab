@@ -1,7 +1,6 @@
 // src/components/sidebar/NameDialog.tsx
 import { useEffect, useRef, useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog'
-import { Button } from '../ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Button } from '@suite/shared/ui'
 
 export interface NameDialogProps {
   title: string

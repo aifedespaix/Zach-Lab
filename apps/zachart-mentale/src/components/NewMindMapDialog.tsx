@@ -4,8 +4,15 @@ import { useWorkspaceStore, describeError } from '../state/useWorkspaceStore'
 import { createMindMapFile } from '../persistence/fileOps'
 import { mindMapExists } from '../persistence/fileStore'
 import { sanitizeFileName, separatorOf, parentDirOf, mindMapFileNameFor } from '../persistence/paths'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog'
-import { Button } from './ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  Button,
+} from '@suite/shared/ui'
 
 export interface FolderOption {
   path: string

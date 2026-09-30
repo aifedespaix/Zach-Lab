@@ -1,4 +1,4 @@
-import type { Oklch } from './contrast'
+import type { Oklch } from '@suite/shared/theme'
 
 /**
  * The fill behind a card's mnemonic icon.

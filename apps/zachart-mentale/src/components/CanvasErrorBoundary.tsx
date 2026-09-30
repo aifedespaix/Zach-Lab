@@ -1,5 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
-import { Button } from './ui/button'
+import { Button } from '@suite/shared/ui'
 
 interface CanvasErrorBoundaryProps {
   children: ReactNode

@@ -4,7 +4,7 @@ import type { AppearanceSettings, LevelAppearance } from '../../types/appearance
 import { defaultLevelAppearances } from '../../types/appearanceSettings'
 import { LevelAppearanceEditor } from '../appearance/LevelAppearanceEditor'
 import { SettingsSection } from './SettingsSection'
-import { Button } from '../ui/button'
+import { Button } from '@suite/shared/ui'
 
 interface AppearanceSettingsPanelProps {
   settings: AppearanceSettings

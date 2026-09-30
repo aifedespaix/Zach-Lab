@@ -1,6 +1,13 @@
 import { AlertTriangle } from 'lucide-react'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog'
-import { Button } from './ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  Button,
+} from '@suite/shared/ui'
 import { summarizeIssues, type CardIssue } from '../validation/cardsValidation'
 
 /**
