@@ -1,36 +1,22 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { SlidersHorizontal, Palette, GraduationCap, Keyboard, RefreshCw, type LucideIcon } from 'lucide-react'
+import { SlidersHorizontal, Palette, GraduationCap, Keyboard, RefreshCw } from 'lucide-react'
+import { useShortcutSettingsStore, type ShortcutSettings } from '@suite/shared/commands'
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  Button,
-} from '@suite/shared/ui'
+  SettingsDialog as SharedSettingsDialog,
+  ShortcutSettingsPanel,
+  type SettingsPanelDef,
+  type SettingsSource,
+} from '@suite/shared/settings'
+import type { UpdateCheckHandle } from '@suite/shared/update'
 import { useAppearanceSettingsStore } from '../../state/useAppearanceSettingsStore'
 import { useQuizSettingsStore } from '../../state/useQuizSettingsStore'
 import type { AppearanceSettings } from '../../types/appearanceSettings'
 import type { QuizSettings } from '../../types/quizSettings'
-import type { UpdateCheckHandle } from '@suite/shared/update'
 import { GeneralSettingsPanel } from './GeneralSettingsPanel'
 import { AppearanceSettingsPanel } from './AppearanceSettingsPanel'
 import { QuizSettingsPanel } from './QuizSettingsPanel'
-import { ShortcutSettingsPanel } from '@suite/shared/settings'
 import { SyncSettingsPanel } from './SyncSettingsPanel'
-import { useShortcutSettingsStore } from '@suite/shared/commands'
-import type { ShortcutSettings } from '@suite/shared/commands'
 
 export type SettingsTab = 'general' | 'appearance' | 'quiz' | 'shortcuts' | 'sync'
-
-const TABS: { id: SettingsTab; label: string; icon: LucideIcon; hint: string }[] = [
-  { id: 'general', label: 'Général', icon: SlidersHorizontal, hint: 'Thème et police' },
-  { id: 'appearance', label: 'Apparence', icon: Palette, hint: 'Couleurs des niveaux' },
-  { id: 'quiz', label: 'Quiz', icon: GraduationCap, hint: 'Correction et aides' },
-  { id: 'shortcuts', label: 'Raccourcis', icon: Keyboard, hint: 'Toutes les actions' },
-  { id: 'sync', label: 'Synchronisation', icon: RefreshCw, hint: 'Compte et serveur' },
-]
 
 interface SettingsDialogProps {
   open: boolean
@@ -40,25 +26,38 @@ interface SettingsDialogProps {
   initialTab?: SettingsTab
 }
 
+/** The stores the window previews, saves and undoes — the same three the tabs edit. */
+const SOURCES: SettingsSource<any>[] = [
+  {
+    snapshot: () => useAppearanceSettingsStore.getState().snapshot(),
+    restore: (snapshot: AppearanceSettings) => useAppearanceSettingsStore.getState().applyDraft(snapshot),
+    commit: () => useAppearanceSettingsStore.getState().commit(),
+  },
+  {
+    snapshot: () => useQuizSettingsStore.getState().snapshot(),
+    restore: (snapshot: QuizSettings) => useQuizSettingsStore.getState().applyDraft(snapshot),
+    commit: () => useQuizSettingsStore.getState().commit(),
+  },
+  {
+    snapshot: () => useShortcutSettingsStore.getState().snapshot(),
+    restore: (snapshot: ShortcutSettings) => useShortcutSettingsStore.getState().applyDraft(snapshot),
+    commit: () => useShortcutSettingsStore.getState().commit(),
+    // The shortcuts tab writes straight into its own store (a recorder cannot
+    // hand a draft back up through a callback the way a slider can), so the
+    // window watches for the change instead of being told about it.
+    changedSince: {
+      subscribe: listener => useShortcutSettingsStore.subscribe(() => listener()),
+      isChanged: (snapshot: ShortcutSettings) =>
+        JSON.stringify(useShortcutSettingsStore.getState().overrides) !== JSON.stringify(snapshot.bindings),
+    },
+  },
+]
+
 /**
- * The single settings window: one button in the header, three tabs inside.
- *
- * Edits are LIVE but not SAVED. Every change goes straight into the stores
- * through `applyDraft`, so the mind map behind the window repaints as you drag
- * a colour slider — you are choosing against the real thing, not a swatch —
- * while nothing reaches disk until "Enregistrer". "Annuler" replays the
- * snapshot taken when the window opened, which puts the app back exactly as it
- * was, preview included.
+ * The app's settings window: the shared frame (tabs, live preview, save and
+ * undo) filled with this app's five panels.
  */
 export function SettingsDialog({ open, onOpenChange, updateCheck, initialTab = 'general' }: SettingsDialogProps) {
-  const [tab, setTab] = useState<SettingsTab>(initialTab)
-  const [dirty, setDirty] = useState(false)
-  // Refs, not state: the snapshot is never rendered, and re-rendering on it
-  // would be a re-render per open with nothing to show for it.
-  const appearanceSnapshot = useRef<AppearanceSettings | null>(null)
-  const quizSnapshot = useRef<QuizSettings | null>(null)
-  const shortcutSnapshot = useRef<ShortcutSettings | null>(null)
-
   // One subscription per field, assembled below. Selecting an OBJECT here
   // would build a new one on every store read, and zustand v5 compares
   // snapshots by identity — that is an infinite render loop, not a slow path.
@@ -72,170 +71,64 @@ export function SettingsDialog({ open, onOpenChange, updateCheck, initialTab = '
   const appearance: AppearanceSettings = { levels, fontFamily, themeMode }
   const quiz: QuizSettings = { similarityThreshold, lengthGuideEnabled, liveLetterFeedback, lastQuizConfig }
 
-  // Re-snapshot on every OPEN, not once on mount: the window is reopened many
-  // times per session, and a snapshot from the first open would revert edits
-  // saved in between — silently undoing work the user had already committed.
-  useEffect(() => {
-    if (!open) return
-    appearanceSnapshot.current = useAppearanceSettingsStore.getState().snapshot()
-    quizSnapshot.current = useQuizSettingsStore.getState().snapshot()
-    shortcutSnapshot.current = useShortcutSettingsStore.getState().snapshot()
-    // The caller decides which tab a given entry point lands on — « Raccourcis
-    // clavier » in the menu opens on the shortcuts list, not on Général.
-    setTab(initialTab)
-    setDirty(false)
-  }, [open, initialTab])
-
-  // The shortcuts tab writes straight into its own store (a recorder cannot
-  // hand a draft back up through a callback the way a slider can), so the
-  // dialog watches for the change instead of being told about it.
-  const shortcutOverrides = useShortcutSettingsStore(s => s.overrides)
-  useEffect(() => {
-    if (!open || shortcutSnapshot.current === null) return
-    const changed =
-      JSON.stringify(shortcutOverrides) !== JSON.stringify(shortcutSnapshot.current.bindings)
-    if (changed) setDirty(true)
-  }, [shortcutOverrides, open])
-
-  function editAppearance(next: AppearanceSettings) {
-    useAppearanceSettingsStore.getState().applyDraft(next)
-    setDirty(true)
-  }
-
-  function editQuiz(next: QuizSettings) {
-    useQuizSettingsStore.getState().applyDraft(next)
-    setDirty(true)
-  }
-
-  const discard = useCallback(() => {
-    if (appearanceSnapshot.current) useAppearanceSettingsStore.getState().applyDraft(appearanceSnapshot.current)
-    if (quizSnapshot.current) useQuizSettingsStore.getState().applyDraft(quizSnapshot.current)
-    if (shortcutSnapshot.current) useShortcutSettingsStore.getState().applyDraft(shortcutSnapshot.current)
-    setDirty(false)
-    onOpenChange(false)
-  }, [onOpenChange])
-
-  async function save() {
-    await Promise.all([
-      useAppearanceSettingsStore.getState().commit(),
-      useQuizSettingsStore.getState().commit(),
-      useShortcutSettingsStore.getState().commit(),
-    ])
-    setDirty(false)
-    onOpenChange(false)
-  }
+  const panels: SettingsPanelDef[] = [
+    {
+      id: 'general',
+      label: 'Général',
+      hint: 'Thème et police',
+      icon: SlidersHorizontal,
+      render: ({ markDirty }) => (
+        <GeneralSettingsPanel
+          settings={appearance}
+          onChange={next => {
+            useAppearanceSettingsStore.getState().applyDraft(next)
+            markDirty()
+          }}
+          updateCheck={updateCheck}
+        />
+      ),
+    },
+    {
+      id: 'appearance',
+      label: 'Apparence',
+      hint: 'Couleurs des niveaux',
+      icon: Palette,
+      render: ({ markDirty }) => (
+        <AppearanceSettingsPanel
+          settings={appearance}
+          onChange={next => {
+            useAppearanceSettingsStore.getState().applyDraft(next)
+            markDirty()
+          }}
+        />
+      ),
+    },
+    {
+      id: 'quiz',
+      label: 'Quiz',
+      hint: 'Correction et aides',
+      icon: GraduationCap,
+      render: ({ markDirty }) => (
+        <QuizSettingsPanel
+          settings={quiz}
+          onChange={next => {
+            useQuizSettingsStore.getState().applyDraft(next)
+            markDirty()
+          }}
+        />
+      ),
+    },
+    { id: 'shortcuts', label: 'Raccourcis', hint: 'Toutes les actions', icon: Keyboard, render: () => <ShortcutSettingsPanel /> },
+    { id: 'sync', label: 'Synchronisation', hint: 'Compte et serveur', icon: RefreshCw, render: () => <SyncSettingsPanel /> },
+  ]
 
   return (
-    <Dialog
+    <SharedSettingsDialog
       open={open}
-      onOpenChange={next => {
-        // Closing by any route other than "Enregistrer" is a cancel, and must
-        // undo the live preview — leaving a half-dragged colour applied but
-        // unsaved would show one thing now and another after a restart.
-        if (!next) discard()
-      }}
-    >
-      <DialogContent
-        // A FIXED height, not a max-height: with the tabs sharing one frame,
-        // an auto-height dialog grew and shrank as you flipped between Général
-        // (short) and Apparence/Raccourcis (long), so the whole window jumped
-        // under the cursor. Pinning it at the 85vh cap keeps every tab the same
-        // size and lets the middle row scroll instead.
-        className="sm:max-w-3xl grid-rows-[auto_minmax(0,1fr)_auto] h-[85vh] overflow-hidden"
-        // A stray click on the backdrop must not throw away a page of colour
-        // tweaks. Escape and "Annuler" still discard — both are deliberate.
-        onPointerDownOutside={event => {
-          if (dirty) event.preventDefault()
-        }}
-        onInteractOutside={event => {
-          if (dirty) event.preventDefault()
-        }}
-      >
-        <DialogHeader>
-          <DialogTitle>Paramètres</DialogTitle>
-          <DialogDescription>
-            Les changements s'affichent tout de suite. Ils ne sont conservés qu'après « Enregistrer ».
-          </DialogDescription>
-        </DialogHeader>
-
-        <div style={{ display: 'flex', gap: 20, minHeight: 0 }}>
-          <nav
-            role="tablist"
-            aria-label="Sections des paramètres"
-            aria-orientation="vertical"
-            style={{ display: 'flex', flexDirection: 'column', gap: 4, width: 176, flexShrink: 0 }}
-          >
-            {TABS.map(({ id, label, icon: Icon, hint }) => {
-              const selected = tab === id
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  role="tab"
-                  id={`settings-tab-${id}`}
-                  aria-selected={selected}
-                  aria-controls={`settings-panel-${id}`}
-                  onClick={() => setTab(id)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    textAlign: 'left',
-                    padding: '9px 11px',
-                    borderRadius: 10,
-                    border: '1px solid transparent',
-                    background: selected ? 'var(--muted)' : 'transparent',
-                    borderColor: selected ? 'var(--border)' : 'transparent',
-                    color: selected ? 'inherit' : 'var(--muted-foreground)',
-                    fontWeight: selected ? 700 : 500,
-                    cursor: 'pointer',
-                    transition: 'background 0.12s ease, color 0.12s ease',
-                  }}
-                >
-                  <Icon size={16} aria-hidden style={{ flexShrink: 0 }} />
-                  <span style={{ minWidth: 0 }}>
-                    <span style={{ display: 'block', fontSize: 13 }}>{label}</span>
-                    <span style={{ display: 'block', fontSize: 10.5, opacity: 0.7, fontWeight: 500 }}>{hint}</span>
-                  </span>
-                </button>
-              )
-            })}
-          </nav>
-
-          <div
-            role="tabpanel"
-            id={`settings-panel-${tab}`}
-            aria-labelledby={`settings-tab-${tab}`}
-            tabIndex={0}
-            style={{ flex: 1, minWidth: 0, overflowY: 'auto', paddingRight: 6 }}
-          >
-            {tab === 'general' && (
-              <GeneralSettingsPanel settings={appearance} onChange={editAppearance} updateCheck={updateCheck} />
-            )}
-            {tab === 'appearance' && <AppearanceSettingsPanel settings={appearance} onChange={editAppearance} />}
-            {tab === 'quiz' && <QuizSettingsPanel settings={quiz} onChange={editQuiz} />}
-            {tab === 'shortcuts' && <ShortcutSettingsPanel />}
-            {tab === 'sync' && <SyncSettingsPanel />}
-          </div>
-        </div>
-
-        <DialogFooter className="sm:items-center sm:justify-between">
-          <span
-            role="status"
-            style={{ fontSize: 12, color: 'var(--muted-foreground)', textAlign: 'left' }}
-          >
-            {dirty ? 'Modifications non enregistrées' : 'Tout est enregistré'}
-          </span>
-          <span style={{ display: 'flex', gap: 8 }}>
-            <Button variant="outline" onClick={discard}>
-              Annuler
-            </Button>
-            <Button onClick={save} disabled={!dirty}>
-              Enregistrer
-            </Button>
-          </span>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      onOpenChange={onOpenChange}
+      panels={panels}
+      sources={SOURCES}
+      initialPanel={initialTab}
+    />
   )
 }
