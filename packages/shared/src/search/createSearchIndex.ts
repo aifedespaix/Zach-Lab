@@ -15,6 +15,8 @@ export interface SearchOptions {
   limit?: number
   /** Restrict the search to some of the indexed fields. Defaults to all of them. */
   fields?: string[]
+  /** Weight of a field: `{ title: 3 }` makes a hit in the title count three times a hit elsewhere. */
+  boost?: Record<string, number>
 }
 
 export interface SearchIndex {
@@ -90,6 +92,7 @@ export function wrapDatabase(db: AnyOrama, fields: readonly string[]): SearchInd
         properties: options.fields ?? [...fields],
         limit: options.limit ?? DEFAULT_LIMIT,
         tolerance: toleranceFor(tokens),
+        ...(options.boost === undefined ? {} : { boost: options.boost }),
       }) as { hits: { id: string; score: number }[] }
       return results.hits.map(hit => ({ id: hit.id, score: hit.score }))
     },

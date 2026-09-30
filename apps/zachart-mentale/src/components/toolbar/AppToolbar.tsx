@@ -50,7 +50,6 @@ import {
 import { CommandButton } from '../commands/CommandButton'
 import { CommandDropdownItem } from '../commands/CommandMenuItem'
 import { CommandPalette } from '@suite/shared/commands'
-import { rankCommands } from '../commands/rankCommands'
 import { NewMindMapDialog } from '../NewMindMapDialog'
 import { NameDialog } from '../sidebar/NameDialog'
 import { ExportDialog } from '../sidebar/ExportDialog'
@@ -515,7 +514,7 @@ export function AppToolbar({ filePath, cards, meta, onOpenFile, onRequestFork, f
         updateCheck={updateCheck}
       />
 
-      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} rank={rankCommands} />
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
     </TooltipProvider>
   )
 }

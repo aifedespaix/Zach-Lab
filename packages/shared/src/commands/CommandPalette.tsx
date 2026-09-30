@@ -5,15 +5,15 @@ import { categoryLabel, commandList } from './catalog'
 import { useCommandRegistry } from './useCommandRegistry'
 import { useShortcutSettingsStore } from './useShortcutSettingsStore'
 import { runCommand } from './useCommand'
-import { rankCommandsByText, type CommandRanker } from './rankCommandsByText'
+import { rankCommandsBySearch, type CommandRanker } from './rankCommandsBySearch'
 
 export interface CommandPaletteProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   /**
-   * How a query is matched against the commands. Defaults to a plain
-   * accent-insensitive substring match; an app with a real search engine
-   * plugs it in here.
+   * How a query is matched against the commands. Defaults to the suite's
+   * full-text search (`rankCommandsBySearch`); an app with other needs can
+   * plug its own ranking in here.
    */
   rank?: CommandRanker
 }
@@ -30,7 +30,7 @@ export interface CommandPaletteProps {
  * missing from the list looks like a missing feature; « Coller la carte »
  * greyed out says the clipboard is empty.
  */
-export function CommandPalette({ open, onOpenChange, rank = rankCommandsByText }: CommandPaletteProps) {
+export function CommandPalette({ open, onOpenChange, rank = rankCommandsBySearch }: CommandPaletteProps) {
   const [query, setQuery] = useState('')
   const [highlighted, setHighlighted] = useState(0)
   const registrations = useCommandRegistry(state => state.registrations)

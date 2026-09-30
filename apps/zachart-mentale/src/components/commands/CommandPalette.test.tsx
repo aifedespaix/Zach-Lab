@@ -3,29 +3,47 @@ import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
   CommandPalette,
-  commandById,
+  commandList,
+  rankCommandsBySearch,
   useCommandRegistry,
   useShortcutSettingsStore,
 } from '@suite/shared/commands'
-import { rankCommands, scoreCommand } from './rankCommands'
 
 function publish(id: string, run: () => void, enabled = true) {
   act(() => useCommandRegistry.getState().register(id as never, { run, enabled }))
 }
 
-describe('scoreCommand', () => {
-  it('ranks a hit on the name above one buried in the explanation', () => {
-    const rename = commandById('edit.rename')!
-    const del = commandById('edit.delete')!
-    expect(scoreCommand(rename, 'renommer')!).toBeLessThan(scoreCommand(del, 'confirmation')!)
+/** The palette's ranking, run on the app's real catalogue: ids, best match first. */
+function ranked(query: string): string[] {
+  return rankCommandsBySearch(query, commandList())
+    .sort((a, b) => a.score - b.score)
+    .map(entry => entry.command.id)
+}
+
+describe('classement de la palette sur le vrai catalogue', () => {
+  it('met un nom exact avant un mot noyé dans une explication', () => {
+    // « Renommer » existe pour un fichier ET pour une carte : les deux passent en tête.
+    expect(ranked('renommer').slice(0, 2).sort()).toEqual(['edit.rename', 'file.rename'])
+    // « confirmation » n'apparaît que dans l'explication de la suppression.
+    expect(ranked('confirmation')).toContain('edit.delete')
   })
 
-  it('ignores accents and case, because nobody types them into a search box', () => {
-    expect(scoreCommand(commandById('card.addFloating')!, 'creer une carte')).not.toBeNull()
+  it('ignore les accents et la casse, parce que personne ne les tape dans une barre de recherche', () => {
+    expect(ranked('creer une carte')).toContain('card.addFloating')
+    expect(ranked('CRÉER UNE CARTE')).toContain('card.addFloating')
   })
 
-  it('reports no match at all rather than a weak one', () => {
-    expect(scoreCommand(commandById('edit.undo')!, 'xyzzy')).toBeNull()
+  it('tolère une faute de frappe et un pluriel', () => {
+    expect(ranked('annuller')).toContain('edit.undo')
+    expect(ranked('raccourci')[0]).toBeDefined()
+  })
+
+  it('ne renvoie rien plutôt qu\'une correspondance faible', () => {
+    expect(ranked('xyzzy')).toEqual([])
+  })
+
+  it('liste tout le catalogue pour une requête vide', () => {
+    expect(ranked('')).toHaveLength(commandList().length)
   })
 })
 
@@ -37,7 +55,7 @@ describe('CommandPalette', () => {
 
   it('shows each action with its category and its current shortcut', async () => {
     const user = userEvent.setup()
-    render(<CommandPalette open onOpenChange={() => {}} rank={rankCommands} />)
+    render(<CommandPalette open onOpenChange={() => {}} />)
 
     await user.type(screen.getByLabelText('Rechercher une commande'), 'annuler')
     const option = screen.getByRole('option', { name: /Annuler/ })
@@ -52,7 +70,7 @@ describe('CommandPalette', () => {
     publish('edit.undo', undo)
     vi.useFakeTimers({ shouldAdvanceTime: true })
     try {
-      render(<CommandPalette open onOpenChange={onOpenChange} rank={rankCommands} />)
+      render(<CommandPalette open onOpenChange={onOpenChange} />)
       await user.type(screen.getByLabelText('Rechercher une commande'), 'annuler')
       await user.keyboard('{Enter}')
       expect(onOpenChange).toHaveBeenCalledWith(false)
@@ -71,7 +89,7 @@ describe('CommandPalette', () => {
     const user = userEvent.setup()
     const paste = vi.fn()
     publish('edit.paste', paste, false)
-    render(<CommandPalette open onOpenChange={() => {}} rank={rankCommands} />)
+    render(<CommandPalette open onOpenChange={() => {}} />)
 
     await user.type(screen.getByLabelText('Rechercher une commande'), 'coller')
     expect(screen.getByRole('option', { name: /Coller la carte/ })).toBeDisabled()
@@ -79,7 +97,7 @@ describe('CommandPalette', () => {
 
   it('says so when nothing matches', async () => {
     const user = userEvent.setup()
-    render(<CommandPalette open onOpenChange={() => {}} rank={rankCommands} />)
+    render(<CommandPalette open onOpenChange={() => {}} />)
     await user.type(screen.getByLabelText('Rechercher une commande'), 'xyzzy')
     expect(screen.getByText(/Aucune commande ne correspond/)).toBeInTheDocument()
   })

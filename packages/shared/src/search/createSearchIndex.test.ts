@@ -155,3 +155,12 @@ describe('createSearchIndex — mise à jour', () => {
     expect(index.size()).toBe(3)
   })
 })
+
+describe('createSearchIndex — pondération', () => {
+  it('boost fait passer une correspondance dans un champ avant une autre', () => {
+    const index = createSearchIndex(['title', 'body'])
+    index.add({ id: 'corps', title: 'Divers', body: 'aire '.repeat(40) })
+    index.add({ id: 'titre', title: 'Aire', body: 'une notion de géométrie plane assez longue pour diluer le champ du corps du texte' })
+    expect(index.search('aire', { boost: { title: 10 } })[0]?.id).toBe('titre')
+  })
+})
