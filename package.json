@@ -1,19 +1,24 @@
 {
   "name": "suite-educative",
   "private": true,
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "bun run --filter zachart-mentale dev",
     "build": "bun run --filter zachart-mentale build",
     "tauri": "bun run --filter zachart-mentale tauri",
     "test": "bun run --filter '*' test",
     "test:admin": "cd apps/zachart-mentale/admin && bun run test",
-    "test:all": "bun run test && bun run test:admin",
+    "test:all": "bun run test && bun run test:admin && bun run test:scripts",
     "admin:dev": "cd apps/zachart-mentale/admin && bun run dev",
     "admin:build": "cd apps/zachart-mentale/admin && bun run build",
     "infra:check": "bun run apps/zachart-mentale/infra/setup-pocketbase.mjs --check",
     "infra:plan": "bun run apps/zachart-mentale/infra/setup-pocketbase.mjs --dry-run",
     "infra:apply": "bun run apps/zachart-mentale/infra/setup-pocketbase.mjs",
-    "version:bump": "bun scripts/bump-version.mjs"
+    "version:bump": "bun scripts/bump-version.mjs",
+    "new-app": "bun scripts/new-app.mjs",
+    "test:scripts": "bun test scripts"
   }
 }
