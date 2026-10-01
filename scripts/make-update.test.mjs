@@ -171,7 +171,7 @@ describe('generateUpdates', () => {
   it('refuse de rien construire si une app du lot n\'est pas prête (pas de clé publique)', () => {
     writeApp('zachart-maths', { productName: "Zach'Math", version: '0.1.0', crate: 'zachart-maths', updater: { pubkey: '', endpoints: [] } })
     const calls = []
-    expect(() => generateUpdates(base({ targets: ['mentale', 'maths'], run: fakeRun(calls) }))).toThrow(/Rien n'a été construit[\s\S]*Zach'Math/)
+    expect(() => generateUpdates(base({ targets: ['mentale', 'maths'], run: fakeRun(calls) }))).toThrow(/Rien n'a été construit[\s\S]*Zach’Math/)
     expect(calls).toEqual([])
     expect(existsSync(join(root, 'updates'))).toBe(false)
   })

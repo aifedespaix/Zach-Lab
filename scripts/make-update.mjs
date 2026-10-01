@@ -39,7 +39,7 @@ export const APPS = {
   },
   maths: {
     app: 'zachart-maths',
-    title: "Zach'Math",
+    title: 'Zach’Math',
     // Same signing key as Zachar’t Mentale (docs/RELEASE.md).
     keyEnv: 'TAURI_SIGNING_PRIVATE_KEY',
     passEnv: 'TAURI_SIGNING_PRIVATE_KEY_PASSWORD',
