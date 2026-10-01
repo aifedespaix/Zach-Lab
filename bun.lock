@@ -31,6 +31,36 @@
         "vitest": "^5.0.0",
       },
     },
+    "apps/zachart-maths": {
+      "name": "zachart-maths",
+      "version": "0.1.0",
+      "dependencies": {
+        "@suite/shared": "workspace:*",
+        "@tailwindcss/vite": "^4.3.3",
+        "@tauri-apps/api": "^2",
+        "@tauri-apps/plugin-fs": "~2",
+        "katex": "^0.18.7",
+        "lucide-react": "^1.41.0",
+        "mathlive": "^0.110.0",
+        "react": "^19.1.0",
+        "react-dom": "^19.1.0",
+        "tailwindcss": "^4.3.3",
+        "zustand": "^5.0.15",
+      },
+      "devDependencies": {
+        "@tauri-apps/cli": "^2",
+        "@testing-library/jest-dom": "^7.0.1",
+        "@testing-library/react": "^16.3.3",
+        "@testing-library/user-event": "^14.6.7",
+        "@types/react": "^19.1.8",
+        "@types/react-dom": "^19.1.6",
+        "@vitejs/plugin-react": "^6.0.2",
+        "jsdom": "^30.0.1",
+        "typescript": "~6.0.3",
+        "vite": "^8.0.16",
+        "vitest": "^5.0.0",
+      },
+    },
     "apps/zachart-mentale": {
       "name": "zachart-mentale",
       "version": "1.20.5",
@@ -1280,6 +1310,8 @@
     "yocto-spinner": ["yocto-spinner@1.2.2", "", { "dependencies": { "yoctocolors": "^2.1.1" } }, "sha512-DODGl1wJjA/s5pnJFKau9lIYHT81lnhob1i3e1TjxZRxEhWRKl74nTbWE6H5KlkViQQTo/Z29YFdxzTZAMY3ng=="],
 
     "yoctocolors": ["yoctocolors@2.2.0", "", {}, "sha512-xYqdZFUK/VYazNl/oCDYN+3WloWQwMfZxBoiNt6qNyk+xfOdi598muWE42rNZFp1kNOiqW936q5RhUdnpqElSg=="],
+
+    "zachart-maths": ["zachart-maths@workspace:apps/zachart-maths"],
 
     "zachart-mentale": ["zachart-mentale@workspace:apps/zachart-mentale"],
 

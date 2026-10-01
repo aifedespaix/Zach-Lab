@@ -7,6 +7,7 @@ Chaque app a **sa version, son tag et sa release**. Un tag pousse le workflow
 |---|---|---|---|---|
 | Zachar’t Mentale | `apps/zachart-mentale` | `zachart-vX.Y.Z` | normale | oui |
 | Base | `apps/base` | `base-vX.Y.Z` | **pré-release** | non (pas encore de clé) |
+| Zach'Math | `apps/zachart-maths` | `zachart-maths-vX.Y.Z` | **pré-release** | non (pas encore de clé) — voir « Générer une mise à jour en local » |
 
 Les anciens tags `v1.2.3` restent en place ; ils ne relancent rien.
 
@@ -26,6 +27,35 @@ Le workflow refuse un tag qui ne correspond pas à la version du code
 (`zachart-v1.20.7` posé sur un code en 1.20.6) : l'updater comparerait le mauvais
 numéro.
 
+## Générer une mise à jour en local
+
+Sans passer par GitHub Actions, depuis une machine **Windows** (l'installeur est un NSIS) :
+
+```bash
+bun run update:mentale           # Zachar’t Mentale
+bun run update:maths             # Zach'Math
+bun run update:all               # les deux, l'une après l'autre
+bun run update:mentale -- patch  # bumpe la version d'abord (patch, minor, major ou X.Y.Z)
+```
+
+Options, après `--` : `--skip-tests` (saute les tests de l'app), `--notes "texte"` (les notes de
+`latest.json`), `--out dossier` (par défaut `updates/`, ignoré par git).
+
+La commande **vérifie tout avant de compiler** (clé de signature, clé publique et adresse dans
+`tauri.conf.json`, Windows), lance les tests de l'app, construit avec `createUpdaterArtifacts`, puis
+range dans `updates/<app>/<version>/` l'installeur signé, sa `.sig` et le `latest.json` que l'app
+interroge. Les noms de fichiers sont en ASCII exprès : GitHub réécrit les espaces et les `’` des noms
+d'assets, ce qui casserait l'adresse écrite dans `latest.json`.
+
+**Elle ne publie rien** : elle imprime les commandes `gh` (créer la release du tag, déposer le
+`latest.json` sur la release roulante de l'app). Pour une version donnée, choisis une voie ou l'autre :
+cette commande, ou le tag poussé qui lance `release.yml`.
+
+La clé privée se donne par variable d'environnement, **par nom d'app** (tableau ci-dessous) : son
+contenu, ou le chemin du fichier. Bun lit aussi un fichier `.env.local` à la racine (ignoré par git).
+Zach'Math n'est pas encore prête : il lui faut d'abord une clé, voir « Activer les mises à jour signées
+d'une app » plus bas.
+
 ## Les secrets de signature
 
 Ils se créent dans les réglages du dépôt GitHub (jamais dans le code, jamais
@@ -35,6 +65,7 @@ dans une discussion) et sont choisis **par nom** selon l'app :
 |---|---|---|
 | Zachar’t Mentale | `TAURI_SIGNING_PRIVATE_KEY` | `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` |
 | Base | `TAURI_SIGNING_PRIVATE_KEY_BASE` | `TAURI_SIGNING_PRIVATE_KEY_BASE_PASSWORD` |
+| Zach'Math | `TAURI_SIGNING_PRIVATE_KEY_MATHS` | `TAURI_SIGNING_PRIVATE_KEY_MATHS_PASSWORD` |
 
 Une clé par app : la fuite de l'une ne permet pas de signer les mises à jour des
 autres. Zachar’t Mentale garde les noms d'origine pour que sa publication

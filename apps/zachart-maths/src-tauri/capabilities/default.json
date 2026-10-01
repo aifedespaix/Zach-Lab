@@ -1,0 +1,27 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Capability for the main window",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:default",
+    "fs:allow-exists",
+    "fs:allow-read-text-file",
+    "fs:allow-write-text-file",
+    "fs:allow-mkdir",
+    "fs:allow-read-dir",
+    "fs:allow-remove",
+    "fs:allow-rename",
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        "$APPCONFIG/**",
+        "$DOCUMENT/Zach'Math",
+        "$DOCUMENT/Zach'Math/**"
+      ]
+    },
+    "updater:default"
+  ]
+}

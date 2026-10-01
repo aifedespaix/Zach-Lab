@@ -1,0 +1,145 @@
+import { act, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { ExerciseWorkspace } from './ExerciseWorkspace'
+import { createMemoryFs } from './memoryFs'
+import { useExerciseStore } from './useExerciseStore'
+import { AUTOSAVE_DELAY_MS, useOpenExercise } from './useOpenExercise'
+
+const exo = (titre: string) => JSON.stringify({ version: 1, id: titre, titre, question: '', page: '', blocs: [], reponse: '' })
+const stored = (fs: ReturnType<typeof createMemoryFs>, path: string) => JSON.parse(fs.files.get(path)!)
+
+async function setup(files: Record<string, string>) {
+  const fs = createMemoryFs(files)
+  render(<ExerciseWorkspace />)
+  await act(async () => useExerciseStore.getState().init(fs))
+  return fs
+}
+const open = (path: string | null) => act(async () => useExerciseStore.getState().select(path))
+
+vi.mock('mathlive', () => {
+  if (!customElements.get('math-field')) {
+    customElements.define('math-field', class extends HTMLElement {
+      value = ''
+      connectedCallback() { this.tabIndex = 0 }
+      insert(fragment: string) { this.value += fragment.replace(/#[0?]/g, '') }
+    })
+  }
+  return {}
+})
+
+describe('ExerciseWorkspace', () => {
+  beforeEach(() => {
+    useExerciseStore.setState({ fs: null, tree: [], loaded: false, selected: null, error: null })
+    useOpenExercise.setState({ path: null, exercise: null, status: 'empty' })
+  })
+  afterEach(() => vi.useRealTimers())
+
+  it('invite à choisir un exercice, puis l\'affiche', async () => {
+    await setup({ 'A/a.json': exo('Premier') })
+    expect(screen.getByText(/Choisis un exercice/)).toBeInTheDocument()
+    await open('A/a.json')
+    expect(screen.getByLabelText("Titre de l'exercice")).toHaveValue('Premier')
+    expect(screen.getByRole('contentinfo', { name: 'Zone de réponse' })).toBeInTheDocument()
+  })
+
+  it('enregistre après le délai, pas à chaque frappe', async () => {
+    const fs = await setup({ 'A/a.json': exo('Premier') })
+    await open('A/a.json')
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    await user.type(screen.getByLabelText('Page (facultatif)'), '42')
+    expect(stored(fs, 'A/a.json').page).toBe('')
+    await act(async () => void (await vi.advanceTimersByTimeAsync(AUTOSAVE_DELAY_MS + 50)))
+    expect(stored(fs, 'A/a.json').page).toBe('42')
+    expect(screen.getByRole('status')).toHaveTextContent('Enregistré')
+  })
+
+  it('écrit tout de suite en changeant d\'exercice, et le titre met l\'arbre à jour', async () => {
+    const fs = await setup({ 'A/a.json': exo('Premier'), 'A/b.json': exo('Second') })
+    await open('A/a.json')
+    const user = userEvent.setup()
+    await user.type(screen.getByLabelText('Réponse finale'), 'x = 3')
+    await user.clear(screen.getByLabelText("Titre de l'exercice"))
+    await user.type(screen.getByLabelText("Titre de l'exercice"), 'Renommé')
+    await open('A/b.json')
+    expect(stored(fs, 'A/a.json')).toMatchObject({ reponse: 'x = 3', titre: 'Renommé' })
+    expect(screen.getByLabelText("Titre de l'exercice")).toHaveValue('Second')
+    expect(useExerciseStore.getState().tree[0].exercises.map(e => e.titre)).toEqual(['Renommé', 'Second'])
+  })
+
+  it('signale un fichier illisible, et un échec d\'écriture', async () => {
+    const fs = await setup({ 'A/a.json': exo('Premier') })
+    await open('A/a.json')
+    fs.writeText = async () => { throw new Error('disque plein') }
+    await userEvent.setup().type(screen.getByLabelText('Réponse finale'), 'x')
+    await act(async () => void (await useOpenExercise.getState().flush()))
+    expect(screen.getByRole('alert')).toHaveTextContent(/a échoué/)
+  })
+
+  it('les blocs ajoutés et réordonnés sont écrits dans le fichier', async () => {
+    const fs = await setup({ 'A/a.json': exo('Premier') })
+    await open('A/a.json')
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Ajouter un bloc Texte' }))
+    await user.click(screen.getByRole('button', { name: 'Ajouter un bloc Calcul' }))
+    await user.click(screen.getAllByRole('button', { name: 'Monter le bloc' })[1])
+    await act(async () => void (await useOpenExercise.getState().flush()))
+    expect(stored(fs, 'A/a.json').blocs.map((b: { type: string }) => b.type)).toEqual(['calcul', 'texte'])
+  })
+
+  it('la barre d\'outils insère un signe au curseur du champ actif, et ça s\'enregistre', async () => {
+    const fs = await setup({ 'A/a.json': exo('Premier') })
+    await open('A/a.json')
+    const user = userEvent.setup()
+    expect(screen.getByRole('button', { name: 'Multiplié par' })).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: 'Ajouter un bloc Calcul' }))
+    const calcul = screen.getByLabelText('Calcul')
+    await user.type(calcul, '34')
+    await user.keyboard('{ArrowLeft}')
+    await user.click(screen.getByRole('button', { name: 'Multiplié par' }))
+    expect(calcul).toHaveValue('3×4')
+    expect(calcul).toHaveFocus()
+    await user.keyboard('2')
+    expect(calcul).toHaveValue('3×24')
+    await act(async () => void (await useOpenExercise.getState().flush()))
+    expect(stored(fs, 'A/a.json').blocs[0].expression).toBe('3×24')
+  })
+
+  it('remplace la sélection, et fonctionne aussi dans la réponse finale', async () => {
+    await setup({ 'A/a.json': exo('Premier') })
+    await open('A/a.json')
+    const user = userEvent.setup()
+    const reponse = screen.getByLabelText<HTMLTextAreaElement>('Réponse finale')
+    await user.type(reponse, 'x ? 3')
+    reponse.setSelectionRange(2, 3)
+    await user.click(screen.getByRole('button', { name: 'Supérieur ou égal' }))
+    expect(reponse).toHaveValue('x ≥ 3')
+  })
+
+  it('n\'écrit plus dans l\'ancien champ après un changement d\'exercice', async () => {
+    await setup({ 'A/a.json': exo('Premier'), 'A/b.json': exo('Second') })
+    await open('A/a.json')
+    await userEvent.setup().click(screen.getByLabelText('Réponse finale'))
+    await open('A/b.json')
+    expect(screen.getByRole('button', { name: 'Plus' })).toBeDisabled()
+  })
+
+  it('la barre insère du LaTeX dans un champ de formule, et réserve les structures aux formules', async () => {
+    const fs = await setup({ 'A/a.json': exo('Premier') })
+    await open('A/a.json')
+    const user = userEvent.setup()
+    await user.click(screen.getByLabelText('Réponse finale'))
+    expect(screen.getByRole('button', { name: 'Fraction' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Multiplié par' })).toBeEnabled()
+
+    await user.click(screen.getByRole('button', { name: 'Ajouter un bloc Équation' }))
+    const etape = await screen.findByLabelText('Étape 1')
+    await user.click(etape)
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Fraction' })).toBeEnabled())
+    await user.click(screen.getByRole('button', { name: 'Fraction' }))
+    await user.click(screen.getByRole('button', { name: 'Multiplié par' }))
+    await act(async () => void (await useOpenExercise.getState().flush()))
+    expect(stored(fs, 'A/a.json').blocs[0]).toMatchObject({ type: 'equation', etapes: [{ latex: '\\frac{}{}\\times ' }] })
+  })
+})

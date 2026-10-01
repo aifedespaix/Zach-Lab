@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["apps/zachart-mentale/src-tauri", "apps/base/src-tauri", "crates/suite-tauri"]
+members = ["apps/zachart-mentale/src-tauri", "apps/base/src-tauri", "crates/suite-tauri", "apps/zachart-maths/src-tauri"]
 
 # Les profils ne sont lus que depuis la racine du workspace.
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration

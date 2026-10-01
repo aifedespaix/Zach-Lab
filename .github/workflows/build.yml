@@ -83,6 +83,14 @@ jobs:
         working-directory: apps/base
         run: bun tauri build --config '{"bundle":{"createUpdaterArtifacts":false}}'
 
+      # Zach'Math n'est pas encore publiée (pas de tag ni de clé de mise à jour,
+      # voir docs/RELEASE.md), mais son installeur doit se construire dès
+      # maintenant : c'est ce « Run workflow » qui en livre un .exe testable.
+      - name: build the NSIS installer of Zach'Math
+        shell: bash
+        working-directory: apps/zachart-maths
+        run: bun tauri build --config '{"bundle":{"createUpdaterArtifacts":false}}'
+
       - name: upload the installers
         uses: actions/upload-artifact@v4
         with:
