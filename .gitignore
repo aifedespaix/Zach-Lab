@@ -51,3 +51,6 @@ apps/*/infra/backups/
 
 # Etat runtime de headroom, regenere a chaque lancement
 .claude/.headroom_*
+
+# Mises à jour générées en local par `bun run update:*` (installeurs signés, latest.json)
+/updates/

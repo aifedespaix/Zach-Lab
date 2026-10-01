@@ -18,6 +18,9 @@
     "infra:plan": "bun run apps/zachart-mentale/infra/setup-pocketbase.mjs --dry-run",
     "infra:apply": "bun run apps/zachart-mentale/infra/setup-pocketbase.mjs",
     "version:bump": "bun scripts/bump-version.mjs",
+    "update:mentale": "bun scripts/make-update.mjs mentale",
+    "update:maths": "bun scripts/make-update.mjs maths",
+    "update:all": "bun scripts/make-update.mjs all",
     "new-app": "bun scripts/new-app.mjs",
     "test:scripts": "bun test scripts"
   }
