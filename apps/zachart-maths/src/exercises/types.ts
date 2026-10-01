@@ -16,10 +16,12 @@ export interface Exercise {
   page: string
   blocs: unknown[]
   reponse: string
+  /** Les notes libres prises à côté de l'exercice (sidebar droite). */
+  notes: string
 }
 
 export function newExercise(titre: string): Exercise {
-  return { version: EXERCISE_VERSION, id: crypto.randomUUID(), titre, question: '', page: '', blocs: [], reponse: '' }
+  return { version: EXERCISE_VERSION, id: crypto.randomUUID(), titre, question: '', page: '', blocs: [], reponse: '', notes: '' }
 }
 
 /** Relit un fichier d'exercice ; `null` si ce n'est pas un exercice exploitable. */
@@ -37,6 +39,7 @@ export function validateExercise(raw: unknown): Exercise | null {
     page: text(r.page),
     blocs: Array.isArray(r.blocs) ? r.blocs : [],
     reponse: text(r.reponse),
+    notes: text(r.notes),
   }
 }
 

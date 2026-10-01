@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Keyboard, Moon, Search, Settings as SettingsIcon } from 'lucide-react'
+import { BookOpen, Keyboard, Moon, NotebookPen, Search, Settings as SettingsIcon } from 'lucide-react'
 import {
   CommandButton,
   CommandPalette,
@@ -13,6 +13,7 @@ import { startCircularThemeTransition, useResolvedTheme, useThemeDomSync, useThe
 import { TooltipProvider } from '@suite/shared/ui'
 import { UpdateReadyBanner, useAppUpdater } from '@suite/shared/update'
 import './commands'
+import { CoursePanel } from './cours/CoursePanel'
 import { ExerciseTree } from './exercises/ExerciseTree'
 import { ExerciseWorkspace } from './exercises/ExerciseWorkspace'
 import './exercises/useOpenExercise'
@@ -81,11 +82,15 @@ export default function App() {
             label="Panneau droit"
             resizeLabel="Redimensionner le panneau de droite"
             storage={rightPanel}
-          />
+          >
+            <CoursePanel />
+          </ResizablePanel>
         }
         toolbar={
           <>
             <CommandButton command="app.palette" icon={Search} variant="ghost" size="icon-sm" />
+            <CommandButton command="cours.search" icon={BookOpen} variant="ghost" size="icon-sm" />
+            <CommandButton command="notes.toggle" icon={NotebookPen} variant="ghost" size="icon-sm" />
             <CommandButton command="app.toggleTheme" icon={Moon} variant="ghost" size="icon-sm" />
             <CommandButton command="app.settings" icon={SettingsIcon} variant="ghost" size="icon-sm" />
           </>

@@ -28,11 +28,30 @@ export const COMMANDS = [
     category: 'app',
     defaultBinding: null,
   },
+  {
+    id: 'cours.search',
+    label: 'Chercher un cours',
+    description: 'Ouvre la recherche de cours.',
+    category: 'cours',
+    defaultBinding: 'Mod+Shift+F',
+    allowInEditable: true,
+  },
+  {
+    id: 'notes.toggle',
+    label: 'Afficher ou masquer les notes',
+    description: 'Les cours prennent toute la hauteur quand les notes sont masquées.',
+    category: 'cours',
+    defaultBinding: 'Mod+Shift+N',
+    allowInEditable: true,
+  },
 ] as const
 
 export type CommandId = (typeof COMMANDS)[number]['id']
 
 defineCommandCatalog({
-  categories: [{ id: 'app', label: 'Application' }],
+  categories: [
+    { id: 'app', label: 'Application' },
+    { id: 'cours', label: 'Cours et notes' },
+  ],
   commands: COMMANDS,
 })
