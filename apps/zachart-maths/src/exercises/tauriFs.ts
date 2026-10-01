@@ -3,7 +3,7 @@ import { exists, mkdir, readDir, readTextFile, remove, rename, writeTextFile } f
 import type { ExerciseFs } from './fsPort'
 
 /** Dossier où vivent les exercices de l'élève, dans ses Documents. */
-export const EXERCISES_FOLDER = "Zachar't Maths"
+export const EXERCISES_FOLDER = "Zach'Math"
 
 /** Adaptateur Tauri : tous les chemins de la bibliothèque sont résolus sous `root`. */
 export function createTauriFs(root: string): ExerciseFs {

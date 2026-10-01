@@ -4,3 +4,141 @@
 /* Tailwind 4 does not scan a package outside the app: without this line the
    shared components render without their utility classes. */
 @source "../../../packages/shared/src";
+
+/*
+ * La marque animée (`AnimatedLogo.tsx`). Quatre points posés dans l'ordre où le M s'écrit, chacun
+ * glissant depuis le précédent, les trois traits se dessinant entre eux. Mêmes durées et mêmes
+ * temps forts que l'animation de Zachar't Mentale, pour que les deux apps de la suite se
+ * ressemblent à l'écran de chargement.
+ */
+.animated-logo-dot,
+.animated-logo-seg {
+  opacity: 0;
+}
+.animated-logo-seg {
+  stroke: #64748b;
+  stroke-width: 12;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  stroke-dasharray: 80;
+  stroke-dashoffset: 80;
+}
+.animated-logo-dot {
+  transform-origin: center;
+}
+
+@keyframes animated-logo-pop-1 {
+  0%   { opacity: 0; transform: scale(0.3); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes animated-logo-slide-2 {
+  0%   { opacity: 0; transform: translate(0, 56px) scale(0.6); }
+  100% { opacity: 1; transform: translate(0, 0) scale(1); }
+}
+@keyframes animated-logo-slide-3 {
+  0%   { opacity: 0; transform: translate(-56px, 0) scale(0.6); }
+  100% { opacity: 1; transform: translate(0, 0) scale(1); }
+}
+@keyframes animated-logo-slide-4 {
+  0%   { opacity: 0; transform: translate(0, -56px) scale(0.6); }
+  100% { opacity: 1; transform: translate(0, 0) scale(1); }
+}
+@keyframes animated-logo-draw-seg {
+  to { stroke-dashoffset: 0; opacity: 1; }
+}
+@keyframes animated-logo-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.08); }
+}
+
+/* draw-pulse : dessin unique (forwards), puis respiration sans fin, sans reprise */
+.animated-logo--draw-pulse .animated-logo-dot--1 {
+  animation:
+    animated-logo-pop-1 0.3s ease-out 0s forwards,
+    animated-logo-pulse 2.2s ease-in-out 1.35s infinite;
+}
+.animated-logo--draw-pulse .animated-logo-dot--2 {
+  animation:
+    animated-logo-slide-2 0.35s ease-out 0.3s forwards,
+    animated-logo-pulse 2.2s ease-in-out 1.5s infinite;
+}
+.animated-logo--draw-pulse .animated-logo-dot--3 {
+  animation:
+    animated-logo-slide-3 0.35s ease-out 0.65s forwards,
+    animated-logo-pulse 2.2s ease-in-out 1.65s infinite;
+}
+.animated-logo--draw-pulse .animated-logo-dot--4 {
+  animation:
+    animated-logo-slide-4 0.35s ease-out 1s forwards,
+    animated-logo-pulse 2.2s ease-in-out 1.8s infinite;
+}
+.animated-logo--draw-pulse .animated-logo-seg--1 { animation: animated-logo-draw-seg 0.35s ease-out 0.3s forwards; }
+.animated-logo--draw-pulse .animated-logo-seg--2 { animation: animated-logo-draw-seg 0.35s ease-out 0.65s forwards; }
+.animated-logo--draw-pulse .animated-logo-seg--3 { animation: animated-logo-draw-seg 0.35s ease-out 1s forwards; }
+
+/* Estompée au repos : un filigrane qui attend un exercice, pas un morceau d'interface qui rivalise avec le texte. */
+.animated-logo--draw-pulse {
+  opacity: 0.55;
+}
+
+/* draw-fade : dessine, tient, efface le tout d'un bloc, recommence de zéro */
+@keyframes animated-logo-cycle-1 {
+  0%        { opacity: 0; transform: scale(0.3); }
+  8.3%      { opacity: 1; transform: scale(1); }
+  61%       { opacity: 1; transform: scale(1); }
+  72%, 100% { opacity: 0; transform: scale(1); }
+}
+@keyframes animated-logo-cycle-2 {
+  0%, 8.3%  { opacity: 0; transform: translate(0, 56px) scale(0.6); }
+  18%       { opacity: 1; transform: translate(0, 0) scale(1); }
+  61%       { opacity: 1; transform: translate(0, 0) scale(1); }
+  72%, 100% { opacity: 0; transform: translate(0, 0) scale(1); }
+}
+@keyframes animated-logo-cycle-3 {
+  0%, 18%   { opacity: 0; transform: translate(-56px, 0) scale(0.6); }
+  27.8%     { opacity: 1; transform: translate(0, 0) scale(1); }
+  61%       { opacity: 1; transform: translate(0, 0) scale(1); }
+  72%, 100% { opacity: 0; transform: translate(0, 0) scale(1); }
+}
+@keyframes animated-logo-cycle-4 {
+  0%, 27.8% { opacity: 0; transform: translate(0, -56px) scale(0.6); }
+  37.5%     { opacity: 1; transform: translate(0, 0) scale(1); }
+  61%       { opacity: 1; transform: translate(0, 0) scale(1); }
+  72%, 100% { opacity: 0; transform: translate(0, 0) scale(1); }
+}
+@keyframes animated-logo-cycle-seg-1 {
+  0%, 8.3%  { opacity: 0; stroke-dashoffset: 80; }
+  18%       { opacity: 1; stroke-dashoffset: 0; }
+  61%       { opacity: 1; stroke-dashoffset: 0; }
+  72%, 100% { opacity: 0; stroke-dashoffset: 0; }
+}
+@keyframes animated-logo-cycle-seg-2 {
+  0%, 18%   { opacity: 0; stroke-dashoffset: 80; }
+  27.8%     { opacity: 1; stroke-dashoffset: 0; }
+  61%       { opacity: 1; stroke-dashoffset: 0; }
+  72%, 100% { opacity: 0; stroke-dashoffset: 0; }
+}
+@keyframes animated-logo-cycle-seg-3 {
+  0%, 27.8% { opacity: 0; stroke-dashoffset: 80; }
+  37.5%     { opacity: 1; stroke-dashoffset: 0; }
+  61%       { opacity: 1; stroke-dashoffset: 0; }
+  72%, 100% { opacity: 0; stroke-dashoffset: 0; }
+}
+.animated-logo--draw-fade .animated-logo-dot--1 { animation: animated-logo-cycle-1 3.6s ease-out infinite; }
+.animated-logo--draw-fade .animated-logo-dot--2 { animation: animated-logo-cycle-2 3.6s ease-out infinite; }
+.animated-logo--draw-fade .animated-logo-dot--3 { animation: animated-logo-cycle-3 3.6s ease-out infinite; }
+.animated-logo--draw-fade .animated-logo-dot--4 { animation: animated-logo-cycle-4 3.6s ease-out infinite; }
+.animated-logo--draw-fade .animated-logo-seg--1 { animation: animated-logo-cycle-seg-1 3.6s ease-out infinite; }
+.animated-logo--draw-fade .animated-logo-seg--2 { animation: animated-logo-cycle-seg-2 3.6s ease-out infinite; }
+.animated-logo--draw-fade .animated-logo-seg--3 { animation: animated-logo-cycle-seg-3 3.6s ease-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animated-logo-dot,
+  .animated-logo-seg {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+    stroke-dashoffset: 0;
+  }
+}

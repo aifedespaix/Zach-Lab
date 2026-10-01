@@ -18,8 +18,8 @@
       "identifier": "fs:scope",
       "allow": [
         "$APPCONFIG/**",
-        "$DOCUMENT/Zachar't Maths",
-        "$DOCUMENT/Zachar't Maths/**"
+        "$DOCUMENT/Zach'Math",
+        "$DOCUMENT/Zach'Math/**"
       ]
     },
     "updater:default"

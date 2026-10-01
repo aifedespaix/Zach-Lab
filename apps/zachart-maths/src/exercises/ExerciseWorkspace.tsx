@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { AnimatedLogo } from '../AnimatedLogo'
 import { BlockStack } from './BlockStack'
 import { addBlock, parseBlocks, type BlockType } from './blocks'
 import { insertAtCursor, isTextField, type TextField } from './insertAtCursor'
@@ -68,7 +69,12 @@ export function ExerciseWorkspace() {
   }, [])
 
   if (selected === null) {
-    return <p style={{ padding: 16, color: 'var(--muted-foreground)', fontSize: 14 }}>Choisis un exercice dans la liste de gauche.</p>
+    return (
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+        <AnimatedLogo mode="draw-pulse" size={140} />
+        <p style={{ color: 'var(--muted-foreground)', fontSize: 14 }}>Choisis un exercice dans la liste de gauche.</p>
+      </div>
+    )
   }
   if (status === 'loading') return <p style={{ padding: 16, fontSize: 14 }}>Ouverture…</p>
   if (status === 'unreadable' || exercise === null) {

@@ -8,10 +8,11 @@ import {
   useShortcutSettingsStore,
 } from '@suite/shared/commands'
 import { SettingsDialog, ShortcutSettingsPanel } from '@suite/shared/settings'
-import { AppShell, ResizablePanel, createPanelWidthStorage } from '@suite/shared/shell'
+import { AppShell, BootScreen, ResizablePanel, createPanelWidthStorage } from '@suite/shared/shell'
 import { startCircularThemeTransition, useResolvedTheme, useThemeDomSync, useThemeStore } from '@suite/shared/theme'
 import { TooltipProvider } from '@suite/shared/ui'
 import { UpdateReadyBanner, useAppUpdater } from '@suite/shared/update'
+import { AnimatedLogo } from './AnimatedLogo'
 import './commands'
 import { CoursePanel } from './cours/CoursePanel'
 import { ExerciseTree } from './exercises/ExerciseTree'
@@ -22,6 +23,9 @@ import { useExerciseStore } from './exercises/useExerciseStore'
 
 // Each app picks its own bounds and its own storage keys: two apps of the suite
 // share a machine, but never a webview.
+/** Durée minimale de l'écran de chargement : en dessous, l'animation clignoterait sans rien dire. */
+const BOOT_FLOOR_MS = 1300
+
 const leftPanel = createPanelWidthStorage({ key: 'zachart-maths:left-width', min: 180, max: 520, fallback: 240 })
 const rightPanel = createPanelWidthStorage({ key: 'zachart-maths:right-width', min: 300, max: 640, fallback: 400 })
 
@@ -40,6 +44,13 @@ export default function App() {
 
   const { updateReady, dismissed, applyUpdate, dismissUpdate } = useAppUpdater()
   const resolvedTheme = useResolvedTheme()
+  const exercisesLoaded = useExerciseStore(state => state.loaded)
+  // Le M a le temps de s'écrire une fois, même si le disque répond tout de suite.
+  const [bootFloorElapsed, setBootFloorElapsed] = useState(false)
+  useEffect(() => {
+    const timer = setTimeout(() => setBootFloorElapsed(true), BOOT_FLOOR_MS)
+    return () => clearTimeout(timer)
+  }, [])
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
 
@@ -97,6 +108,11 @@ export default function App() {
         }
         overlays={
           <>
+            {(!exercisesLoaded || !bootFloorElapsed) && (
+              <BootScreen>
+                <AnimatedLogo mode="draw-fade" size={120} />
+              </BootScreen>
+            )}
             <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
             <SettingsDialog
               open={settingsOpen}

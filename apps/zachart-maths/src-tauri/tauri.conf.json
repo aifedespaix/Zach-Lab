@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Zachar't Maths",
+  "productName": "Zach'Math",
   "version": "0.1.0",
   "identifier": "com.clape.zachart-maths",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Zachar't Maths",
+        "title": "Zach'Math",
         "width": 1200,
         "height": 900,
         "visible": false

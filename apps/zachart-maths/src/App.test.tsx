@@ -107,4 +107,18 @@ describe('feuille de style de base', () => {
   it('importe la charte graphique partagée', () => {
     expect(css).toContain('@suite/shared/theme.css')
   })
+
+  it('couvre l\'écran d\'un M qui s\'écrit le temps du chargement, puis le retire', async () => {
+    vi.useFakeTimers()
+    try {
+      render(<App />)
+      expect(screen.getByRole('status', { name: /Chargement/ }).querySelectorAll('circle')).toHaveLength(4)
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1500)
+      })
+      expect(screen.queryByRole('status', { name: /Chargement/ })).not.toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })

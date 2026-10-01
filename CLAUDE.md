@@ -6,7 +6,7 @@ Vue** — there is no Vue anywhere.
 
 ```
 apps/zachart-mentale/   Zachar't Mentale (src/, src-tauri/, admin/, infra/)
-apps/zachart-maths/     Zachar't Maths (src/exercises, src/cours, src/math)
+apps/zachart-maths/     Zach'Math (src/exercises, src/cours, src/math)
 apps/base/              empty, working shell: the template of every new app
 packages/shared/        @suite/shared — the React code every app reuses
 crates/suite-tauri/     the Rust code every app reuses
@@ -82,13 +82,13 @@ schema module, nothing else: the script, its tests and the docs all read that on
 definition. Synchronisation and PocketBase belong to Zachar't Mentale only; the
 other apps of the suite have none.
 
-## Zachar't Maths (`apps/zachart-maths`)
+## Zach'Math (`apps/zachart-maths`)
 
 Born from `apps/base` with `new-app`; it has no sync and no PocketBase. Three areas, each
 under `src/`, wired together in `App.tsx`:
 
 - **`exercises/`** — the student's files and the centre area. An exercise is one `.json` file
-  (`types.ts`, versioned) in a chapter folder under `Documents/Zachar't Maths/`; the order
+  (`types.ts`, versioned) in a chapter folder under `Documents/Zach'Math/`; the order
   of a folder lives in its `_ordre.json`. Everything touching the disk goes through the
   `ExerciseFs` port (`fsPort.ts`): `tauriFs.ts` in the app, `memoryFs.ts` in tests — write
   new file logic in `library.ts` against the port, never against `@tauri-apps/plugin-fs`.
