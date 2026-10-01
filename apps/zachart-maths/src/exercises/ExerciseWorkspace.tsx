@@ -1,5 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { BlockStack } from './BlockStack'
+import { addBlock, parseBlocks, type BlockType } from './blocks'
+import { insertAtCursor, isTextField, type TextField } from './insertAtCursor'
+import { Toolbar } from './Toolbar'
 import { useExerciseStore } from './useExerciseStore'
 import { useOpenExercise } from './useOpenExercise'
 
@@ -17,6 +20,31 @@ export function ExerciseWorkspace() {
   const { exercise, status } = useOpenExercise()
   const edit = useOpenExercise(s => s.edit)
   const selected = useExerciseStore(s => s.selected)
+  const lastField = useRef<TextField | null>(null)
+  const [hasField, setHasField] = useState(false)
+
+  // Le dernier champ où l'élève a écrit reçoit les signes de la barre, même si le focus est
+  // passé sur un bouton (clavier) depuis.
+  const rememberField = (e: React.FocusEvent) => {
+    if (!isTextField(e.target)) return
+    lastField.current = e.target
+    setHasField(true)
+  }
+  const insertSymbol = (glyph: string) => {
+    const field = lastField.current
+    if (field?.isConnected) {
+      insertAtCursor(field, glyph)
+      field.focus()
+    }
+  }
+  const addBlockOfType = (type: BlockType) =>
+    edit({ blocs: addBlock(parseBlocks(useOpenExercise.getState().exercise?.blocs ?? []), type) })
+
+  // Un autre exercice, d'autres champs : l'ancien champ ne doit plus recevoir de signes.
+  useEffect(() => {
+    lastField.current = null
+    setHasField(false)
+  }, [selected])
 
   // Ne rien perdre si la fenêtre se ferme avant la fin du délai d'autosauvegarde.
   useEffect(() => {
@@ -34,7 +62,7 @@ export function ExerciseWorkspace() {
   }
 
   return (
-    <section aria-label="Exercice" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+    <section aria-label="Exercice" onFocus={rememberField} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <header style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: 12, borderBottom: '1px solid var(--border)' }}>
         <input
           aria-label="Titre de l'exercice"
@@ -61,8 +89,11 @@ export function ExerciseWorkspace() {
         />
       </header>
 
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 16 }}>
-        <BlockStack value={exercise.blocs} onChange={blocs => edit({ blocs })} />
+      <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+        <Toolbar canInsert={hasField} onSymbol={insertSymbol} onAddBlock={addBlockOfType} />
+        <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: 16 }}>
+          <BlockStack value={exercise.blocs} onChange={blocs => edit({ blocs })} showAddButtons={false} />
+        </div>
       </div>
 
       <footer

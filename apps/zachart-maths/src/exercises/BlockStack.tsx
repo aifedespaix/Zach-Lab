@@ -113,7 +113,12 @@ function editorFor(block: KnownBlock, onChange: (patch: Partial<KnownBlock>) => 
 }
 
 /** La pile de blocs de la zone de travail : chaque bloc se déplace d'un cran et se supprime. */
-export function BlockStack({ value, onChange }: { value: readonly unknown[]; onChange: (blocs: Block[]) => void }) {
+export function BlockStack({ value, onChange, showAddButtons = true }: {
+  value: readonly unknown[]
+  onChange: (blocs: Block[]) => void
+  /** Les boutons « + Texte »… sous la pile ; faux quand la barre d'outils les porte déjà. */
+  showAddButtons?: boolean
+}) {
   const blocks = useMemo(() => parseBlocks(value), [value])
   return (
     <div>
@@ -137,13 +142,13 @@ export function BlockStack({ value, onChange }: { value: readonly unknown[]; onC
       {blocks.length === 0 && (
         <p style={{ fontSize: 14, color: 'var(--muted-foreground)' }}>Aucun bloc. Ajoute-en un pour commencer.</p>
       )}
-      <div role="group" aria-label="Ajouter un bloc" style={{ display: 'flex', gap: 6, marginTop: 12 }}>
+      {showAddButtons && <div role="group" aria-label="Ajouter un bloc" style={{ display: 'flex', gap: 6, marginTop: 12 }}>
         {BLOCK_TYPES.map(({ type, label }) => (
           <Button key={type} variant="outline" size="sm" onClick={() => onChange(addBlock(blocks, type))}>
             <Plus />{label}
           </Button>
         ))}
-      </div>
+      </div>}
     </div>
   )
 }
