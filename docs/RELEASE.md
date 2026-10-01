@@ -7,7 +7,7 @@ Chaque app a **sa version, son tag et sa release**. Un tag pousse le workflow
 |---|---|---|---|---|
 | Zachar’t Mentale | `apps/zachart-mentale` | `zachart-vX.Y.Z` | normale | oui |
 | Base | `apps/base` | `base-vX.Y.Z` | **pré-release** | non (pas encore de clé) |
-| Zach'Math | `apps/zachart-maths` | `zachart-maths-vX.Y.Z` | **pré-release** | non (pas encore de clé) — voir « Générer une mise à jour en local » |
+| Zach'Math | `apps/zachart-maths` | `zachart-maths-vX.Y.Z` | **pré-release** | oui (clé de Zachar’t Mentale) |
 
 Les anciens tags `v1.2.3` restent en place ; ils ne relancent rien.
 
@@ -53,8 +53,7 @@ cette commande, ou le tag poussé qui lance `release.yml`.
 
 La clé privée se donne par variable d'environnement, **par nom d'app** (tableau ci-dessous) : son
 contenu, ou le chemin du fichier. Bun lit aussi un fichier `.env.local` à la racine (ignoré par git).
-Zach'Math n'est pas encore prête : il lui faut d'abord une clé, voir « Activer les mises à jour signées
-d'une app » plus bas.
+Zach'Math signe avec la même clé que Zachar’t Mentale : `update:maths` lit donc les mêmes variables.
 
 ## Les secrets de signature
 
@@ -65,11 +64,12 @@ dans une discussion) et sont choisis **par nom** selon l'app :
 |---|---|---|
 | Zachar’t Mentale | `TAURI_SIGNING_PRIVATE_KEY` | `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` |
 | Base | `TAURI_SIGNING_PRIVATE_KEY_BASE` | `TAURI_SIGNING_PRIVATE_KEY_BASE_PASSWORD` |
-| Zach'Math | `TAURI_SIGNING_PRIVATE_KEY_MATHS` | `TAURI_SIGNING_PRIVATE_KEY_MATHS_PASSWORD` |
+| Zach'Math | `TAURI_SIGNING_PRIVATE_KEY` | `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` |
 
-Une clé par app : la fuite de l'une ne permet pas de signer les mises à jour des
-autres. Zachar’t Mentale garde les noms d'origine pour que sa publication
-continue de fonctionner sans rien changer.
+Zach'Math **réutilise la clé de Zachar’t Mentale** : un seul secret à gérer, et
+la même clé publique dans les deux `tauri.conf.json`. Le revers : la fuite de
+cette clé permettrait de signer une mise à jour pour les deux apps. Une app
+peut avoir sa propre clé (voir plus bas) ; Base n'en a pas encore.
 
 ## Où l'app cherche ses mises à jour
 
@@ -126,8 +126,10 @@ laisserait ses utilisateurs sans mises à jour.
 Une app créée depuis Base n'en a pas (`createUpdaterArtifacts: false`, pas de clé
 publique) : elle ne produit ni signature ni `latest.json`.
 
-1. `bun tauri signer generate` (en local) ; ranger la clé privée et son mot de
-   passe dans les deux secrets de l'app (voir plus haut), **par nom**.
+1. Soit réutiliser la clé de Zachar’t Mentale (copier sa clé publique, voir
+   Zach'Math), soit `bun tauri signer generate` (en local) et ranger la clé
+   privée et son mot de passe dans deux secrets propres à l'app, **par nom**
+   (et dans `release.yml` / `scripts/make-update.mjs`).
 2. Dans `tauri.conf.json` de l'app : `createUpdaterArtifacts: true`,
    `plugins.updater.pubkey` (la clé publique) et `plugins.updater.endpoints`
    (l'adresse de sa release roulante).

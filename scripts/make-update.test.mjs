@@ -37,7 +37,7 @@ beforeEach(() => {
 })
 afterEach(() => rmSync(root, { recursive: true, force: true }))
 
-const KEYS = { TAURI_SIGNING_PRIVATE_KEY: 'cle-mentale', TAURI_SIGNING_PRIVATE_KEY_PASSWORD: 'mdp-m', TAURI_SIGNING_PRIVATE_KEY_MATHS: 'cle-maths' }
+const KEYS = { TAURI_SIGNING_PRIVATE_KEY: 'cle-mentale', TAURI_SIGNING_PRIVATE_KEY_PASSWORD: 'mdp-m' }
 
 /** A stand-in for `tauri build`: it writes what the real one writes, where it writes it. */
 function fakeRun(calls) {
@@ -102,6 +102,13 @@ describe('noms et latest.json', () => {
   })
 })
 
+describe('clé de signature', () => {
+  it("Zach'Math signe avec la clé de Zachar’t Mentale", () => {
+    expect(APPS.maths.keyEnv).toBe(APPS.mentale.keyEnv)
+    expect(APPS.maths.passEnv).toBe(APPS.mentale.passEnv)
+  })
+})
+
 describe('updaterProblems', () => {
   const conf = { plugins: { updater: READY } }
   it('ne trouve rien à redire quand tout est là', () => {
@@ -109,7 +116,7 @@ describe('updaterProblems', () => {
   })
   it('signale hors Windows, sans clé, sans clé publique, sans adresse', () => {
     expect(updaterProblems({ info: APPS.mentale, conf, env: KEYS, platform: 'linux' }).join()).toContain('sous Windows')
-    expect(updaterProblems({ info: APPS.maths, conf, env: {}, platform: 'win32' }).join()).toContain('TAURI_SIGNING_PRIVATE_KEY_MATHS')
+    expect(updaterProblems({ info: APPS.maths, conf, env: {}, platform: 'win32' }).join()).toContain('TAURI_SIGNING_PRIVATE_KEY')
     const noKey = updaterProblems({ info: APPS.maths, conf: { plugins: { updater: { pubkey: '' } } }, env: KEYS, platform: 'win32' })
     expect(noKey.join()).toContain('signer generate')
     expect(noKey.join()).toContain('updater-zachart-maths/latest.json')

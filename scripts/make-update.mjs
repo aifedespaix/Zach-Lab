@@ -27,7 +27,7 @@ export const REPO = 'aifedespaix/Zachar-t-Mentale'
 
 /**
  * What this script knows of each app. The signing key is taken from the environment by
- * NAME, per app (docs/RELEASE.md): one app's key never signs another's update.
+ * NAME, per app (docs/RELEASE.md); Zach'Math shares Zachar’t Mentale's key.
  */
 export const APPS = {
   mentale: {
@@ -40,8 +40,9 @@ export const APPS = {
   maths: {
     app: 'zachart-maths',
     title: "Zach'Math",
-    keyEnv: 'TAURI_SIGNING_PRIVATE_KEY_MATHS',
-    passEnv: 'TAURI_SIGNING_PRIVATE_KEY_MATHS_PASSWORD',
+    // Same signing key as Zachar’t Mentale (docs/RELEASE.md).
+    keyEnv: 'TAURI_SIGNING_PRIVATE_KEY',
+    passEnv: 'TAURI_SIGNING_PRIVATE_KEY_PASSWORD',
     // Only Zachar’t Mentale is a normal release: `releases/latest` is the entry point of its
     // installed copies, and another app's release must not take it over.
     prerelease: true,
