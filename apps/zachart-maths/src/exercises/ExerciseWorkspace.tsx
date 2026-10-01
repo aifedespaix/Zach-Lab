@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { BlockStack } from './BlockStack'
 import { useExerciseStore } from './useExerciseStore'
 import { useOpenExercise } from './useOpenExercise'
 
@@ -61,7 +62,7 @@ export function ExerciseWorkspace() {
       </header>
 
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 16 }}>
-        <p style={{ color: 'var(--muted-foreground)', fontSize: 14 }}>Zone de travail : les blocs arrivent au prochain lot.</p>
+        <BlockStack value={exercise.blocs} onChange={blocs => edit({ blocs })} />
       </div>
 
       <footer

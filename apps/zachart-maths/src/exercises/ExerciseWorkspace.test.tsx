@@ -65,4 +65,15 @@ describe('ExerciseWorkspace', () => {
     await act(async () => void (await useOpenExercise.getState().flush()))
     expect(screen.getByRole('alert')).toHaveTextContent(/a échoué/)
   })
+
+  it('les blocs ajoutés et réordonnés sont écrits dans le fichier', async () => {
+    const fs = await setup({ 'A/a.json': exo('Premier') })
+    await open('A/a.json')
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: /Texte/ }))
+    await user.click(screen.getByRole('button', { name: /Calcul/ }))
+    await user.click(screen.getAllByRole('button', { name: 'Monter le bloc' })[1])
+    await act(async () => void (await useOpenExercise.getState().flush()))
+    expect(stored(fs, 'A/a.json').blocs.map((b: { type: string }) => b.type)).toEqual(['calcul', 'texte'])
+  })
 })
