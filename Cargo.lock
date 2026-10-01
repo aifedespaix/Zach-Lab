@@ -5418,6 +5418,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "zachart-maths"
+version = "0.2.0"
+dependencies = [
+ "serde_json",
+ "suite-tauri",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-fs",
+ "tauri-plugin-updater",
+]
+
+[[package]]
 name = "zachart-mentale"
 version = "1.6.0"
 dependencies = [
