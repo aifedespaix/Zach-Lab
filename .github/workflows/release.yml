@@ -9,6 +9,7 @@ on:
     tags:
       - 'zachart-v*'
       - 'base-v*'
+      - 'zachart-maths-v*'
 
 jobs:
   publish-tauri:
@@ -39,6 +40,9 @@ jobs:
             base-v*)
               app=base prefix=base title='Base' updater=false prerelease=true
               key=TAURI_SIGNING_PRIVATE_KEY_BASE pass=TAURI_SIGNING_PRIVATE_KEY_BASE_PASSWORD ;;
+            zachart-maths-v*)
+              app=zachart-maths prefix=zachart-maths title="Zach'Math" updater=false prerelease=true
+              key=TAURI_SIGNING_PRIVATE_KEY_MATHS pass=TAURI_SIGNING_PRIVATE_KEY_MATHS_PASSWORD ;;
             *)
               echo "::error::Le tag $GITHUB_REF_NAME ne correspond à aucune app." ; exit 1 ;;
           esac
