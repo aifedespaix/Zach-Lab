@@ -1,11 +1,14 @@
 import { Button } from '@suite/shared/ui'
 import type { BlockType } from './blocks'
-import { ACTIONS, SYMBOL_FAMILIES, borderOf, toneOf } from './toolbarCatalog'
+import { ACTIONS, SYMBOL_FAMILIES, borderOf, toneOf, type SymbolEntry } from './toolbarCatalog'
+
+/** Où atterrira un signe : nulle part, dans un champ de texte, dans MathLive, ou dans le champ LaTeX brut. */
+export type InsertTarget = 'none' | 'text' | 'math' | 'raw'
 
 interface ToolbarProps {
-  /** `false` tant qu'aucun champ n'a pris le curseur : les signes n'ont nulle part où aller. */
-  canInsert: boolean
-  onSymbol: (glyph: string) => void
+  /** Le champ visé ; `none` tant qu'aucun n'a pris le curseur. */
+  target: InsertTarget
+  onSymbol: (symbol: SymbolEntry) => void
   onAddBlock: (type: BlockType) => void
 }
 
@@ -13,7 +16,7 @@ interface ToolbarProps {
 const keepFocus = (e: React.MouseEvent) => e.preventDefault()
 
 /** La barre d'outils verticale de la zone de travail, une couleur par famille. */
-export function Toolbar({ canInsert, onSymbol, onAddBlock }: ToolbarProps) {
+export function Toolbar({ target, onSymbol, onAddBlock }: ToolbarProps) {
   return (
     <div
       role="toolbar"
@@ -23,19 +26,19 @@ export function Toolbar({ canInsert, onSymbol, onAddBlock }: ToolbarProps) {
     >
       {SYMBOL_FAMILIES.map(family => (
         <div key={family.name} role="group" aria-label={family.name} style={{ display: 'flex', flexWrap: 'wrap', gap: 3, padding: 4, borderRadius: 8, background: toneOf(family.hue) }}>
-          {family.symbols.map(({ glyph, label }) => (
+          {family.symbols.map(symbol => (
             <Button
-              key={glyph}
+              key={symbol.glyph}
               variant="outline"
               size="icon-sm"
-              aria-label={label}
-              title={label}
-              disabled={!canInsert}
+              aria-label={symbol.label}
+              title={symbol.label}
+              disabled={target === 'none' || (target === 'text' && symbol.mathOnly === true)}
               onMouseDown={keepFocus}
-              onClick={() => onSymbol(glyph)}
+              onClick={() => onSymbol(symbol)}
               style={{ borderColor: borderOf(family.hue) }}
             >
-              {glyph}
+              {symbol.glyph}
             </Button>
           ))}
         </div>

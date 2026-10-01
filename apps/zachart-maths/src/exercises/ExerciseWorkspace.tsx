@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { BlockStack } from './BlockStack'
 import { addBlock, parseBlocks, type BlockType } from './blocks'
 import { insertAtCursor, isTextField, type TextField } from './insertAtCursor'
-import { Toolbar } from './Toolbar'
+import { isMathField, type MathfieldElement } from '../math/MathField'
+import { Toolbar, type InsertTarget } from './Toolbar'
+import type { SymbolEntry } from './toolbarCatalog'
 import { useExerciseStore } from './useExerciseStore'
 import { useOpenExercise } from './useOpenExercise'
 
@@ -20,22 +22,34 @@ export function ExerciseWorkspace() {
   const { exercise, status } = useOpenExercise()
   const edit = useOpenExercise(s => s.edit)
   const selected = useExerciseStore(s => s.selected)
-  const lastField = useRef<TextField | null>(null)
-  const [hasField, setHasField] = useState(false)
+  const lastField = useRef<TextField | MathfieldElement | null>(null)
+  const [target, setTarget] = useState<InsertTarget>('none')
 
   // Le dernier champ où l'élève a écrit reçoit les signes de la barre, même si le focus est
   // passé sur un bouton (clavier) depuis.
   const rememberField = (e: React.FocusEvent) => {
-    if (!isTextField(e.target)) return
-    lastField.current = e.target
-    setHasField(true)
-  }
-  const insertSymbol = (glyph: string) => {
-    const field = lastField.current
-    if (field?.isConnected) {
-      insertAtCursor(field, glyph)
-      field.focus()
+    // MathLive vit dans un shadow DOM : l'évènement y est ramené à l'élément `math-field`.
+    if (isMathField(e.target)) {
+      lastField.current = e.target
+      setTarget('math')
+    } else if (isTextField(e.target)) {
+      lastField.current = e.target
+      setTarget(e.target.dataset.mathRaw !== undefined ? 'raw' : 'text')
     }
+  }
+  const insertSymbol = (symbol: SymbolEntry) => {
+    const field = lastField.current
+    if (!field?.isConnected) return
+    if (isMathField(field)) {
+      if (typeof field.insert === 'function') field.insert(symbol.latex, { focus: true })
+      else field.value += symbol.latex.replace(/#[0?]/g, '')
+      // `insert` ne déclenche pas toujours `input` : le champ le dit lui-même, pour que
+      // l'état de l'étape suive.
+      field.dispatchEvent(new Event('input', { bubbles: true }))
+      return
+    }
+    insertAtCursor(field, field.dataset.mathRaw !== undefined ? (symbol.plain ?? symbol.latex.replace(/#[0?]/g, '')) : symbol.glyph)
+    field.focus()
   }
   const addBlockOfType = (type: BlockType) =>
     edit({ blocs: addBlock(parseBlocks(useOpenExercise.getState().exercise?.blocs ?? []), type) })
@@ -43,7 +57,7 @@ export function ExerciseWorkspace() {
   // Un autre exercice, d'autres champs : l'ancien champ ne doit plus recevoir de signes.
   useEffect(() => {
     lastField.current = null
-    setHasField(false)
+    setTarget('none')
   }, [selected])
 
   // Ne rien perdre si la fenêtre se ferme avant la fin du délai d'autosauvegarde.
@@ -90,7 +104,7 @@ export function ExerciseWorkspace() {
       </header>
 
       <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
-        <Toolbar canInsert={hasField} onSymbol={insertSymbol} onAddBlock={addBlockOfType} />
+        <Toolbar target={target} onSymbol={insertSymbol} onAddBlock={addBlockOfType} />
         <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: 16 }}>
           <BlockStack value={exercise.blocs} onChange={blocs => edit({ blocs })} showAddButtons={false} />
         </div>

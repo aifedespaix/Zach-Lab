@@ -8,7 +8,16 @@ import type { BlockType } from './blocks'
  * réponse). Les structures qui demandent du LaTeX (fraction, racine, indice) sont celles du
  * bloc Équation, au lot 5.
  */
-export interface SymbolEntry { glyph: string; label: string }
+export interface SymbolEntry {
+  glyph: string
+  label: string
+  /** Ce que reçoit un champ de formule. `#0` = la sélection, `#?` = l'arrêt suivant (syntaxe MathLive). */
+  latex: string
+  /** Le même fragment en LaTeX littéral, pour le champ brut où ces jetons s'écriraient tels quels. */
+  plain?: string
+  /** Sans équivalent en texte brut (fraction, indice…) : réservé aux champs de formule. */
+  mathOnly?: boolean
+}
 
 export interface SymbolFamily {
   name: string
@@ -21,65 +30,75 @@ export interface ActionEntry { type: BlockType; label: string }
 
 export const SYMBOL_FAMILIES: readonly SymbolFamily[] = [
   {
+    name: 'Structures',
+    hue: 320,
+    symbols: [
+      { glyph: '⅟', label: 'Fraction', latex: '\\frac{#0}{#?}', plain: '\\frac{}{}', mathOnly: true },
+      { glyph: 'xⁿ', label: 'Puissance', latex: '#0^{#?}', plain: '^{}', mathOnly: true },
+      { glyph: 'xₙ', label: 'Indice', latex: '#0_{#?}', plain: '_{}', mathOnly: true },
+      { glyph: '( )', label: 'Parenthèses', latex: '\\left(#0\\right)', plain: '\\left(\\right)', mathOnly: true },
+    ],
+  },
+  {
     name: 'Opérations',
     hue: 8,
     symbols: [
-      { glyph: '+', label: 'Plus' },
-      { glyph: '−', label: 'Moins' },
-      { glyph: '×', label: 'Multiplié par' },
-      { glyph: '÷', label: 'Divisé par' },
-      { glyph: '±', label: 'Plus ou moins' },
-      { glyph: '·', label: 'Point multiplicatif' },
+      { glyph: '+', label: 'Plus', latex: '+' },
+      { glyph: '−', label: 'Moins', latex: '-' },
+      { glyph: '×', label: 'Multiplié par', latex: '\\times ' },
+      { glyph: '÷', label: 'Divisé par', latex: '\\div ' },
+      { glyph: '±', label: 'Plus ou moins', latex: '\\pm ' },
+      { glyph: '·', label: 'Point multiplicatif', latex: '\\cdot ' },
     ],
   },
   {
     name: 'Comparaisons',
     hue: 38,
     symbols: [
-      { glyph: '=', label: 'Égal' },
-      { glyph: '≠', label: 'Différent de' },
-      { glyph: '<', label: 'Inférieur à' },
-      { glyph: '>', label: 'Supérieur à' },
-      { glyph: '≤', label: 'Inférieur ou égal' },
-      { glyph: '≥', label: 'Supérieur ou égal' },
-      { glyph: '≈', label: 'Environ égal à' },
+      { glyph: '=', label: 'Égal', latex: '=' },
+      { glyph: '≠', label: 'Différent de', latex: '\\neq ' },
+      { glyph: '<', label: 'Inférieur à', latex: '<' },
+      { glyph: '>', label: 'Supérieur à', latex: '>' },
+      { glyph: '≤', label: 'Inférieur ou égal', latex: '\\leq ' },
+      { glyph: '≥', label: 'Supérieur ou égal', latex: '\\geq ' },
+      { glyph: '≈', label: 'Environ égal à', latex: '\\approx ' },
     ],
   },
   {
     name: 'Nombres',
     hue: 140,
     symbols: [
-      { glyph: '²', label: 'Au carré' },
-      { glyph: '³', label: 'Au cube' },
-      { glyph: '√', label: 'Racine carrée' },
-      { glyph: 'π', label: 'Pi' },
-      { glyph: '∞', label: 'Infini' },
-      { glyph: '°', label: 'Degré' },
-      { glyph: '%', label: 'Pourcentage' },
+      { glyph: '²', label: 'Au carré', latex: '^{2}' },
+      { glyph: '³', label: 'Au cube', latex: '^{3}' },
+      { glyph: '√', label: 'Racine carrée', latex: '\\sqrt{#0}', plain: '\\sqrt{}' },
+      { glyph: 'π', label: 'Pi', latex: '\\pi ' },
+      { glyph: '∞', label: 'Infini', latex: '\\infty ' },
+      { glyph: '°', label: 'Degré', latex: '^{\\circ}' },
+      { glyph: '%', label: 'Pourcentage', latex: '\\%' },
     ],
   },
   {
     name: 'Ensembles et logique',
     hue: 200,
     symbols: [
-      { glyph: '∈', label: 'Appartient à' },
-      { glyph: '∉', label: "N'appartient pas à" },
-      { glyph: '∪', label: 'Union' },
-      { glyph: '∩', label: 'Intersection' },
-      { glyph: '∅', label: 'Ensemble vide' },
-      { glyph: '⇒', label: 'Donc, implique' },
-      { glyph: '⇔', label: 'Équivalent à' },
+      { glyph: '∈', label: 'Appartient à', latex: '\\in ' },
+      { glyph: '∉', label: "N'appartient pas à", latex: '\\notin ' },
+      { glyph: '∪', label: 'Union', latex: '\\cup ' },
+      { glyph: '∩', label: 'Intersection', latex: '\\cap ' },
+      { glyph: '∅', label: 'Ensemble vide', latex: '\\varnothing ' },
+      { glyph: '⇒', label: 'Donc, implique', latex: '\\Rightarrow ' },
+      { glyph: '⇔', label: 'Équivalent à', latex: '\\Leftrightarrow ' },
     ],
   },
   {
     name: 'Lettres grecques',
     hue: 270,
     symbols: [
-      { glyph: 'α', label: 'Alpha' },
-      { glyph: 'β', label: 'Bêta' },
-      { glyph: 'θ', label: 'Thêta' },
-      { glyph: 'Δ', label: 'Delta' },
-      { glyph: 'Σ', label: 'Sigma' },
+      { glyph: 'α', label: 'Alpha', latex: '\\alpha ' },
+      { glyph: 'β', label: 'Bêta', latex: '\\beta ' },
+      { glyph: 'θ', label: 'Thêta', latex: '\\theta ' },
+      { glyph: 'Δ', label: 'Delta', latex: '\\Delta ' },
+      { glyph: 'Σ', label: 'Sigma', latex: '\\Sigma ' },
     ],
   },
 ]
@@ -87,11 +106,12 @@ export const SYMBOL_FAMILIES: readonly SymbolFamily[] = [
 /** Les actions : elles agissent sur la pile de blocs, pas sur un champ. */
 export const ACTIONS: { name: string; hue: number; actions: readonly ActionEntry[] } = {
   name: 'Ajouter un bloc',
-  hue: 330,
+  hue: 350,
   actions: [
     { type: 'texte', label: 'Texte' },
     { type: 'calcul', label: 'Calcul' },
     { type: 'tableau', label: 'Tableau' },
+    { type: 'equation', label: 'Équation' },
   ],
 }
 

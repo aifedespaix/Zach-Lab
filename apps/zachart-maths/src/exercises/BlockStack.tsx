@@ -1,9 +1,10 @@
 import { useMemo, type ReactNode } from 'react'
 import { ArrowDown, ArrowUp, Minus, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@suite/shared/ui'
+import { EquationEditor } from './EquationEditor'
 import {
   BLOCK_TYPES, addBlock, addColumn, addRow, canGrow, isKnown, moveBlock, parseBlocks, removeBlock, removeColumn,
-  removeRow, setCell, updateBlock, type Block, type CalcBlock, type KnownBlock, type TableBlock, type TextBlock,
+  removeRow, setCell, updateBlock, type Block, type CalcBlock, type EquationBlock, type KnownBlock, type TableBlock, type TextBlock,
 } from './blocks'
 
 const field = 'rounded border bg-background px-2 py-1 text-sm'
@@ -109,6 +110,7 @@ function editorFor(block: KnownBlock, onChange: (patch: Partial<KnownBlock>) => 
     case 'texte': return <TextEditor block={block} onChange={onChange} />
     case 'calcul': return <CalcEditor block={block} onChange={onChange} />
     case 'tableau': return <TableEditor block={block} onChange={onChange} />
+    case 'equation': return <EquationEditor block={block} onChange={onChange as (patch: Partial<EquationBlock>) => void} />
   }
 }
 

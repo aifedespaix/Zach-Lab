@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ExerciseWorkspace } from './ExerciseWorkspace'
@@ -16,6 +16,17 @@ async function setup(files: Record<string, string>) {
   return fs
 }
 const open = (path: string | null) => act(async () => useExerciseStore.getState().select(path))
+
+vi.mock('mathlive', () => {
+  if (!customElements.get('math-field')) {
+    customElements.define('math-field', class extends HTMLElement {
+      value = ''
+      connectedCallback() { this.tabIndex = 0 }
+      insert(fragment: string) { this.value += fragment.replace(/#[0?]/g, '') }
+    })
+  }
+  return {}
+})
 
 describe('ExerciseWorkspace', () => {
   beforeEach(() => {
@@ -112,5 +123,23 @@ describe('ExerciseWorkspace', () => {
     await userEvent.setup().click(screen.getByLabelText('Réponse finale'))
     await open('A/b.json')
     expect(screen.getByRole('button', { name: 'Plus' })).toBeDisabled()
+  })
+
+  it('la barre insère du LaTeX dans un champ de formule, et réserve les structures aux formules', async () => {
+    const fs = await setup({ 'A/a.json': exo('Premier') })
+    await open('A/a.json')
+    const user = userEvent.setup()
+    await user.click(screen.getByLabelText('Réponse finale'))
+    expect(screen.getByRole('button', { name: 'Fraction' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Multiplié par' })).toBeEnabled()
+
+    await user.click(screen.getByRole('button', { name: 'Ajouter un bloc Équation' }))
+    const etape = await screen.findByLabelText('Étape 1')
+    await user.click(etape)
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Fraction' })).toBeEnabled())
+    await user.click(screen.getByRole('button', { name: 'Fraction' }))
+    await user.click(screen.getByRole('button', { name: 'Multiplié par' }))
+    await act(async () => void (await useOpenExercise.getState().flush()))
+    expect(stored(fs, 'A/a.json').blocs[0]).toMatchObject({ type: 'equation', etapes: [{ latex: '\\frac{}{}\\times ' }] })
   })
 })

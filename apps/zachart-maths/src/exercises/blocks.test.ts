@@ -15,7 +15,7 @@ describe('parseBlocks', () => {
   })
 
   it('garde un bloc inconnu avec tous ses champs', () => {
-    expect(parseBlocks([{ id: 'e', type: 'equation', etapes: [1, 2] }])).toEqual([{ id: 'e', type: 'equation', etapes: [1, 2] }])
+    expect(parseBlocks([{ id: 'e', type: 'schema', etapes: [1, 2] }])).toEqual([{ id: 'e', type: 'schema', etapes: [1, 2] }])
   })
 
   it('rend un tableau rectangulaire, jamais vide', () => {
@@ -23,6 +23,20 @@ describe('parseBlocks', () => {
     expect(t).toMatchObject({ cellules: [['a', '', ''], ['b', 'c', '']] })
     const [empty] = parseBlocks([{ id: 'v', type: 'tableau', cellules: 'x' }])
     expect(empty).toMatchObject({ cellules: [['']] })
+  })
+})
+
+describe('parseBlocks : équation', () => {
+  it('garde au moins une étape, des identifiants uniques, et pas d\'action sur la première', () => {
+    const [empty] = parseBlocks([{ id: 'q', type: 'equation', etapes: 'x' }])
+    expect(empty).toMatchObject({ etapes: [{ action: '', latex: '' }] })
+    const [eq] = parseBlocks([{ id: 'q', type: 'equation', etapes: [
+      { id: 's', action: 'oups', latex: '2x=4' }, { id: 's', action: '÷ 2', latex: 'x=2' }, 7,
+    ] }]) as { etapes: { id: string; action: string; latex: string }[] }[]
+    expect(eq.etapes).toHaveLength(2)
+    expect(eq.etapes[0]).toEqual({ id: 's', action: '', latex: '2x=4' })
+    expect(eq.etapes[1]).toMatchObject({ action: '÷ 2', latex: 'x=2' })
+    expect(eq.etapes[1].id).not.toBe('s')
   })
 })
 

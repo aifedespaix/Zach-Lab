@@ -63,7 +63,7 @@ describe('BlockStack', () => {
 
   it('conserve un bloc inconnu, déplaçable et supprimable', async () => {
     const user = userEvent.setup()
-    const unknown = { id: 'e', type: 'equation', etapes: [1] }
+    const unknown = { id: 'e', type: 'schema', etapes: [1] }
     render(<Harness initial={[unknown, { id: 'a', type: 'texte' }]} />)
     expect(screen.getByText(/pas encore pris en charge/)).toBeInTheDocument()
     await user.click(screen.getAllByRole('button', { name: 'Descendre le bloc' })[0])

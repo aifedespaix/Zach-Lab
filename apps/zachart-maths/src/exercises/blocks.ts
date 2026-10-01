@@ -1,16 +1,21 @@
 /**
  * Les blocs de la zone de travail : une pile verticale que l'élève remplit de haut en bas.
  *
- * Le bloc Équation arrive avec son propre lot ; en attendant, un bloc de type inconnu
- * (écrit par une version plus récente, ou pas encore pris en charge) est conservé tel quel
- * dans le fichier, déplaçable et supprimable, mais pas modifiable.
+ * Un bloc de type inconnu (écrit par une version plus récente) est conservé tel quel dans
+ * le fichier, déplaçable et supprimable, mais pas modifiable.
  */
 export interface TextBlock { id: string; type: 'texte'; contenu: string }
 export interface CalcBlock { id: string; type: 'calcul'; expression: string; resultat: string }
 export interface TableBlock { id: string; type: 'tableau'; cellules: string[][] }
+/**
+ * Une résolution pas à pas. `action` de l'étape *i* est ce que l'élève a fait pour passer de
+ * l'étape *i − 1* à celle-ci (« − 5 des deux côtés ») ; celle de la première étape reste vide.
+ */
+export interface EquationStep { id: string; action: string; latex: string }
+export interface EquationBlock { id: string; type: 'equation'; etapes: EquationStep[] }
 export interface UnknownBlock { id: string; type: string; [key: string]: unknown }
 
-export type KnownBlock = TextBlock | CalcBlock | TableBlock
+export type KnownBlock = TextBlock | CalcBlock | TableBlock | EquationBlock
 export type Block = KnownBlock | UnknownBlock
 export type BlockType = KnownBlock['type']
 
@@ -18,11 +23,14 @@ export const BLOCK_TYPES: readonly { type: BlockType; label: string }[] = [
   { type: 'texte', label: 'Texte' },
   { type: 'calcul', label: 'Calcul' },
   { type: 'tableau', label: 'Tableau' },
+  { type: 'equation', label: 'Équation' },
 ]
 
 export const isKnown = (block: Block): block is KnownBlock => BLOCK_TYPES.some(t => t.type === block.type)
 
 const MAX_TABLE = 12
+
+export const newStep = (): EquationStep => ({ id: crypto.randomUUID(), action: '', latex: '' })
 
 export function newBlock(type: BlockType): KnownBlock {
   const id = crypto.randomUUID()
@@ -30,6 +38,7 @@ export function newBlock(type: BlockType): KnownBlock {
     case 'texte': return { id, type, contenu: '' }
     case 'calcul': return { id, type, expression: '', resultat: '' }
     case 'tableau': return { id, type, cellules: [['', ''], ['', '']] }
+    case 'equation': return { id, type, etapes: [newStep()] }
   }
 }
 
@@ -41,6 +50,22 @@ function normalizeCells(raw: unknown): string[][] {
   const width = Math.min(MAX_TABLE, Math.max(1, ...rows.map(r => r.length)))
   const grid = rows.map(r => Array.from({ length: width }, (_, i) => r[i] ?? ''))
   return grid.length > 0 ? grid : [Array(width).fill('')]
+}
+
+/** Au moins une étape, des identifiants uniques, et pas d'action sur la première. */
+function normalizeSteps(raw: unknown): EquationStep[] {
+  const seen = new Set<string>()
+  const steps = (Array.isArray(raw) ? raw : []).flatMap((item): EquationStep[] => {
+    if (typeof item !== 'object' || item === null) return []
+    const r = item as Record<string, unknown>
+    let id = typeof r.id === 'string' && r.id !== '' ? r.id : crypto.randomUUID()
+    if (seen.has(id)) id = crypto.randomUUID()
+    seen.add(id)
+    return [{ id, action: str(r.action), latex: str(r.latex) }]
+  })
+  if (steps.length === 0) return [newStep()]
+  steps[0] = { ...steps[0], action: '' }
+  return steps
 }
 
 /**
@@ -58,6 +83,7 @@ export function parseBlocks(raw: readonly unknown[]): Block[] {
       case 'texte': blocks.push({ id, type: 'texte', contenu: str(b.contenu) }); break
       case 'calcul': blocks.push({ id, type: 'calcul', expression: str(b.expression), resultat: str(b.resultat) }); break
       case 'tableau': blocks.push({ id, type: 'tableau', cellules: normalizeCells(b.cellules) }); break
+      case 'equation': blocks.push({ id, type: 'equation', etapes: normalizeSteps(b.etapes) }); break
       default: blocks.push({ ...b, id, type: b.type })
     }
   }
