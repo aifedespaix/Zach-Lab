@@ -14,6 +14,8 @@ interface ExerciseStore {
   error: string | null
 
   init(fs: ExerciseFs): Promise<void>
+  /** Relit l'arbre (ex. après un changement de titre fait dans l'éditeur). */
+  refresh(): Promise<void>
   select(path: string | null): void
   dismissError(): void
   addChapter(name: string): Promise<void>
@@ -55,6 +57,7 @@ export const useExerciseStore = create<ExerciseStore>((set, get) => {
       await run(async () => {})
       set({ loaded: true })
     },
+    refresh: () => run(async () => {}),
     select: path => set({ selected: path }),
     dismissError: () => set({ error: null }),
 

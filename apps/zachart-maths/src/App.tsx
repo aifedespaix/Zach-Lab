@@ -14,6 +14,8 @@ import { TooltipProvider } from '@suite/shared/ui'
 import { UpdateReadyBanner, useAppUpdater } from '@suite/shared/update'
 import './commands'
 import { ExerciseTree } from './exercises/ExerciseTree'
+import { ExerciseWorkspace } from './exercises/ExerciseWorkspace'
+import './exercises/useOpenExercise'
 import { createTauriFs, defaultExercisesRoot } from './exercises/tauriFs'
 import { useExerciseStore } from './exercises/useExerciseStore'
 
@@ -49,7 +51,6 @@ export default function App() {
       .then(root => useExerciseStore.getState().init(createTauriFs(root)))
       .catch(e => useExerciseStore.setState({ loaded: true, error: e instanceof Error ? e.message : String(e) }))
   }, [])
-  const selected = useExerciseStore(state => state.selected)
 
   useCommand('app.palette', () => setPaletteOpen(true))
   useCommand('app.settings', () => setSettingsOpen(true))
@@ -122,10 +123,8 @@ export default function App() {
         }
       >
         {updateReady && !dismissed && <UpdateReadyBanner onApply={applyUpdate} onDismiss={dismissUpdate} />}
-        <main style={{ flex: 1, padding: 16 }}>
-          <p style={{ color: 'var(--muted-foreground)', fontSize: 14 }}>
-            {selected === null ? 'Choisis un exercice dans la liste de gauche.' : `Exercice ouvert : ${selected}`}
-          </p>
+        <main style={{ flex: 1, display: 'flex', minWidth: 0 }}>
+          <ExerciseWorkspace />
         </main>
       </AppShell>
     </TooltipProvider>
