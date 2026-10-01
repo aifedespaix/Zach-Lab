@@ -1,0 +1,5 @@
+@import "tailwindcss";
+@import "@suite/shared/theme.css";
+/* Tailwind 4 does not scan a package outside the app: without this line the
+   shared components render without their utility classes. */
+@source "../../../packages/shared/src";

@@ -27,7 +27,7 @@ Run everything from the repository root.
 - `bun run new-app <nom> [--port <n>]` — a new app, copied from `apps/base`.
 - `bun run version:bump -- <app> <patch|minor|major|X.Y.Z>` — see `docs/RELEASE.md`.
 
-Ports: zachart-mentale 1420, its admin 1430, base 1440 (HMR = port + 1).
+Ports: zachart-mentale 1420, its admin 1430, base 1440, zachart-maths 1450 (HMR = port + 1).
 
 ## `packages/shared` — the one rule
 

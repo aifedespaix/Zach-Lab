@@ -158,7 +158,7 @@ if (import.meta.main) {
   const args = process.argv.slice(2)
   const portFlag = args.indexOf('--port')
   const port = portFlag === -1 ? undefined : Number(args[portFlag + 1])
-  const name = args.find((arg, index) => !arg.startsWith('--') && index !== portFlag + 1)
+  const name = args.find((arg, index) => !arg.startsWith('--') && portFlag === -1 || index !== portFlag + 1)
   const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 
   if (name === undefined) {
