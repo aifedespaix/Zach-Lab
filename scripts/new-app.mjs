@@ -153,13 +153,18 @@ export function createApp({ root, name, port }) {
   return { name, product, port: vitePort, path: target }
 }
 
-// `import.meta.main` is Bun's « this file was run, not imported ».
-if (import.meta.main) {
-  const args = process.argv.slice(2)
+/** `[nom, --port n]`, dans n'importe quel ordre : le nom est le seul argument qui n'est ni le drapeau ni sa valeur. */
+export function parseArgs(args) {
   const portFlag = args.indexOf('--port')
   const port = portFlag === -1 ? undefined : Number(args[portFlag + 1])
-  const name = args.find((arg, index) => !arg.startsWith('--') && portFlag === -1 || index !== portFlag + 1)
+  const name = args.find((arg, index) => !arg.startsWith('--') && (portFlag === -1 || index !== portFlag + 1))
+  return { name, port }
+}
+
+// `import.meta.main` is Bun's « this file was run, not imported ».
+if (import.meta.main) {
   const root = join(dirname(fileURLToPath(import.meta.url)), '..')
+  const { name, port } = parseArgs(process.argv.slice(2))
 
   if (name === undefined) {
     console.error('Usage: bun run new-app <nom> [--port <n>]')

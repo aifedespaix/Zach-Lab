@@ -6,6 +6,7 @@ Vue** — there is no Vue anywhere.
 
 ```
 apps/zachart-mentale/   Zachar't Mentale (src/, src-tauri/, admin/, infra/)
+apps/zachart-maths/     Zachar't Maths (src/exercises, src/cours, src/math)
 apps/base/              empty, working shell: the template of every new app
 packages/shared/        @suite/shared — the React code every app reuses
 crates/suite-tauri/     the Rust code every app reuses
@@ -80,6 +81,35 @@ infra:plan` / `infra:apply` / `infra:check`. Adding a collection means editing t
 schema module, nothing else: the script, its tests and the docs all read that one
 definition. Synchronisation and PocketBase belong to Zachar't Mentale only; the
 other apps of the suite have none.
+
+## Zachar't Maths (`apps/zachart-maths`)
+
+Born from `apps/base` with `new-app`; it has no sync and no PocketBase. Three areas, each
+under `src/`, wired together in `App.tsx`:
+
+- **`exercises/`** — the student's files and the centre area. An exercise is one `.json` file
+  (`types.ts`, versioned) in a chapter folder under `Documents/Zachar't Maths/`; the order
+  of a folder lives in its `_ordre.json`. Everything touching the disk goes through the
+  `ExerciseFs` port (`fsPort.ts`): `tauriFs.ts` in the app, `memoryFs.ts` in tests — write
+  new file logic in `library.ts` against the port, never against `@tauri-apps/plugin-fs`.
+  `useOpenExercise` loads the selected exercise and autosaves it (600 ms, and on switch).
+- **Blocks** (`blocks.ts`): `texte`, `calcul`, `tableau`, `equation`. A new block type = a
+  type in `blocks.ts` (`newBlock`, `parseBlocks`), an editor in `BlockStack.tsx`, a button in
+  `toolbarCatalog.ts`. A block of an unknown type is kept verbatim in the file, never dropped.
+- **Toolbar** (`toolbarCatalog.ts`): symbols are data, one hue per family. A symbol has a
+  `glyph` (plain fields), a `latex` (MathLive; `#0`/`#?` placeholders) and an optional `plain`.
+  Text fields are filled with `insertAtCursor` (`setRangeText`, not `value =`: React and
+  user-event both track `value`).
+- **`math/`** — `MathField` (MathLive, loaded on demand, raw-LaTeX textarea as the fallback
+  that is also a complete editor) and `renderMathToHtml` (KaTeX, bounded, `trust: false`).
+- **`cours/`** — courses are Markdown files in `cours/contenu/` (front matter `titre`,
+  `chapitre`, `mots-cles`), compiled in with `import.meta.glob`; adding a course is adding a
+  file. `suggest.ts` ranks them from the exercise's chapter folder name (generic names like
+  « Chapitre 3 » are ignored — fuzzy search would match everything) and its content. Notes
+  are the `notes` field of the exercise file.
+
+The app imports nothing from another app and only `@suite/shared` public entry points
+(`src/boundary.test.ts`).
 
 ## Explore via the knowledge graph first
 

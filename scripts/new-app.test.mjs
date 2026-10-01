@@ -8,7 +8,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, 
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { createApp } from './new-app.mjs'
+import { createApp, parseArgs } from './new-app.mjs'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -172,5 +172,19 @@ describe('createApp — refus, et rien n\'est écrit', () => {
     writeFileSync(join(root, 'Cargo.toml'), '[workspace]\nresolver = "2"\n')
     expect(() => createApp({ root, name: 'maths' })).toThrow(/Cargo\.toml/)
     expect(readdirSync(join(root, 'apps')).sort()).toEqual(['base', 'zachart-mentale'])
+  })
+})
+
+describe('parseArgs', () => {
+  it('trouve le nom sans --port (régression : le premier argument était pris pour la valeur du drapeau)', () => {
+    expect(parseArgs(['maths'])).toEqual({ name: 'maths', port: undefined })
+  })
+  it('trouve le nom et le port, dans les deux ordres', () => {
+    expect(parseArgs(['maths', '--port', '1460'])).toEqual({ name: 'maths', port: 1460 })
+    expect(parseArgs(['--port', '1460', 'maths'])).toEqual({ name: 'maths', port: 1460 })
+  })
+  it('ne prend pas la valeur du port pour le nom', () => {
+    expect(parseArgs(['--port', '1460']).name).toBeUndefined()
+    expect(parseArgs([]).name).toBeUndefined()
   })
 })
