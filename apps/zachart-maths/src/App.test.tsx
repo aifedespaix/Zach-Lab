@@ -11,9 +11,13 @@ vi.mock('@tauri-apps/plugin-fs', () => ({
   readTextFile: vi.fn(),
   writeTextFile: vi.fn(async () => {}),
   mkdir: vi.fn(async () => {}),
+  readDir: vi.fn(async () => []),
+  remove: vi.fn(async () => {}),
+  rename: vi.fn(async () => {}),
 }))
 vi.mock('@tauri-apps/api/path', () => ({
   appConfigDir: vi.fn(async () => '/config'),
+  documentDir: vi.fn(async () => '/docs'),
   join: vi.fn(async (...parts: string[]) => parts.join('/')),
 }))
 

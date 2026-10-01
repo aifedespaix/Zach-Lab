@@ -13,6 +13,9 @@ import { startCircularThemeTransition, useResolvedTheme, useThemeDomSync, useThe
 import { TooltipProvider } from '@suite/shared/ui'
 import { UpdateReadyBanner, useAppUpdater } from '@suite/shared/update'
 import './commands'
+import { ExerciseTree } from './exercises/ExerciseTree'
+import { createTauriFs, defaultExercisesRoot } from './exercises/tauriFs'
+import { useExerciseStore } from './exercises/useExerciseStore'
 
 // Each app picks its own bounds and its own storage keys: two apps of the suite
 // share a machine, but never a webview.
@@ -41,6 +44,13 @@ export default function App() {
     void useShortcutSettingsStore.getState().init()
   }, [])
 
+  useEffect(() => {
+    void defaultExercisesRoot()
+      .then(root => useExerciseStore.getState().init(createTauriFs(root)))
+      .catch(e => useExerciseStore.setState({ loaded: true, error: e instanceof Error ? e.message : String(e) }))
+  }, [])
+  const selected = useExerciseStore(state => state.selected)
+
   useCommand('app.palette', () => setPaletteOpen(true))
   useCommand('app.settings', () => setSettingsOpen(true))
   useCommand('app.toggleTheme', () => {
@@ -60,7 +70,9 @@ export default function App() {
             label="Panneau gauche"
             resizeLabel="Redimensionner le panneau de gauche"
             storage={leftPanel}
-          />
+          >
+            <ExerciseTree />
+          </ResizablePanel>
         }
         right={
           <ResizablePanel
@@ -112,7 +124,7 @@ export default function App() {
         {updateReady && !dismissed && <UpdateReadyBanner onApply={applyUpdate} onDismiss={dismissUpdate} />}
         <main style={{ flex: 1, padding: 16 }}>
           <p style={{ color: 'var(--muted-foreground)', fontSize: 14 }}>
-            Zone de travail vide. Remplace ce texte par le contenu de ton logiciel.
+            {selected === null ? 'Choisis un exercice dans la liste de gauche.' : `Exercice ouvert : ${selected}`}
           </p>
         </main>
       </AppShell>

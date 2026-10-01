@@ -38,10 +38,12 @@
         "@suite/shared": "workspace:*",
         "@tailwindcss/vite": "^4.3.3",
         "@tauri-apps/api": "^2",
+        "@tauri-apps/plugin-fs": "~2",
         "lucide-react": "^1.41.0",
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
         "tailwindcss": "^4.3.3",
+        "zustand": "^5.0.15",
       },
       "devDependencies": {
         "@tauri-apps/cli": "^2",
