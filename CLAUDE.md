@@ -26,6 +26,7 @@ Run everything from the repository root.
 - `bunx tsc --noEmit -p apps/<app>` (or `-p packages/shared`) — type-check one workspace.
 - `cargo test --workspace` — the Rust side.
 - `bun run new-app <nom> [--port <n>]` — a new app, copied from `apps/base`.
+- `bun run deploy [<app|all> <patch|minor|major|X.Y.Z>]` — publishes (bump, commit, push, tag); interactive without args, see `docs/RELEASE.md`.
 - `bun run version:bump -- <app> <patch|minor|major|X.Y.Z>` — see `docs/RELEASE.md`.
 - `bun run update:mentale|update:maths|update:all [-- patch|minor|major|X.Y.Z]` — builds the signed
   update locally (Windows) into `updates/`; publishes nothing. See `docs/RELEASE.md`.

@@ -9,9 +9,29 @@ Chaque app a **sa version, son tag et sa release**. Un tag pousse le workflow
 | Base | `apps/base` | `base-vX.Y.Z` | **pré-release** | non (pas encore de clé) |
 | Zach'Math | `apps/zachart-maths` | `zachart-maths-vX.Y.Z` | **pré-release** | oui (clé de Zachar’t Mentale) |
 
+**Voir la dernière version de chaque logiciel sur /releases.** GitHub liste toutes
+les releases à la suite. Pour n'y garder que la plus récente de chaque app, active
+la variable de dépôt `PRUNE_OLD_RELEASES=true` (Settings → Secrets and variables →
+Actions → Variables) : `release.yml` supprime alors les anciennes releases de l'app
+publiée (les tags restent, les anciens installeurs disparaissent). Désactivé par
+défaut. Les releases techniques `updater-*` restent visibles.
+
 Les anciens tags `v1.2.3` restent en place ; ils ne relancent rien.
 
 ## Publier une version
+
+```bash
+bun run deploy                                  # interactif : choisis l'app, le type de version, confirme
+bun run deploy zachart-maths minor              # direct ; plusieurs : a,b ou « all »
+bun run deploy all patch --yes --dry-run        # --dry-run : montre le plan sans rien écrire ; --yes : sans confirmation
+```
+
+`bun run deploy` vérifie l'état du dépôt (branche `main`, rien d'indexé, à jour avec
+`origin`, tag libre), bumpe, fait un commit par app, pousse `main`, pose et pousse
+les tags. **Seul le tag lance la construction** : un simple push sur `main` ne
+construit rien (`build.yml` ne tourne que sur les PR et à la demande).
+
+Les étapes à la main, si besoin :
 
 ```bash
 bun run version:bump -- zachart-mentale patch     # ou minor, major, X.Y.Z
