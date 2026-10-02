@@ -116,3 +116,19 @@ jobs:
           fi
           gh release download "$GITHUB_REF_NAME" --pattern latest.json --clobber
           gh release upload "$rolling" latest.json --clobber
+
+      # La page /releases liste toutes les releases, toutes apps confondues. Pour
+      # n'y voir que la dernière version de chaque logiciel, les anciennes
+      # releases de l'app sont supprimées (les TAGS restent). Désactivé par
+      # défaut : à activer avec la variable de dépôt PRUNE_OLD_RELEASES=true
+      # (Settings > Secrets and variables > Actions > Variables).
+      - name: keep only the latest release of this app
+        if: vars.PRUNE_OLD_RELEASES == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pattern="^${{ steps.app.outputs.prefix }}-v[0-9]+\.[0-9]+\.[0-9]+$"
+          gh release list --limit 200 --json tagName --jq '.[].tagName' \
+            | grep -E "$pattern" | grep -vx "$GITHUB_REF_NAME" \
+            | while read -r old; do gh release delete "$old" --yes; done

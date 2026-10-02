@@ -17,7 +17,7 @@ export const TAG_PREFIX = { 'zachart-mentale': 'zachart' }
 const SEMVER = /^\d+\.\d+\.\d+$/
 const APP_NAME = /^[a-z][a-z0-9-]*$/
 
-function listApps(root) {
+export function listApps(root) {
   const appsDir = join(root, 'apps')
   if (!existsSync(appsDir)) return []
   return readdirSync(appsDir, { withFileTypes: true })
@@ -26,7 +26,7 @@ function listApps(root) {
     .sort()
 }
 
-function nextVersion(current, arg) {
+export function nextVersion(current, arg) {
   if (SEMVER.test(arg)) return arg
   const [major, minor, patch] = current.split('.').map(Number)
   if (arg === 'patch') return `${major}.${minor}.${patch + 1}`
