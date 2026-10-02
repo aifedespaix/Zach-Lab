@@ -18,7 +18,14 @@ const BRANCH = 'main'
 const tagOf = (app, version) => `${TAG_PREFIX[app] ?? app}-v${version}`
 
 export function currentVersion(root, app) {
-  return JSON.parse(readFileSync(join(root, 'apps', app, 'src-tauri', 'tauri.conf.json'), 'utf8')).version
+  const file = join(root, 'apps', app, 'src-tauri', 'tauri.conf.json')
+  const text = readFileSync(file, 'utf8')
+  try {
+    return JSON.parse(text).version
+  } catch (error) {
+    const conflict = /^(<{7}|={7}|>{7})/m.test(text) ? ' Il contient des marqueurs de conflit git (<<<<<<<) : résous le conflit.' : ''
+    throw new Error(`${file} n'est pas un JSON valide (${error.message}).${conflict}`)
+  }
 }
 
 /** `["zachart-maths", "minor", "--yes"]` -> `{ apps: ["zachart-maths"], bump: "minor", yes: true, dryRun: false }`. */
