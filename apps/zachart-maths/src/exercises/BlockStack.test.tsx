@@ -112,3 +112,20 @@ describe('BlockStack — calcul', () => {
     await waitFor(() => expect(screen.getAllByLabelText('Calcul')[1]).toHaveFocus())
   })
 })
+
+describe('BlockStack — halo', () => {
+  it("le bloc déplacé reçoit un halo, pas les autres", async () => {
+    const user = userEvent.setup()
+    render(<Harness initial={[{ id: 'a', type: 'texte', contenu: '' }, { id: 'b', type: 'calcul' }]} />)
+    await user.click(within(screen.getAllByRole('region')[1]).getByRole('button', { name: 'Monter le bloc' }))
+    expect(document.querySelector('[data-block-id="b"]')!.classList.contains('block-halo')).toBe(true)
+    expect(document.querySelector('[data-block-id="a"]')!.classList.contains('block-halo')).toBe(false)
+    expect(names()[0]).toMatch(/Calcul/)
+  })
+
+  it("un bloc arrivé de l'autre zone reçoit halo et curseur", () => {
+    render(<BlockStack value={[{ id: 'z', type: 'texte', contenu: '' }]} onChange={() => {}} arrivedId="z" />)
+    expect(document.querySelector('[data-block-id="z"]')!.classList.contains('block-halo')).toBe(true)
+    expect(screen.getByLabelText('Texte')).toHaveFocus()
+  })
+})

@@ -142,3 +142,15 @@
     stroke-dashoffset: 0;
   }
 }
+
+/*
+ * Le halo d'un bloc qu'on vient de déplacer : un anneau qui s'éteint en 600 ms, pour retrouver
+ * le bloc du regard. Il reste sous « réduire les animations » : c'est un repère, pas un mouvement.
+ */
+@keyframes block-halo {
+  from { box-shadow: 0 0 0 4px color-mix(in oklab, var(--ring) 80%, transparent); }
+  to { box-shadow: 0 0 0 0 transparent; }
+}
+.block-halo {
+  animation: block-halo 600ms ease-out;
+}

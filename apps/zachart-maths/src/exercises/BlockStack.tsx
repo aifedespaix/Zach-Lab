@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Minus, Plus } from 'lucide-react'
+import { motion, useReducedMotion } from 'motion/react'
 import { Button } from '@suite/shared/ui'
 import { BlockCard } from './BlockCard'
 import { BLOCK_META } from './blockMeta'
@@ -71,13 +72,25 @@ function editorFor(block: KnownBlock, onChange: (patch: Partial<KnownBlock>) => 
 }
 
 /** La pile de blocs de la zone de travail : chaque bloc se déplace d'un cran et se supprime, et les boutons d'ajout sont au bout. */
-export function BlockStack({ value, onChange, label = "Blocs de l'exercice" }: {
+export function BlockStack({ value, onChange, label = "Blocs de l'exercice", arrivedId = null }: {
   value: readonly unknown[]
   onChange: (blocs: Block[]) => void
   label?: string
+  /** Le bloc qui vient de l'autre zone : fondu d'entrée, halo et curseur. */
+  arrivedId?: string | null
 }) {
   const blocks = useMemo(() => parseBlocks(value), [value])
-  const toFocus = useRef<string | null>(null)
+  const toFocus = useRef<string | null>(arrivedId)
+  const reduced = useReducedMotion()
+  /** Le bloc qui porte le halo : celui qu'on vient de déplacer ou de recevoir. */
+  const [halo, setHalo] = useState<string | null>(arrivedId)
+
+  // Un bloc arrivé de l'autre zone : halo, et le curseur y entre pour qu'on continue d'écrire.
+  useEffect(() => {
+    if (arrivedId === null) return
+    setHalo(arrivedId)
+    toFocus.current = arrivedId
+  }, [arrivedId])
 
   // Le bloc qu'on vient d'ajouter reçoit le curseur : on peut écrire sans cliquer une seconde fois.
   useEffect(() => {
@@ -85,7 +98,12 @@ export function BlockStack({ value, onChange, label = "Blocs de l'exercice" }: {
     const target = document.querySelector<HTMLElement>(`[data-block-id="${toFocus.current}"]`)
     toFocus.current = null
     target?.querySelector<HTMLElement>('textarea, input, math-field')?.focus()
-  }, [blocks])
+  }, [blocks, arrivedId])
+
+  const move = (id: string, delta: -1 | 1) => {
+    setHalo(id)
+    onChange(moveBlock(blocks, id, delta))
+  }
 
   const add = (type: BlockType) => {
     const block = newBlock(type)
@@ -103,19 +121,29 @@ export function BlockStack({ value, onChange, label = "Blocs de l'exercice" }: {
     <div>
       <ul aria-label={label} style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
         {blocks.map((block, i) => (
-          <li key={block.id}>
+          <motion.li
+            key={block.id}
+            // `position` : seule la place anime, jamais la taille — une carte qui s'agrandit ne s'étire pas.
+            layout={reduced ? false : 'position'}
+            transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+            initial={block.id === arrivedId ? { opacity: 0 } : false}
+            animate={{ opacity: 1 }}
+            data-slide={reduced ? 'off' : 'on'}
+          >
             <BlockCard
               block={block}
               index={i}
               count={blocks.length}
-              onMove={delta => onChange(moveBlock(blocks, block.id, delta))}
+              halo={halo === block.id}
+              onHaloEnd={() => setHalo(null)}
+              onMove={delta => move(block.id, delta)}
               onRemove={() => onChange(removeBlock(blocks, block.id))}
             >
               {isKnown(block)
                 ? editorFor(block, patch => onChange(updateBlock(blocks, block.id, patch)), () => insertAfter(block.id, 'calcul'))
                 : <p style={{ fontSize: 13, color: 'var(--muted-foreground)', margin: 0 }}>Ce type de bloc n'est pas encore pris en charge ; il est conservé tel quel.</p>}
             </BlockCard>
-          </li>
+          </motion.li>
         ))}
       </ul>
 
