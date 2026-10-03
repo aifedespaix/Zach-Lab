@@ -16,6 +16,11 @@ export interface Exercise {
   enonce: string
   page: string
   blocs: unknown[]
+  /**
+   * La seconde zone de travail, à droite. Présent (même vide) : l'exercice est scindé en deux
+   * zones indépendantes ; absent : une seule zone. Les fiches écrites avant ce champ n'en ont pas.
+   */
+  blocsB?: unknown[]
   reponse: string
   /** Les notes libres prises à côté de l'exercice (sidebar droite). */
   notes: string
@@ -40,6 +45,14 @@ export function newSheet(titre: string): Sheet {
 
 const text = (value: unknown) => (typeof value === 'string' ? value : '')
 
+/** Chaque bloc a un identifiant : sans lui, on ne pourrait ni le déplacer ni l'envoyer dans l'autre zone. */
+const withIds = (blocs: unknown[]): unknown[] =>
+  blocs.map(b => {
+    if (typeof b !== 'object' || b === null || Array.isArray(b)) return b
+    const id = (b as { id?: unknown }).id
+    return typeof id === 'string' && id !== '' ? b : { ...b, id: crypto.randomUUID() }
+  })
+
 function normalizeExercise(raw: unknown, seen: Set<string>): Exercise | null {
   if (typeof raw !== 'object' || raw === null) return null
   const r = raw as Record<string, unknown>
@@ -47,16 +60,20 @@ function normalizeExercise(raw: unknown, seen: Set<string>): Exercise | null {
   if (seen.has(id)) id = crypto.randomUUID()
   seen.add(id)
   // `...r` d'abord : les champs inconnus passent, les champs connus sont ensuite normalisés.
-  return {
+  const exercise: Exercise = {
     ...r,
     id,
     numero: text(r.numero),
     enonce: text(r.enonce),
     page: text(r.page),
-    blocs: Array.isArray(r.blocs) ? r.blocs : [],
+    blocs: Array.isArray(r.blocs) ? withIds(r.blocs) : [],
     reponse: text(r.reponse),
     notes: text(r.notes),
   }
+  // `...r` a laissé passer un `blocsB` qui n'est peut-être pas un tableau : seul un tableau compte.
+  if (Array.isArray(r.blocsB)) exercise.blocsB = withIds(r.blocsB)
+  else delete exercise.blocsB
+  return exercise
 }
 
 /**

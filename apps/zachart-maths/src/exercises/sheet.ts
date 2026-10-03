@@ -21,7 +21,7 @@ export function neighbour(sheet: Sheet, id: string, delta: -1 | 1): string | nul
 
 /** Rien n'a encore été écrit dedans (la page seule ne compte pas). */
 export const isBlank = (e: Exercise) =>
-  e.numero.trim() === '' && e.enonce.trim() === '' && e.reponse.trim() === '' && e.notes.trim() === '' && e.blocs.length === 0
+  e.numero.trim() === '' && e.enonce.trim() === '' && e.reponse.trim() === '' && e.notes.trim() === '' && e.blocs.length === 0 && (e.blocsB ?? []).length === 0
 
 /**
  * Retire un exercice et dit lequel afficher ensuite : le suivant, ou le précédent si c'était le

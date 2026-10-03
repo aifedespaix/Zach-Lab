@@ -55,3 +55,23 @@ describe('newSheet', () => {
     expect(sheet.exercices).toHaveLength(1)
   })
 })
+
+describe('blocsB à la lecture', () => {
+  const file = (extra: object) => ({ version: 2, id: 's', titre: 'T', exercices: [{ id: 'e', blocs: [], ...extra }] })
+
+  it("une fiche sans blocsB s'ouvre non scindée", () => {
+    expect(validateSheet(file({}))!.exercices[0].blocsB).toBeUndefined()
+  })
+  it("un blocsB qui n'est pas un tableau est ignoré", () => {
+    for (const bad of ['x', 3, null, {}]) {
+      const e = validateSheet(file({ blocsB: bad }))!.exercices[0]
+      expect('blocsB' in e).toBe(false)
+    }
+  })
+  it("un blocsB vide garde l'exercice scindé, et chaque bloc reçoit un id", () => {
+    const e = validateSheet(file({ blocs: [{ type: 'texte' }], blocsB: [{ type: 'calcul', id: 'k' }] }))!.exercices[0]
+    expect(e.blocsB).toHaveLength(1)
+    expect((e.blocs[0] as { id: string }).id).toMatch(/.+/)
+    expect(validateSheet(file({ blocsB: [] }))!.exercices[0].blocsB).toEqual([])
+  })
+})
