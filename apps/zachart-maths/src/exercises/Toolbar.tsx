@@ -20,10 +20,10 @@ export function Toolbar({ target, onSymbol }: ToolbarProps) {
       role="toolbar"
       aria-label="Outils"
       aria-orientation="vertical"
-      style={{ display: 'flex', flexDirection: 'column', gap: 8, width: 104, flexShrink: 0, overflowY: 'auto', padding: 8, borderRight: '1px solid var(--border)' }}
+      style={{ display: 'flex', flexDirection: 'column', gap: 4, width: 72, flexShrink: 0, overflowY: 'auto', padding: 6, borderRight: '1px solid var(--border)' }}
     >
       {SYMBOL_FAMILIES.map(family => (
-        <div key={family.name} role="group" aria-label={family.name} style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', justifyItems: 'center', gap: 3, padding: 4, borderRadius: 8, background: toneOf(family.hue) }}>
+        <div key={family.name} role="group" aria-label={family.name} style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', justifyItems: 'center', gap: 2, padding: 3, borderRadius: 6, background: toneOf(family.hue) }}>
           {family.symbols.map(symbol => (
             <Button
               key={symbol.glyph}
@@ -34,7 +34,7 @@ export function Toolbar({ target, onSymbol }: ToolbarProps) {
               disabled={target === 'none' || (target === 'text' && symbol.mathOnly === true)}
               onMouseDown={keepFocus}
               onClick={() => onSymbol(symbol)}
-              style={{ borderColor: borderOf(family.hue) }}
+              style={{ borderColor: borderOf(family.hue), width: 26, height: 26, fontSize: 13 }}
             >
               {symbol.glyph}
             </Button>
