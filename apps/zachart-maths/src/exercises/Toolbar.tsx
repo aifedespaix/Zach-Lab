@@ -13,17 +13,17 @@ interface ToolbarProps {
 // Un clic sur la barre ne doit pas retirer le curseur du champ visé, sinon on ne sait plus où écrire.
 const keepFocus = (e: React.MouseEvent) => e.preventDefault()
 
-/** La barre d'outils verticale de la zone de travail, une couleur par famille. */
+/** La barre d'outils verticale de la zone de travail, sur deux colonnes, une couleur par famille. */
 export function Toolbar({ target, onSymbol }: ToolbarProps) {
   return (
     <div
       role="toolbar"
       aria-label="Outils"
       aria-orientation="vertical"
-      style={{ display: 'flex', flexDirection: 'column', gap: 8, width: 84, flexShrink: 0, overflowY: 'auto', padding: 8, borderRight: '1px solid var(--border)' }}
+      style={{ display: 'flex', flexDirection: 'column', gap: 8, width: 104, flexShrink: 0, overflowY: 'auto', padding: 8, borderRight: '1px solid var(--border)' }}
     >
       {SYMBOL_FAMILIES.map(family => (
-        <div key={family.name} role="group" aria-label={family.name} style={{ display: 'flex', flexWrap: 'wrap', gap: 3, padding: 4, borderRadius: 8, background: toneOf(family.hue) }}>
+        <div key={family.name} role="group" aria-label={family.name} style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', justifyItems: 'center', gap: 3, padding: 4, borderRadius: 8, background: toneOf(family.hue) }}>
           {family.symbols.map(symbol => (
             <Button
               key={symbol.glyph}
