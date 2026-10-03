@@ -55,6 +55,15 @@ describe('ExerciseTree', () => {
     expect(useExerciseStore.getState().selected).toBeNull()
   })
 
+  it("annonce le nombre d'exercices avant de supprimer un fichier", async () => {
+    const fiche = JSON.stringify({ version: 2, id: 'a', titre: 'Fiche', exercices: [{ id: '1' }, { id: '2' }, { id: '3' }] })
+    const { user } = await setup({ 'Algèbre/f.json': fiche })
+    await user.pointer({ keys: '[MouseRight]', target: await screen.findByRole('button', { name: 'Fiche' }) })
+    await user.click(await screen.findByRole('menuitem', { name: 'Supprimer' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Supprimer ce fichier ?' })
+    expect(dialog).toHaveTextContent('« Fiche » et ses 3 exercice(s)')
+  })
+
   it('montre un exercice illisible sans pouvoir l\'ouvrir, et signale un nom refusé', async () => {
     const { user } = await setup({ 'A/x.json': '{cassé' })
     await user.click(await screen.findByRole('button', { name: 'x' }))

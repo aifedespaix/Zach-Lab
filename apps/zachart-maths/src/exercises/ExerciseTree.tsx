@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { ChevronDown, ChevronRight, FilePlus, FileText, FileWarning, FolderPlus } from 'lucide-react'
 import {
-  Button, ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuSub,
+  Button, ConfirmDialog, ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuSub,
   ContextMenuSubContent, ContextMenuSubTrigger, ContextMenuTrigger,
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@suite/shared/ui'
 import { splitPath } from './names'
 import { useExerciseStore } from './useExerciseStore'
@@ -15,7 +14,7 @@ type Naming =
   | { kind: 'new-exercise'; chapter: string }
   | { kind: 'rename-exercise'; path: string }
 
-type Deletion = { kind: 'chapter'; chapter: string; count: number } | { kind: 'exercise'; path: string; titre: string }
+type Deletion = { kind: 'chapter'; chapter: string; count: number } | { kind: 'exercise'; path: string; titre: string; count: number }
 
 const DRAG_TYPE = 'application/x-zachart-exercise'
 
@@ -214,7 +213,7 @@ export function ExerciseTree() {
                               </ContextMenuSub>
                             )}
                             <ContextMenuSeparator />
-                            <ContextMenuItem variant="destructive" onSelect={() => setDeletion({ kind: 'exercise', path: exo.path, titre: exo.titre })}>Supprimer</ContextMenuItem>
+                            <ContextMenuItem variant="destructive" onSelect={() => setDeletion({ kind: 'exercise', path: exo.path, titre: exo.titre, count: exo.exercices })}>Supprimer</ContextMenuItem>
                           </ContextMenuContent>
                         </ContextMenu>
                       )}
@@ -227,23 +226,19 @@ export function ExerciseTree() {
         })}
       </div>
 
-      <Dialog open={deletion !== null} onOpenChange={open => !open && setDeletion(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Supprimer {deletion?.kind === 'chapter' ? 'ce chapitre' : 'cet exercice'} ?</DialogTitle>
-            <DialogDescription>
-              {deletion?.kind === 'chapter'
-                ? `« ${deletion.chapter} » et ses ${deletion.count} exercice(s) seront effacés du disque.`
-                : `« ${deletion?.titre} » sera effacé du disque.`}{' '}
-              Cette action est définitive.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeletion(null)}>Annuler</Button>
-            <Button variant="destructive" onClick={confirmDeletion}>Supprimer</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={deletion !== null}
+        title={deletion?.kind === 'chapter' ? 'Supprimer ce chapitre ?' : 'Supprimer ce fichier ?'}
+        description={
+          deletion === null ? '' : `${
+            deletion.kind === 'chapter'
+              ? `« ${deletion.chapter} » et ses ${deletion.count} fichier(s) seront effacés du disque.`
+              : `« ${deletion.titre} »${deletion.count > 0 ? ` et ses ${deletion.count} exercice(s)` : ''} seront effacés du disque.`
+          } Cette action est définitive.`
+        }
+        onCancel={() => setDeletion(null)}
+        onConfirm={confirmDeletion}
+      />
     </nav>
   )
 }
