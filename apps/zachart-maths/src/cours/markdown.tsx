@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { renderMathToHtml } from '../math/renderMath'
+import { renderMathToHtml } from '@suite/shared/math'
 
 /**
  * Le Markdown des cours, réduit à ce que les cours utilisent : titres, paragraphes, listes,

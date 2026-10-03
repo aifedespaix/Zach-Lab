@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 const sources = import.meta.glob('./**/*.{ts,tsx}', { query: '?raw', import: 'default', eager: true }) as Record<string, string>
 
 const IMPORT = /(?:from|import|vi\.mock|require)\s*\(?\s*['"]([^'"]+)['"]/g
-const PUBLIC_ENTRIES = new Set(['ui', 'theme', 'update', 'shell', 'commands', 'settings', 'search'])
+const PUBLIC_ENTRIES = new Set(['ui', 'theme', 'update', 'shell', 'commands', 'settings', 'search', 'math'])
 
 /**
  * Ce qui ne doit pas se glisser dans cette app : du code d'une autre app (un module copié ou
@@ -33,6 +33,7 @@ describe('détecteur de frontière', () => {
   it('laisse passer les points d\'entrée publics et les paquets', () => {
     expect(violations(`import { Button } from '@suite/shared/ui'`)).toEqual([])
     expect(violations(`import '@suite/shared/theme.css'`)).toEqual([])
+    expect(violations(`import { renderMathToHtml } from '@suite/shared/math'`)).toEqual([])
     expect(violations(`import katex from 'katex'`)).toEqual([])
   })
 })

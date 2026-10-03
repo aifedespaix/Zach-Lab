@@ -41,6 +41,10 @@ describe('renderMathToHtml', () => {
     expect(display).toContain('katex-display')
   })
 
+  it('is inline by default, so a caller can leave the display argument out', () => {
+    expect(renderMathToHtml('x^2')).toBe(renderMathToHtml('x^2', false))
+  })
+
   it('escapes HTML in the source rather than emitting it', () => {
     // The LaTeX is user input and the output goes through
     // dangerouslySetInnerHTML, so this is the injection boundary. Assert on the

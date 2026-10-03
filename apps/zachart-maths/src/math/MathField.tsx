@@ -1,5 +1,5 @@
 import { useEffect, useImperativeHandle, useRef, useState } from 'react'
-import { renderMathToHtml } from './renderMath'
+import { renderMathToHtml } from '@suite/shared/math'
 
 /** Le `<math-field>` de MathLive, tel que l'app l'utilise. */
 export type MathfieldElement = HTMLElement & {

@@ -52,7 +52,7 @@ function fallbackMarkup(latex: string, reason: string): string {
  * links, embed resources, or honour `\html*` — the load-bearing setting is
  * `trust`, NOT `strict` (which only controls cosmetic warnings).
  */
-export function renderMathToHtml(latex: string, display: boolean): string {
+export function renderMathToHtml(latex: string, display = false): string {
   if (latex.trim() === '') return ''
   if (latex.length > MAX_LATEX_LENGTH) {
     return fallbackMarkup(latex.slice(0, 200) + '…', 'Formule trop longue pour être affichée')

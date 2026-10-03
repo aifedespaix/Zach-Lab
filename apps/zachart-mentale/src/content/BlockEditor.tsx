@@ -19,7 +19,7 @@ import type { CardBlock, CardBlockKind, EquationStep, TableCell } from '../types
 import { blockGroups, equationToPlainText, questionLabels } from './blocks'
 import { EquationBlockField } from './EquationEditor'
 import { canMoveBlock, movePlan } from './blockMove'
-import { renderMathToHtml } from './renderMath'
+import { renderMathToHtml } from '@suite/shared/math'
 import { MathFieldEditor, type MathFieldHandle, type MathfieldElement } from './MathFieldEditor'
 import { latchEdgeKey, rawFieldKeyDown, type BlockEdgeHandle, type BlockPlace, type ExitDirection } from './fieldIntents'
 import { SymbolBand } from './SymbolBand'

@@ -11,7 +11,8 @@
     "./commands": "./src/commands/index.ts",
     "./settings": "./src/settings/index.ts",
     "./shell": "./src/shell/index.ts",
-    "./search": "./src/search/index.ts"
+    "./search": "./src/search/index.ts",
+    "./math": "./src/math/index.ts"
   },
   "scripts": {
     "test": "vitest run"
@@ -29,6 +30,7 @@
     "@tauri-apps/plugin-updater": "^2.11.0",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.2.5",
+    "katex": "^0.18.7",
     "lucide-react": "^1.41.0",
     "motion": "^13.2.0",
     "radix-ui": "^1.6.7",

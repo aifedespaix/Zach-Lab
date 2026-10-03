@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { COURSES, loadCourses, parseCourse } from './courses'
-import { renderMathToHtml } from '../math/renderMath'
+import { renderMathToHtml } from '@suite/shared/math'
 
 describe('parseCourse', () => {
   it('lit l\'en-tête et le corps', () => {

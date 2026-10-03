@@ -1,7 +1,7 @@
 import { Fragment, memo, type CSSProperties } from 'react'
 import type { CardBlock, TableCell } from '../types/cardBlock'
 import { blockGroups, equationStepIsSolved } from './blocks'
-import { renderMathToHtml } from './renderMath'
+import { renderMathToHtml } from '@suite/shared/math'
 import { renderHighlighted, stripHighlightMarkers } from './highlight'
 
 /**
