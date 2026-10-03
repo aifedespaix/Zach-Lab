@@ -340,6 +340,18 @@ describe('FileSidebar', () => {
     expect(screen.getByText('Cartes mentales')).toBeInTheDocument()
   })
 
+  it('remembers the collapsed state from one launch to the next', async () => {
+    const user = userEvent.setup()
+    const first = render(<FileSidebar onOpenFile={() => {}} />)
+    await screen.findByText('Cartes mentales')
+    await user.click(screen.getByRole('button', { name: 'Replier la barre latérale' }))
+    first.unmount()
+
+    render(<FileSidebar onOpenFile={() => {}} />)
+    expect(await screen.findByRole('button', { name: 'Déplier la barre latérale' })).toBeInTheDocument()
+    expect(screen.queryByText('Cartes mentales')).not.toBeInTheDocument()
+  })
+
   it('animates the collapse/expand width change instead of snapping', async () => {
     render(<FileSidebar onOpenFile={() => {}} />)
     await screen.findByText('Cartes mentales')

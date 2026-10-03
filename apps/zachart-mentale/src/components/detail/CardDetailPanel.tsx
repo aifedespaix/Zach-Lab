@@ -9,7 +9,6 @@ import {
   ChevronRight,
   Eraser,
   PanelRightClose,
-  PanelRightOpen,
   Pencil,
   Plus,
   Search,
@@ -36,7 +35,7 @@ import { pickImageFile } from '../../content/pickImage'
 import { assetSrc } from '../../persistence/assets'
 import { normalizeForComparison } from '../../utils/textSimilarity'
 import { cardDetailWidthStorage } from '../../persistence/cardDetailWidth'
-import { PanelResizeHandle, usePanelResize } from '@suite/shared/shell'
+import { CollapsedRail, PanelResizeHandle, usePanelResize } from '@suite/shared/shell'
 import {
   Button,
   Dialog,
@@ -280,25 +279,7 @@ export function CardDetailPanel() {
     return (
       <>
         <TooltipProvider>
-          <div
-            style={{
-              width: 32,
-              flexShrink: 0,
-              borderLeft: '1px solid var(--border)',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'flex-end',
-              paddingBottom: 8,
-            }}
-          >
-            <CommandButton
-              command="view.toggleDetailPanel"
-              icon={PanelRightOpen}
-              label="Déplier le panneau des fiches"
-              variant="ghost"
-              size="icon-sm"
-            />
-          </div>
+          <CollapsedRail side="right" command="view.toggleDetailPanel" label="Déplier le panneau des fiches" />
         </TooltipProvider>
         {editor}
       </>

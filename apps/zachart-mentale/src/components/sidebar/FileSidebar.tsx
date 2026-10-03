@@ -30,7 +30,7 @@ import { TreeDragGhost } from './TreeDragGhost'
 import { filterTree } from './treeFilter'
 import { useMindMapTypeIndex } from '../../hooks/useMindMapTypeIndex'
 import { prefersReducedMotion } from '@suite/shared/theme'
-import { PanelResizeHandle, usePanelResize } from '@suite/shared/shell'
+import { PanelResizeHandle, usePanelCollapsed, usePanelResize } from '@suite/shared/shell'
 import { sidebarWidthStorage } from '../../persistence/sidebarWidth'
 import { loadShowUnreadableFiles, saveShowUnreadableFiles } from '../../persistence/showUnreadableFiles'
 import { createSubfolder, freeSiblingPath } from '../../persistence/fileOps'
@@ -122,7 +122,8 @@ export function FileSidebar({ onOpenFile }: FileSidebarProps) {
   // would make the effect below walk the sync folder for nothing.
   const syncUserName = useSyncStore(s => s.currentUser?.username ?? null)
   const syncFolderPath = useSyncStore(s => s.syncFolderPath)
-  const [collapsed, setCollapsed] = useState(false)
+  // Remembered between launches, like the width beside it.
+  const [collapsed, setCollapsed] = usePanelCollapsed('zachart-mentale:sidebar-collapsed')
   /** What the search field holds. A view over the tree — never persisted. */
   const [search, setSearch] = useState('')
   /**
