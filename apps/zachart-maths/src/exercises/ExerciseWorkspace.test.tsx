@@ -7,6 +7,8 @@ import { useExerciseStore } from './useExerciseStore'
 import { AUTOSAVE_DELAY_MS, useOpenExercise } from './useOpenExercise'
 
 const exo = (titre: string) => JSON.stringify({ version: 1, id: titre, titre, question: '', page: '', blocs: [], reponse: '' })
+const sheetFile = (titre: string, exercices: object[]) => JSON.stringify({ version: 2, id: titre, titre, exercices })
+const ex = (id: string, extra: object = {}) => ({ id, numero: '', enonce: '', page: '', blocs: [], reponse: '', notes: '', ...extra })
 const stored = (fs: ReturnType<typeof createMemoryFs>, path: string) => JSON.parse(fs.files.get(path)!)
 
 async function setup(files: Record<string, string>) {
@@ -57,6 +59,112 @@ describe('ExerciseWorkspace', () => {
     await userEvent.setup().type(screen.getByLabelText('Réponse'), 'x')
     await act(async () => void (await useOpenExercise.getState().flush()))
     expect(stored(fs, 'A/a.json')).toMatchObject({ version: 2, titre: 'Premier', exercices: [{ numero: '4', page: '12', reponse: 'x' }] })
+  })
+
+  it("affiche la position dans la fiche et passe d'un exercice à l'autre", async () => {
+    await setup({ 'A/a.json': sheetFile('Fiche', [ex('1', { enonce: 'Premier énoncé' }), ex('2', { enonce: 'Second énoncé' })]) })
+    await open('A/a.json')
+    const user = userEvent.setup()
+    expect(screen.getByText('1 / 2')).toBeInTheDocument()
+    expect(screen.getByLabelText("Énoncé de l'exercice")).toHaveValue('Premier énoncé')
+    await user.click(screen.getByRole('button', { name: 'Exercice suivant' }))
+    expect(screen.getByText('2 / 2')).toBeInTheDocument()
+    expect(screen.getByLabelText("Énoncé de l'exercice")).toHaveValue('Second énoncé')
+    await user.click(screen.getByRole('button', { name: 'Exercice précédent' }))
+    expect(screen.getByLabelText("Énoncé de l'exercice")).toHaveValue('Premier énoncé')
+  })
+
+  it("« suivant » au dernier exercice en crée un après, et il est écrit dans le fichier", async () => {
+    const fs = await setup({ 'A/a.json': sheetFile('Fiche', [ex('1', { enonce: 'Écrit' })]) })
+    await open('A/a.json')
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Exercice suivant' }))
+    expect(screen.getByText('2 / 2')).toBeInTheDocument()
+    expect(screen.getByLabelText("Énoncé de l'exercice")).toHaveValue('')
+    await act(async () => void (await useOpenExercise.getState().flush()))
+    expect(stored(fs, 'A/a.json').exercices.map((e: { enonce: string }) => e.enonce)).toEqual(['Écrit', ''])
+  })
+
+  it("« précédent » au premier exercice en crée un avant", async () => {
+    await setup({ 'A/a.json': sheetFile('Fiche', [ex('1', { enonce: 'Écrit' })]) })
+    await open('A/a.json')
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Exercice précédent' }))
+    expect(screen.getByText('1 / 2')).toBeInTheDocument()
+    expect(screen.getByLabelText("Énoncé de l'exercice")).toHaveValue('')
+    await user.click(screen.getByRole('button', { name: 'Exercice suivant' }))
+    expect(screen.getByLabelText("Énoncé de l'exercice")).toHaveValue('Écrit')
+  })
+
+  it("les flèches au bord sont désactivées tant que l'exercice affiché est vierge", async () => {
+    await setup({ 'A/a.json': sheetFile('Fiche', [ex('1')]) })
+    await open('A/a.json')
+    expect(screen.getByRole('button', { name: 'Exercice précédent' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Exercice suivant' })).toBeDisabled()
+    await userEvent.setup().type(screen.getByLabelText("Énoncé de l'exercice"), 'x')
+    expect(screen.getByRole('button', { name: 'Exercice suivant' })).toBeEnabled()
+  })
+
+  it("« Nouvel exercice » ajoute à la fin et s'y place", async () => {
+    await setup({ 'A/a.json': sheetFile('Fiche', [ex('1'), ex('2')]) })
+    await open('A/a.json')
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Nouvel exercice' }))
+    expect(screen.getByText('3 / 3')).toBeInTheDocument()
+  })
+
+  it('le numéro vide est remplacé par la position, et un numéro saisi est écrit', async () => {
+    const fs = await setup({ 'A/a.json': sheetFile('Fiche', [ex('1'), ex('2')]) })
+    await open('A/a.json')
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Exercice suivant' }))
+    const numero = screen.getByLabelText("Numéro de l'exercice (facultatif)")
+    expect(numero).toHaveAttribute('placeholder', '2')
+    await user.type(numero, '3.b')
+    await act(async () => void (await useOpenExercise.getState().flush()))
+    expect(stored(fs, 'A/a.json').exercices[1].numero).toBe('3.b')
+  })
+
+  it("supprime l'exercice affiché après confirmation, et affiche le suivant", async () => {
+    const fs = await setup({ 'A/a.json': sheetFile('Fiche', [ex('1', { enonce: 'Un' }), ex('2', { enonce: 'Deux' }), ex('3', { enonce: 'Trois' })]) })
+    await open('A/a.json')
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Exercice suivant' }))
+    await user.click(screen.getByRole('button', { name: "Supprimer l'exercice" }))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Supprimer' }))
+    expect(screen.getByText('2 / 2')).toBeInTheDocument()
+    expect(screen.getByLabelText("Énoncé de l'exercice")).toHaveValue('Trois')
+    await act(async () => void (await useOpenExercise.getState().flush()))
+    expect(stored(fs, 'A/a.json').exercices.map((e: { id: string }) => e.id)).toEqual(['1', '3'])
+  })
+
+  it('annuler la confirmation ne supprime rien ; le dernier exercice affiché laisse le précédent', async () => {
+    await setup({ 'A/a.json': sheetFile('Fiche', [ex('1', { enonce: 'Un' }), ex('2', { enonce: 'Deux' })]) })
+    await open('A/a.json')
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Exercice suivant' }))
+    await user.click(screen.getByRole('button', { name: "Supprimer l'exercice" }))
+    await user.click(screen.getByRole('button', { name: 'Annuler' }))
+    expect(screen.getByText('2 / 2')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: "Supprimer l'exercice" }))
+    await user.click(screen.getByRole('button', { name: 'Supprimer' }))
+    expect(screen.getByText('1 / 1')).toBeInTheDocument()
+    expect(screen.getByLabelText("Énoncé de l'exercice")).toHaveValue('Un')
+  })
+
+  it("ne propose pas de supprimer l'unique exercice d'une fiche", async () => {
+    await setup({ 'A/a.json': sheetFile('Fiche', [ex('1')]) })
+    await open('A/a.json')
+    expect(screen.getByRole('button', { name: "Supprimer l'exercice" })).toBeDisabled()
+  })
+
+  it("écrit l'exercice courant en changeant de fichier", async () => {
+    const fs = await setup({ 'A/a.json': sheetFile('Fiche', [ex('1', { enonce: 'Un' }), ex('2')]), 'A/b.json': sheetFile('Autre', [ex('x')]) })
+    await open('A/a.json')
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Exercice suivant' }))
+    await user.type(screen.getByLabelText('Réponse'), '42')
+    await open('A/b.json')
+    expect(stored(fs, 'A/a.json').exercices[1].reponse).toBe('42')
   })
 
   it('enregistre après le délai, pas à chaque frappe', async () => {

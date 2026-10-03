@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
+import { ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react'
+import { Button, ConfirmDialog } from '@suite/shared/ui'
 import { AnimatedLogo } from '../AnimatedLogo'
 import { BlockStack } from './BlockStack'
 import { insertAtCursor, isTextField, type TextField } from './insertAtCursor'
 import { isMathField, type MathfieldElement } from '../math/MathField'
+import { isBlank } from './sheet'
 import { Toolbar, type InsertTarget } from './Toolbar'
 import type { SymbolEntry } from './toolbarCatalog'
 import { useExerciseStore } from './useExerciseStore'
@@ -25,6 +28,8 @@ export function ExerciseWorkspace() {
   const selected = useExerciseStore(s => s.selected)
   const lastField = useRef<TextField | MathfieldElement | null>(null)
   const [target, setTarget] = useState<InsertTarget>('none')
+  const currentId = useOpenExercise(s => s.currentId)
+  const [confirming, setConfirming] = useState(false)
 
   // Le dernier champ où l'élève a écrit reçoit les signes de la barre, même si le focus est
   // passé sur un bouton (clavier) depuis.
@@ -56,7 +61,7 @@ export function ExerciseWorkspace() {
   useEffect(() => {
     lastField.current = null
     setTarget('none')
-  }, [selected])
+  }, [selected, currentId])
 
   // Ne rien perdre si la fenêtre se ferme avant la fin du délai d'autosauvegarde.
   useEffect(() => {
@@ -78,6 +83,12 @@ export function ExerciseWorkspace() {
     return <p role="alert" style={{ padding: 16, fontSize: 14 }}>Ce fichier d'exercice est illisible.</p>
   }
 
+  const position = sheet.exercices.findIndex(e => e.id === exercise.id) + 1
+  const count = sheet.exercices.length
+  const { step, addExercise, removeCurrent } = useOpenExercise.getState()
+  // Au bord, la flèche crée un exercice : pas par-dessus un exercice encore vierge.
+  const blank = isBlank(exercise)
+
   return (
     <section aria-label="Exercice" onFocus={rememberField} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <header style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 12, borderBottom: '1px solid var(--border)' }}>
@@ -91,7 +102,7 @@ export function ExerciseWorkspace() {
           />
           <input
             aria-label="Numéro de l'exercice (facultatif)"
-            placeholder="N°"
+            placeholder={String(position)}
             value={exercise.numero}
             onChange={e => edit({ numero: e.target.value })}
             className={field}
@@ -105,6 +116,27 @@ export function ExerciseWorkspace() {
             className={field}
             style={{ width: 80 }}
           />
+          <div role="group" aria-label="Navigation dans la fiche" style={{ display: 'flex', alignItems: 'center', gap: 2, marginLeft: 'auto' }}>
+            <Button
+              variant="ghost" size="icon-sm" aria-label="Exercice précédent"
+              title={position === 1 && blank ? "Écris dans cet exercice avant d'en ajouter un avant" : 'Exercice précédent'}
+              disabled={position === 1 && blank}
+              onClick={() => step(-1)}
+            ><ChevronLeft /></Button>
+            <span aria-live="polite" style={{ fontSize: 13, minWidth: 44, textAlign: 'center' }}>{position} / {count}</span>
+            <Button
+              variant="ghost" size="icon-sm" aria-label="Exercice suivant"
+              title={position === count && blank ? "Écris dans cet exercice avant d'en ajouter un après" : 'Exercice suivant'}
+              disabled={position === count && blank}
+              onClick={() => step(1)}
+            ><ChevronRight /></Button>
+            <Button variant="ghost" size="icon-sm" aria-label="Nouvel exercice" title="Nouvel exercice" onClick={addExercise}><Plus /></Button>
+            <Button
+              variant="ghost" size="icon-sm" aria-label="Supprimer l'exercice" title="Supprimer l'exercice"
+              disabled={count <= 1}
+              onClick={() => setConfirming(true)}
+            ><Trash2 /></Button>
+          </div>
         </div>
         <textarea
           aria-label="Énoncé de l'exercice"
@@ -144,6 +176,13 @@ export function ExerciseWorkspace() {
           {status in STATUS_TEXT ? STATUS_TEXT[status as keyof typeof STATUS_TEXT] : ''}
         </p>
       </footer>
+      <ConfirmDialog
+        open={confirming}
+        title="Supprimer cet exercice ?"
+        description={`L'exercice ${exercise.numero.trim() === '' ? position : exercise.numero} sera effacé de la fiche « ${sheet.titre} ». Cette action est définitive.`}
+        onCancel={() => setConfirming(false)}
+        onConfirm={() => { setConfirming(false); removeCurrent() }}
+      />
     </section>
   )
 }
