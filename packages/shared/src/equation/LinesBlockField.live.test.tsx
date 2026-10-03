@@ -1,6 +1,6 @@
 import { act, render } from '@testing-library/react'
 import { useState } from 'react'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { LinesBlockField } from './LinesBlockField'
 import type { SubLine } from './lines'
 
@@ -64,6 +64,13 @@ const pressEnter = (field: HTMLElement) =>
   })
 
 describe('LinesBlockField avec un vrai champ de formule (focus différé de MathLive)', () => {
+  // Les 60 ms du faux `focus()` tournent sur une horloge simulée : aucun minuteur ne survit au test.
+  beforeEach(() => vi.useFakeTimers())
+  afterEach(() => {
+    vi.clearAllTimers()
+    vi.useRealTimers()
+  })
+
   it('Entrée met le vrai focus dans la nouvelle ligne tout de suite, pas 60 ms plus tard', async () => {
     await mounted([L('a', '1+1')])
     HTMLElement.prototype.focus.call(fields()[0])

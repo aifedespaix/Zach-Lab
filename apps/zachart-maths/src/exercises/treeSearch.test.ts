@@ -36,8 +36,13 @@ describe('filterChapters', () => {
     expect(filterChapters(tree, 'zzzzzz').chapters).toEqual([])
   })
 
-  it('tolère une faute de frappe', () => {
+  it('accepte un début de mot', () => {
     expect(filterChapters(tree, 'pythagor').chapters.map(c => c.name)).toEqual(['Géométrie'])
+  })
+
+  it('tolère une vraie faute de frappe', () => {
+    expect(filterChapters(tree, 'pytagore').chapters.map(c => c.name)).toEqual(['Géométrie'])
+    expect(filterChapters(tree, 'pythagroe').chapters.map(c => c.name)).toEqual(['Géométrie'])
   })
 
   it('ne modifie pas l’arbre d’origine', () => {
