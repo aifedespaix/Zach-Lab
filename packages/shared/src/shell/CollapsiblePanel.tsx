@@ -56,7 +56,7 @@ export function CollapsiblePanel({
     <ResizablePanel side={side} label={label} resizeLabel={resizeLabel} storage={storage}>
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>{children}</div>
-        <PanelFooter>
+        <PanelFooter label={`Actions — ${label}`}>
           {footer}
           {footer !== undefined && <PanelFooterSeparator />}
           <span style={{ marginLeft: 'auto' }} aria-hidden />

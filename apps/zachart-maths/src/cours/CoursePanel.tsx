@@ -3,7 +3,7 @@ import { Copy, ExternalLink, Eye, EyeOff, NotebookPen, PanelRightClose, Search }
 import {
   Button, ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger,
 } from '@suite/shared/ui'
-import { CommandButton, runCommand, useCommand } from '@suite/shared/commands'
+import { runCommand, useCommand } from '@suite/shared/commands'
 import { FieldContextMenu } from '../exercises/FieldContextMenu'
 import { useOpenExercise } from '../exercises/useOpenExercise'
 import { CourseSearchDialog } from './CourseSearchDialog'
@@ -50,13 +50,14 @@ function CoursesSection({ courses }: { courses: readonly Course[] }) {
 
   return (
     <section aria-label="Cours" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-      <header style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '8px 12px', borderBottom: '1px solid var(--border)' }}>
-        <strong style={{ fontSize: 13, flex: 1 }}>Cours</strong>
-        <Button variant="outline" size="xs" onClick={() => setSearchOpen(true)}><Search />Chercher un cours</Button>
-        <Button variant="ghost" size="icon-sm" aria-label="Notes" aria-pressed={notesVisible} onClick={() => setNotesVisible(!notesVisible)}>
-          <NotebookPen />
-        </Button>
-        <CommandButton command="view.toggleCourses" icon={PanelRightClose} label="Replier le panneau des cours" variant="ghost" size="icon-sm" />
+      <header style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '8px 12px', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <strong style={{ fontSize: 13, flex: 1 }}>Cours</strong>
+          <Button variant="ghost" size="icon-sm" aria-label="Notes" aria-pressed={notesVisible} onClick={() => setNotesVisible(!notesVisible)}>
+            <NotebookPen />
+          </Button>
+        </div>
+        <Button variant="outline" size="xs" style={{ width: '100%' }} onClick={() => setSearchOpen(true)}><Search />Chercher un cours</Button>
       </header>
 
       {suggestions.length > 0 && (

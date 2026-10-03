@@ -2,10 +2,11 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import {
   ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, CopyPlus, FilePlus, FileText, FileWarning, FolderPlus, PanelLeftClose,
 } from 'lucide-react'
-import { CommandButton, runCommand } from '@suite/shared/commands'
+import { runCommand, useCommand } from '@suite/shared/commands'
+import { PanelSearch } from '@suite/shared/shell'
 import { beginTreeDrag, consumeSwallowedClick, TreeDragGhost, useTreeDragStore } from '@suite/shared/tree'
 import {
-  Button, ConfirmDialog, ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuSub,
+  ConfirmDialog, ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuSub,
   ContextMenuSubContent, ContextMenuSubTrigger, ContextMenuTrigger,
 } from '@suite/shared/ui'
 import { splitPath } from './names'
@@ -55,6 +56,7 @@ export function ExerciseTree() {
   const [naming, setNaming] = useState<Naming | null>(null)
   const [deletion, setDeletion] = useState<Deletion | null>(null)
   const [folded, setFolded] = useState<ReadonlySet<string>>(new Set())
+  const [search, setSearch] = useState('')
   // La cible de dépôt vient du moteur partagé : une ligne ne s'abonne qu'à ce qui la concerne.
   const dropTarget = useTreeDragStore(s => s.targetPath)
   const dragging = useTreeDragStore(s => s.source?.path ?? null)
@@ -98,18 +100,20 @@ export function ExerciseTree() {
     void (current.kind === 'chapter' ? store.removeChapter(current.chapter) : store.removeExercise(current.path))
   }
 
+  useCommand('tree.newChapter', () => setNaming({ kind: 'new-chapter' }))
+  useCommand('tree.toggleAll', () =>
+    setFolded(prev => (prev.size >= tree.length ? new Set() : new Set(tree.map(c => c.name)))),
+  )
+
   if (!loaded) return <p style={{ padding: 12, fontSize: 13 }}>Chargement des exercices…</p>
 
   return (
     <nav aria-label="Exercices" style={{ display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px' }}>
+      <div style={{ padding: '8px 12px' }}>
         <strong style={{ fontSize: 13 }}>Mes exercices</strong>
-        <div style={{ display: 'flex', gap: 2 }}>
-          <Button variant="ghost" size="icon-sm" aria-label="Nouveau chapitre" onClick={() => setNaming({ kind: 'new-chapter' })}>
-            <FolderPlus />
-          </Button>
-          <CommandButton command="view.toggleTree" icon={PanelLeftClose} label="Replier l'arborescence" variant="ghost" size="icon-sm" />
-        </div>
+      </div>
+      <div style={{ padding: '0 12px 8px' }}>
+        <PanelSearch value={search} onChange={setSearch} ariaLabel="Rechercher un exercice" placeholder="Rechercher un exercice…" />
       </div>
 
       {error !== null && (
@@ -127,7 +131,7 @@ export function ExerciseTree() {
         )}
         {tree.length === 0 && naming === null && (
           <p style={{ padding: '4px 12px', fontSize: 13, color: 'var(--muted-foreground)' }}>
-            Aucun chapitre. Crée-en un avec le bouton ci-dessus.
+            Aucun chapitre. Crée-en un avec le bouton en bas du panneau.
           </p>
         )}
 

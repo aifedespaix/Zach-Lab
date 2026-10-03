@@ -50,7 +50,7 @@ describe('App base', () => {
     expect(screen.getAllByRole('separator')).toHaveLength(2)
   })
 
-  it("le bouton d'en-tête range le panneau gauche, la bande le rouvre", async () => {
+  it("le bouton du pied range le panneau gauche, la bande le rouvre", async () => {
     const user = userEvent.setup()
     render(<App />)
     await act(async () => {})

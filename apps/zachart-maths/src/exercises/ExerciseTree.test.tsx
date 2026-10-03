@@ -1,6 +1,8 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { runCommand } from '@suite/shared/commands'
+import '../commands'
 import { ExerciseTree } from './ExerciseTree'
 import { createMemoryFs } from './memoryFs'
 import { useExerciseStore } from './useExerciseStore'
@@ -22,7 +24,7 @@ describe('ExerciseTree', () => {
 
   it('crée un chapitre puis un exercice, et ouvre l\'exercice', async () => {
     const { user } = await setup()
-    await user.click(screen.getByRole('button', { name: 'Nouveau chapitre' }))
+    await act(async () => void runCommand('tree.newChapter'))
     await user.type(screen.getByLabelText('Nom du nouveau chapitre'), 'Fractions{Enter}')
     expect(await screen.findByRole('button', { name: /Fractions/ })).toBeInTheDocument()
 
@@ -69,8 +71,29 @@ describe('ExerciseTree', () => {
     await user.click(await screen.findByRole('button', { name: 'x' }))
     expect(useExerciseStore.getState().selected).toBeNull()
 
-    await user.click(screen.getByRole('button', { name: 'Nouveau chapitre' }))
+    await act(async () => void runCommand('tree.newChapter'))
     await user.type(screen.getByLabelText('Nom du nouveau chapitre'), '..{Enter}')
     expect(await screen.findByRole('alert')).toHaveTextContent(/pas utilisable/)
+  })
+
+  it('« tree.toggleAll » replie puis déplie tous les chapitres', async () => {
+    const exo = JSON.stringify({ version: 1, id: 'a', titre: 'Exo 1' })
+    await setup({ 'Algèbre/p.json': exo })
+    expect(await screen.findByText('Exo 1')).toBeInTheDocument()
+    await act(async () => void runCommand('tree.toggleAll'))
+    expect(screen.queryByText('Exo 1')).toBeNull()
+    await act(async () => void runCommand('tree.toggleAll'))
+    expect(screen.getByText('Exo 1')).toBeInTheDocument()
+  })
+
+  it('« tree.newChapter » ouvre le champ de nom', async () => {
+    await setup()
+    await act(async () => void runCommand('tree.newChapter'))
+    expect(screen.getByLabelText('Nom du nouveau chapitre')).toBeInTheDocument()
+  })
+
+  it('montre le champ de recherche en tête de l’arborescence', async () => {
+    await setup()
+    expect(screen.getByRole('textbox', { name: 'Rechercher un exercice' })).toBeInTheDocument()
   })
 })

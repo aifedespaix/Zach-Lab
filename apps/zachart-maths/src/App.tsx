@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BookOpen, Keyboard, Moon, NotebookPen, Search, Settings as SettingsIcon } from 'lucide-react'
+import { BookOpen, ChevronsDownUp, FolderPlus, Keyboard, Moon, NotebookPen, Search, Settings as SettingsIcon } from 'lucide-react'
 import {
   CommandButton,
   CommandPalette,
@@ -88,6 +88,12 @@ export default function App() {
             toggleCommand="view.toggleTree"
             foldLabel="Replier l'arborescence"
             unfoldLabel="Déplier l'arborescence"
+            footer={
+              <>
+                <CommandButton command="tree.newChapter" icon={FolderPlus} variant="ghost" size="icon-sm" />
+                <CommandButton command="tree.toggleAll" icon={ChevronsDownUp} variant="ghost" size="icon-sm" />
+              </>
+            }
           >
             <ExerciseTree />
             <SheetOutline />

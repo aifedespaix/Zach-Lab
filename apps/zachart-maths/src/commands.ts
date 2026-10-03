@@ -58,6 +58,20 @@ export const COMMANDS = [
     category: 'view',
     defaultBinding: 'Mod+Shift+B',
   },
+  {
+    id: 'tree.newChapter',
+    label: 'Nouveau chapitre',
+    description: 'Crée un chapitre (un dossier) dans tes exercices.',
+    category: 'tree',
+    defaultBinding: null,
+  },
+  {
+    id: 'tree.toggleAll',
+    label: 'Tout replier ou déplier',
+    description: 'Replie tous les chapitres, ou les déplie si tout est déjà replié.',
+    category: 'tree',
+    defaultBinding: null,
+  },
 ] as const
 
 export type CommandId = (typeof COMMANDS)[number]['id']
@@ -67,6 +81,7 @@ defineCommandCatalog({
     { id: 'app', label: 'Application' },
     { id: 'view', label: 'Affichage' },
     { id: 'cours', label: 'Cours et notes' },
+    { id: 'tree', label: 'Exercices' },
   ],
   commands: COMMANDS,
 })
