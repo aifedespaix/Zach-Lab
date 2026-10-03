@@ -11,7 +11,7 @@ import { EquationEditor, type SubBlockContext } from './EquationEditor'
 import { FieldContextMenu } from './FieldContextMenu'
 import { borderOf, toneOf } from './toolbarCatalog'
 import {
-  BLOCK_TYPES, newBlock, addColumn, addRow, convertBlock, duplicateBlock, insertBlockAfter, isKnown, moveBlock, parseBlocks,
+  BLOCK_TYPES, newBlock, addColumn, addRow, canGrow, convertBlock, duplicateBlock, insertBlockAfter, isKnown, moveBlock, parseBlocks,
   removeBlock, removeColumn, removeRow, setCell, updateBlock, type Block, type BlockType, type EquationBlock, type KnownBlock, type TableBlock, type TextBlock,
 } from './blocks'
 
@@ -58,6 +58,9 @@ function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: 
         onAddColumn={after => set(addColumn(cells, after))}
         onRemoveRow={row => set(removeRow(cells, row))}
         onRemoveColumn={column => set(removeColumn(cells, column))}
+        canAddRow={canGrow(cells, 'row')}
+        canAddColumn={canGrow(cells, 'col')}
+        addDisabledReason={{ row: '12 lignes au maximum', column: '12 colonnes au maximum' }}
       />
     </div>
   )

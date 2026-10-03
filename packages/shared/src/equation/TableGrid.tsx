@@ -16,6 +16,11 @@ export interface TableGridProps {
   onAddColumn: (after: number) => void
   onRemoveRow: (row: number) => void
   onRemoveColumn: (column: number) => void
+  /** False: the « + » of that axis are disabled (the app has a size limit). Default true. */
+  canAddRow?: boolean
+  canAddColumn?: boolean
+  /** Why adding is disabled, shown as the handle's hint (« 12 lignes au maximum »). */
+  addDisabledReason?: { row?: string; column?: string }
   /** Put on the grid's root element (tests find the table by it). */
   'data-testid'?: string
 }
@@ -43,8 +48,13 @@ export function TableGrid({
   onAddColumn,
   onRemoveRow,
   onRemoveColumn,
+  canAddRow = true,
+  canAddColumn = true,
+  addDisabledReason,
   'data-testid': testId,
 }: TableGridProps) {
+  const rowOff = canAddRow ? undefined : (addDisabledReason?.row ?? 'Limite atteinte')
+  const colOff = canAddColumn ? undefined : (addDisabledReason?.column ?? 'Limite atteinte')
   // At least one track: `repeat(0, …)` is invalid CSS and would drop the whole template.
   const trackCount = Math.max(1, columnCount)
   const canRemoveColumn = columnCount > 1
@@ -124,6 +134,7 @@ export function TableGrid({
           <TableHandle
             label={`Insérer une colonne avant la colonne 1 du tableau ${tableLabel}`}
             onActivate={() => onAddColumn(-1)}
+            disabledReason={colOff}
             icon={<Plus size={13} />}
             straddle="col"
           />
@@ -133,6 +144,7 @@ export function TableGrid({
             <TableHandle
               label={`Insérer une colonne après la colonne ${columnIndex + 1} du tableau ${tableLabel}`}
               onActivate={() => onAddColumn(columnIndex)}
+              disabledReason={colOff}
               icon={<Plus size={12} />}
               straddle="col"
             />
@@ -168,6 +180,7 @@ export function TableGrid({
               <TableHandle
                 label={`Insérer une ligne avant la ligne 1 du tableau ${tableLabel}`}
                 onActivate={() => onAddRow(-1)}
+                disabledReason={rowOff}
                 icon={<Plus size={13} />}
                 straddle="row"
               />
@@ -190,6 +203,7 @@ export function TableGrid({
             // boundary BEFORE it.
             insertBefore={renderHeader === undefined && rowIndex === 0}
             canRemoveRow={canRemoveRow}
+            addDisabledReason={rowOff}
             revealTrash={active?.row === rowIndex}
             renderCell={renderCell}
             onAddRow={onAddRow}
@@ -313,10 +327,13 @@ function TableHandle({
   label,
   onActivate,
   destructive = false,
+  disabledReason,
   icon,
   straddle,
 }: {
   label: string
+  /** Present: the handle is disabled (aria-disabled, so the hint still shows) and says why. */
+  disabledReason?: string
   onActivate: () => void
   destructive?: boolean
   icon: ReactNode
@@ -338,11 +355,12 @@ function TableHandle({
           : undefined
 
   return (
-    <Hint label={label}>
+    <Hint label={disabledReason ?? label}>
       <button
         type="button"
         aria-label={label}
-        onClick={onActivate}
+        aria-disabled={disabledReason !== undefined ? true : undefined}
+        onClick={disabledReason !== undefined ? undefined : onActivate}
         // Le survol passe par une CLASSE, pas par un état React : il y a une
         // poignée par frontière, et un `useState` par poignée coûterait un rendu à
         // chaque déplacement de souris au-dessus d'un tableau.
@@ -350,6 +368,7 @@ function TableHandle({
         style={{
           ...(destructive ? { ...HANDLE_BUTTON, color: 'var(--destructive)' } : BARE_HANDLE),
           ...straddleStyle,
+          ...(disabledReason !== undefined ? { opacity: 0.4, cursor: 'not-allowed' } : null),
         }}
       >
         {icon}
@@ -364,11 +383,14 @@ function TableGridRow({
   columnCount,
   insertBefore,
   canRemoveRow,
+  addDisabledReason,
   revealTrash,
   renderCell,
   onAddRow,
   onRemoveRow,
 }: {
+  /** Set when adding a row is not allowed: the reason, shown on the disabled « + ». */
+  addDisabledReason?: string
   tableLabel: string
   rowIndex: number
   columnCount: number
@@ -392,6 +414,7 @@ function TableGridRow({
             <TableHandle
               label={`Insérer une ligne avant la ligne 1 du tableau ${tableLabel}`}
               onActivate={() => onAddRow(-1)}
+              disabledReason={addDisabledReason}
               icon={<Plus size={13} />}
               straddle="row-start"
             />
@@ -400,6 +423,7 @@ function TableGridRow({
         <TableHandle
           label={`Insérer une ligne après la ligne ${rowIndex + 1} du tableau ${tableLabel}`}
           onActivate={() => onAddRow(rowIndex)}
+          disabledReason={addDisabledReason}
           icon={<Plus size={12} />}
           straddle="row"
         />

@@ -78,6 +78,18 @@ describe('BlockStack', () => {
     expect((current as { cellules: string[][] }[])[0].cellules[0]).toHaveLength(1)
   })
 
+  it('à 12 colonnes, les « + » de colonne sont désactivés et ne font rien ; ceux de ligne restent actifs', async () => {
+    const user = userEvent.setup()
+    const row = Array.from({ length: 12 }, () => '')
+    render(<Harness initial={[{ id: 'c', type: 'tableau', cellules: [row, [...row]] }]} />)
+    const plus = screen.getByRole('button', { name: 'Insérer une colonne après la colonne 1 du tableau 1' })
+    expect(plus).toHaveAttribute('aria-disabled', 'true')
+    await user.click(plus)
+    await user.click(screen.getByRole('button', { name: 'Insérer une colonne avant la colonne 1 du tableau 1' }))
+    expect((current as { cellules: string[][] }[])[0].cellules[0]).toHaveLength(12)
+    expect(screen.getByRole('button', { name: 'Insérer une ligne après la ligne 1 du tableau 1' })).not.toHaveAttribute('aria-disabled')
+  })
+
   it('laisse la place aux « + » de la dernière colonne et de la dernière ligne, que overflow-x:auto rognerait', () => {
     render(<Harness initial={[{ id: 'c', type: 'tableau', cellules: [['', ''], ['', '']] }]} />)
     const scroll = screen.getByTestId('table-scroll')

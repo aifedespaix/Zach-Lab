@@ -128,4 +128,20 @@ describe('TableGrid', () => {
     setup({ rowCount: 1, columnCount: 1 })
     expect(screen.queryByRole('button', { name: /Supprimer/ })).toBeNull()
   })
+
+  it('canAddColumn / canAddRow = false désactivent les « + » de l’axe, sans appel', async () => {
+    const h = setup({ canAddColumn: false, canAddRow: false, addDisabledReason: { row: '12 lignes au maximum', column: '12 colonnes au maximum' } })
+    const col = screen.getByRole('button', { name: 'Insérer une colonne après la colonne 1 du tableau 1' })
+    const row = screen.getByRole('button', { name: 'Insérer une ligne après la ligne 1 du tableau 1' })
+    expect(col).toHaveAttribute('aria-disabled', 'true')
+    expect(row).toHaveAttribute('aria-disabled', 'true')
+    await userEvent.click(col)
+    await userEvent.click(row)
+    await userEvent.click(screen.getByRole('button', { name: 'Insérer une colonne avant la colonne 1 du tableau 1' }))
+    expect(h.onAddColumn).not.toHaveBeenCalled()
+    expect(h.onAddRow).not.toHaveBeenCalled()
+    // The hint carries the reason: focus the handle (a keyboard user's way in).
+    act(() => col.focus())
+    expect((await screen.findAllByText('12 colonnes au maximum')).length).toBeGreaterThan(0)
+  })
 })
