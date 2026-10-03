@@ -3,6 +3,7 @@ import {
   ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, CopyPlus, FilePlus, FileText, FileWarning, FolderPlus, PanelLeftClose,
 } from 'lucide-react'
 import { CommandButton, runCommand } from '@suite/shared/commands'
+import { beginTreeDrag, consumeSwallowedClick, TreeDragGhost, useTreeDragStore } from '@suite/shared/tree'
 import {
   Button, ConfirmDialog, ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuSub,
   ContextMenuSubContent, ContextMenuSubTrigger, ContextMenuTrigger,
@@ -18,8 +19,6 @@ type Naming =
   | { kind: 'rename-exercise'; path: string }
 
 type Deletion = { kind: 'chapter'; chapter: string; count: number } | { kind: 'exercise'; path: string; titre: string; count: number }
-
-const DRAG_TYPE = 'application/x-zachart-exercise'
 
 function NameField({ initial = '', label, onSubmit, onCancel }: {
   initial?: string
@@ -56,7 +55,22 @@ export function ExerciseTree() {
   const [naming, setNaming] = useState<Naming | null>(null)
   const [deletion, setDeletion] = useState<Deletion | null>(null)
   const [folded, setFolded] = useState<ReadonlySet<string>>(new Set())
-  const [dropTarget, setDropTarget] = useState<string | null>(null)
+  // La cible de dépôt vient du moteur partagé : une ligne ne s'abonne qu'à ce qui la concerne.
+  const dropTarget = useTreeDragStore(s => s.targetPath)
+  const dragging = useTreeDragStore(s => s.source?.path ?? null)
+  // Les poignées du moteur sont fixées à l'appui et vivent tout le geste : elles lisent l'état
+  // replié du moment, pas celui du rendu qui les a créées.
+  const foldedRef = useRef(folded)
+  foldedRef.current = folded
+
+  const startDrag = (e: React.PointerEvent<HTMLElement>, exo: { path: string; titre: string }) =>
+    beginTreeDrag(e, { path: exo.path, name: exo.titre, kind: 'file' }, {
+      // Un fichier ne se dépose que sur un AUTRE chapitre.
+      canDrop: (source, target) => target !== splitPath(source.path)[0],
+      isExpanded: target => !foldedRef.current.has(target),
+      expand: target => setFolded(prev => { const next = new Set(prev); next.delete(target); return next }),
+      onDrop: (source, target) => void useExerciseStore.getState().moveExercise(source.path, target),
+    })
 
   const toggle = (chapter: string) =>
     setFolded(prev => {
@@ -120,21 +134,12 @@ export function ExerciseTree() {
         {tree.map((chapter, ci) => {
           const open = !folded.has(chapter.name)
           return (
-            <div key={chapter.name}>
+            <div key={chapter.name} data-drop-folder={chapter.name}>
               <ContextMenu>
                 <ContextMenuTrigger asChild onContextMenu={e => e.stopPropagation()}>
                   <div
-                    onDragOver={e => {
-                      if (!e.dataTransfer.types.includes(DRAG_TYPE)) return
-                      e.preventDefault()
-                      setDropTarget(chapter.name)
-                    }}
-                    onDragLeave={() => setDropTarget(null)}
-                    onDrop={e => {
-                      const path = e.dataTransfer.getData(DRAG_TYPE)
-                      setDropTarget(null)
-                      if (path !== '') void store.moveExercise(path, chapter.name)
-                    }}
+                    data-tree-row={chapter.name}
+                    data-tree-kind="folder"
                     style={{ outline: dropTarget === chapter.name ? '2px solid var(--ring)' : undefined }}
                   >
                     {naming?.kind === 'rename-chapter' && naming.chapter === chapter.name ? (
@@ -191,17 +196,22 @@ export function ExerciseTree() {
                           <ContextMenuTrigger asChild onContextMenu={e => e.stopPropagation()}>
                             <button
                               type="button"
-                              draggable
-                              onDragStart={e => e.dataTransfer.setData(DRAG_TYPE, exo.path)}
+                              data-tree-row={exo.path}
+                              data-tree-kind="file"
+                              onPointerDown={e => startDrag(e, exo)}
                               aria-current={selected === exo.path ? 'true' : undefined}
-                             
-                              onClick={() => !exo.corrompu && store.select(exo.path)}
+                              onClick={() => {
+                                // Le clic qui suit la fin d'un vrai glisser n'ouvre pas le fichier : il vient de bouger.
+                                if (consumeSwallowedClick()) return
+                                if (!exo.corrompu) store.select(exo.path)
+                              }}
                               title={exo.corrompu ? 'Fichier illisible : il peut être supprimé ou déplacé, pas ouvert.' : undefined}
                               style={{
                                 display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '4px 8px 4px 24px',
                                 fontSize: 13, textAlign: 'left',
                                 background: selected === exo.path ? 'var(--accent)' : undefined,
                                 color: exo.corrompu ? 'var(--destructive)' : undefined,
+                                opacity: dragging === exo.path ? 0.5 : undefined,
                               }}
                             >
                               {exo.corrompu ? <FileWarning size={14} /> : <FileText size={14} />}
@@ -247,6 +257,12 @@ export function ExerciseTree() {
           <ContextMenuItem onSelect={() => void runCommand('view.toggleTree')}><PanelLeftClose /> Ranger le panneau</ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
+
+      <TreeDragGhost
+        describeTarget={chapter => `Déplacer dans « ${chapter} »`}
+        refusal="Déposer sur un chapitre"
+        icon={() => <FileText size={14} />}
+      />
 
       <ConfirmDialog
         open={deletion !== null}
