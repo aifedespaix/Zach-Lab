@@ -17,6 +17,7 @@ import './commands'
 import { CoursePanel } from './cours/CoursePanel'
 import { ExerciseTree } from './exercises/ExerciseTree'
 import { ExerciseWorkspace } from './exercises/ExerciseWorkspace'
+import { SheetOutline } from './exercises/SheetOutline'
 import './exercises/useOpenExercise'
 import { createTauriFs, defaultExercisesRoot } from './exercises/tauriFs'
 import { useExerciseStore } from './exercises/useExerciseStore'
@@ -85,6 +86,7 @@ export default function App() {
             storage={leftPanel}
           >
             <ExerciseTree />
+            <SheetOutline />
           </ResizablePanel>
         }
         right={
