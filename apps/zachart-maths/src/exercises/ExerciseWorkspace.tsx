@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight, Columns2, Plus, Trash2 } from 'lucide-react'
 import { Button, ConfirmDialog } from '@suite/shared/ui'
+import { RecentFilesList } from '@suite/shared/shell'
 import { AnimatedLogo } from '../AnimatedLogo'
 import { BlockStack } from './BlockStack'
 import { FieldContextMenu } from './FieldContextMenu'
 import { insertAtCursor, isTextField, type TextField } from './insertAtCursor'
 import { isMathField, type MathfieldElement } from '../math/MathField'
+import { splitPath } from './names'
 import { isBlank } from './sheet'
 import { Toolbar, type InsertTarget } from './Toolbar'
 import type { SymbolEntry } from './toolbarCatalog'
@@ -29,6 +31,8 @@ export function ExerciseWorkspace() {
   const edit = useOpenExercise(s => s.edit)
   const editTitle = useOpenExercise(s => s.editTitle)
   const selected = useExerciseStore(s => s.selected)
+  const recent = useExerciseStore(s => s.recent)
+  const tree = useExerciseStore(s => s.tree)
   const lastField = useRef<TextField | MathfieldElement | null>(null)
   const [target, setTarget] = useState<InsertTarget>('none')
   const currentId = useOpenExercise(s => s.currentId)
@@ -88,10 +92,18 @@ export function ExerciseWorkspace() {
   }, [])
 
   if (selected === null) {
+    // Un fichier supprimé ou déplacé n'est pas proposé : on croise avec l'arbre actuel.
+    const entries = new Map(tree.flatMap(c => c.exercises.map(e => [e.path, e] as const)))
+    const items = recent.flatMap(r => {
+      const entry = entries.get(r.path)
+      return entry === undefined || entry.corrompu ? [] : [{ path: r.path, name: entry.titre, folder: splitPath(r.path)[0], openedAt: r.openedAt }]
+    })
     return (
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
         <AnimatedLogo mode="draw-pulse" size={140} />
-        <p style={{ color: 'var(--muted-foreground)', fontSize: 14 }}>Choisis un exercice dans la liste de gauche.</p>
+        {items.length === 0
+          ? <p style={{ color: 'var(--muted-foreground)', fontSize: 14 }}>Choisis un exercice dans la liste de gauche.</p>
+          : <RecentFilesList title="Exercices ouverts récemment" items={items} onOpen={path => useExerciseStore.getState().select(path)} />}
       </div>
     )
   }

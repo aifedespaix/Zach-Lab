@@ -3,6 +3,7 @@ import type { ExerciseFs } from './fsPort'
 import * as library from './library'
 import { splitPath } from './names'
 import type { ChapterNode } from './types'
+import { loadRecent, pushRecent, renameRecent, saveRecent, type RecentFile } from './recentFiles'
 
 interface ExerciseStore {
   fs: ExerciseFs | null
@@ -10,6 +11,8 @@ interface ExerciseStore {
   loaded: boolean
   /** Chemin de l'exercice affiché dans la zone centrale. */
   selected: string | null
+  /** Les derniers fichiers ouverts, le plus récent d'abord (mémorisés entre deux lancements). */
+  recent: RecentFile[]
   /** Dernier échec d'une opération sur disque, à montrer à l'élève. */
   error: string | null
 
@@ -52,6 +55,7 @@ export const useExerciseStore = create<ExerciseStore>((set, get) => {
     tree: [],
     loaded: false,
     selected: null,
+    recent: loadRecent(),
     error: null,
 
     async init(fs) {
@@ -60,7 +64,12 @@ export const useExerciseStore = create<ExerciseStore>((set, get) => {
       set({ loaded: true })
     },
     refresh: () => run(async () => {}),
-    select: path => set({ selected: path }),
+    select: path => {
+      if (path === null) return set({ selected: null })
+      const recent = pushRecent(get().recent, path)
+      saveRecent(recent)
+      set({ selected: path, recent })
+    },
     dismissError: () => set({ error: null }),
 
     async addChapter(name) {
@@ -70,7 +79,10 @@ export const useExerciseStore = create<ExerciseStore>((set, get) => {
       const renamed = await run(fs => library.renameChapter(fs, chapter, name))
       const { selected } = get()
       if (renamed !== undefined && selected !== null && splitPath(selected)[0] === chapter) {
-        set({ selected: `${renamed}/${splitPath(selected)[1]}` })
+        const to = `${renamed}/${splitPath(selected)[1]}`
+        const recent = renameRecent(get().recent, selected, to)
+        saveRecent(recent)
+        set({ selected: to, recent })
       }
     },
     async removeChapter(chapter) {
@@ -87,7 +99,7 @@ export const useExerciseStore = create<ExerciseStore>((set, get) => {
 
     async addExercise(chapter, titre) {
       const path = await run(fs => library.createExercise(fs, chapter, titre))
-      if (path !== undefined) set({ selected: path })
+      if (path !== undefined) get().select(path)
     },
     async renameExercise(path, titre) {
       await run(fs => library.renameExercise(fs, path, titre))
@@ -98,11 +110,15 @@ export const useExerciseStore = create<ExerciseStore>((set, get) => {
     },
     async duplicateExercise(path) {
       const copy = await run(fs => library.duplicateExercise(fs, path))
-      if (copy !== undefined) set({ selected: copy })
+      if (copy !== undefined) get().select(copy)
     },
     async moveExercise(path, toChapter, index) {
       const moved = await run(fs => library.moveExercise(fs, path, toChapter, index))
-      if (moved !== undefined && get().selected === path) set({ selected: moved })
+      if (moved !== undefined) {
+        const recent = renameRecent(get().recent, path, moved)
+        saveRecent(recent)
+        set(get().selected === path ? { selected: moved, recent } : { recent })
+      }
     },
     async shiftExercise(path, delta) {
       const [chapter] = splitPath(path)

@@ -32,10 +32,22 @@ vi.mock('mathlive', () => {
 
 describe('ExerciseWorkspace', () => {
   beforeEach(() => {
-    useExerciseStore.setState({ fs: null, tree: [], loaded: false, selected: null, error: null })
+    useExerciseStore.setState({ fs: null, tree: [], loaded: false, selected: null, recent: [], error: null })
     useOpenExercise.setState({ path: null, sheet: null, currentId: null, exercise: null, status: 'empty' })
   })
   afterEach(() => vi.useRealTimers())
+
+  it('sans fichier ouvert, propose les derniers ouverts (ceux qui existent encore)', async () => {
+    await setup({ 'Fractions/exo-1.json': exo('Premier') })
+    await act(async () => useExerciseStore.setState({ recent: [
+      { path: 'Fractions/exo-1.json', openedAt: new Date().toISOString() },
+      { path: 'Fractions/disparu.json', openedAt: new Date().toISOString() },
+    ] }))
+    expect(screen.getByRole('button', { name: /Premier/ })).toBeInTheDocument()
+    expect(screen.queryByText(/disparu/)).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /Premier/ }))
+    expect(useExerciseStore.getState().selected).toBe('Fractions/exo-1.json')
+  })
 
   it('invite à choisir un exercice, puis l\'affiche', async () => {
     await setup({ 'A/a.json': exo('Premier') })
