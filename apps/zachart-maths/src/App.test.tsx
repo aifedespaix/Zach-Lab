@@ -29,6 +29,12 @@ describe('App base', () => {
     document.documentElement.classList.remove('dark')
   })
 
+  it('la zone centrale peut rétrécir sous son contenu, pour que ce soit la pile de blocs qui défile', async () => {
+    render(<App />)
+    expect(screen.getByRole('main')).toHaveStyle({ minHeight: '0px' })
+    await act(async () => {})
+  })
+
   it('démarre sans aucun état persisté : les deux panneaux et le centre sont là', async () => {
     render(<App />)
     expect(screen.getByRole('complementary', { name: 'Panneau gauche' })).toBeInTheDocument()

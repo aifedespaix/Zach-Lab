@@ -144,7 +144,7 @@ export default function App() {
         }
       >
         {updateReady && !dismissed && <UpdateReadyBanner onApply={applyUpdate} onDismiss={dismissUpdate} />}
-        <main style={{ flex: 1, display: 'flex', minWidth: 0 }}>
+        <main style={{ flex: 1, display: 'flex', minWidth: 0, minHeight: 0 }}>
           <ExerciseWorkspace />
         </main>
       </AppShell>

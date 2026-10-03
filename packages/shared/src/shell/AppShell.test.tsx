@@ -22,6 +22,17 @@ describe('AppShell', () => {
     expect(screen.queryByRole('complementary')).not.toBeInTheDocument()
   })
 
+  it('tient dans la fenêtre : seul ce qu\'il contient défile, jamais la page', () => {
+    const { container } = render(
+      <AppShell>
+        <main>Contenu</main>
+      </AppShell>,
+    )
+    // jsdom résout `vh` en pixels : on lit le style tel qu'il est écrit.
+    const { style } = container.firstElementChild as HTMLElement
+    expect([style.height, style.overflow]).toEqual(['100vh', 'hidden'])
+  })
+
   it('range les panneaux de part et d\'autre du centre, dans cet ordre', () => {
     render(
       <AppShell

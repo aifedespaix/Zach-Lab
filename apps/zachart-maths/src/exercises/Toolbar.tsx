@@ -1,6 +1,5 @@
 import { Button } from '@suite/shared/ui'
-import type { BlockType } from './blocks'
-import { ACTIONS, SYMBOL_FAMILIES, borderOf, toneOf, type SymbolEntry } from './toolbarCatalog'
+import { SYMBOL_FAMILIES, borderOf, toneOf, type SymbolEntry } from './toolbarCatalog'
 
 /** Où atterrira un signe : nulle part, dans un champ de texte, dans MathLive, ou dans le champ LaTeX brut. */
 export type InsertTarget = 'none' | 'text' | 'math' | 'raw'
@@ -9,14 +8,13 @@ interface ToolbarProps {
   /** Le champ visé ; `none` tant qu'aucun n'a pris le curseur. */
   target: InsertTarget
   onSymbol: (symbol: SymbolEntry) => void
-  onAddBlock: (type: BlockType) => void
 }
 
 // Un clic sur la barre ne doit pas retirer le curseur du champ visé, sinon on ne sait plus où écrire.
 const keepFocus = (e: React.MouseEvent) => e.preventDefault()
 
 /** La barre d'outils verticale de la zone de travail, une couleur par famille. */
-export function Toolbar({ target, onSymbol, onAddBlock }: ToolbarProps) {
+export function Toolbar({ target, onSymbol }: ToolbarProps) {
   return (
     <div
       role="toolbar"
@@ -43,22 +41,6 @@ export function Toolbar({ target, onSymbol, onAddBlock }: ToolbarProps) {
           ))}
         </div>
       ))}
-
-      <div role="group" aria-label={ACTIONS.name} style={{ display: 'flex', flexDirection: 'column', gap: 3, padding: 4, borderRadius: 8, background: toneOf(ACTIONS.hue) }}>
-        {ACTIONS.actions.map(({ type, label }) => (
-          <Button
-            key={type}
-            variant="outline"
-            size="xs"
-            aria-label={`Ajouter un bloc ${label}`}
-            onMouseDown={keepFocus}
-            onClick={() => onAddBlock(type)}
-            style={{ borderColor: borderOf(ACTIONS.hue) }}
-          >
-            + {label}
-          </Button>
-        ))}
-      </div>
     </div>
   )
 }

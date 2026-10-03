@@ -33,6 +33,10 @@ describe('validateExercise', () => {
   it('complète les champs manquants', () => {
     expect(validateExercise({ version: 1, id: 'a', titre: 'x' })).toMatchObject({ question: '', blocs: [], reponse: '' })
   })
+  it('lit l\'énoncé, et l\'ouvre vide dans un fichier qui n\'en a pas', () => {
+    expect(validateExercise({ version: 1, id: 'a', titre: 'x', enonce: 'Calcule 3 × 4' })?.enonce).toBe('Calcule 3 × 4')
+    expect(validateExercise({ version: 1, id: 'a', titre: 'x' })?.enonce).toBe('')
+  })
 })
 
 describe('bibliothèque', () => {

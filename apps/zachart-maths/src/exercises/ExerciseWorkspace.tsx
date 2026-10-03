@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatedLogo } from '../AnimatedLogo'
 import { BlockStack } from './BlockStack'
-import { addBlock, parseBlocks, type BlockType } from './blocks'
 import { insertAtCursor, isTextField, type TextField } from './insertAtCursor'
 import { isMathField, type MathfieldElement } from '../math/MathField'
 import { Toolbar, type InsertTarget } from './Toolbar'
@@ -52,9 +51,6 @@ export function ExerciseWorkspace() {
     insertAtCursor(field, field.dataset.mathRaw !== undefined ? (symbol.plain ?? symbol.latex.replace(/#[0?]/g, '')) : symbol.glyph)
     field.focus()
   }
-  const addBlockOfType = (type: BlockType) =>
-    edit({ blocs: addBlock(parseBlocks(useOpenExercise.getState().exercise?.blocs ?? []), type) })
-
   // Un autre exercice, d'autres champs : l'ancien champ ne doit plus recevoir de signes.
   useEffect(() => {
     lastField.current = null
@@ -83,36 +79,46 @@ export function ExerciseWorkspace() {
 
   return (
     <section aria-label="Exercice" onFocus={rememberField} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-      <header style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: 12, borderBottom: '1px solid var(--border)' }}>
-        <input
-          aria-label="Titre de l'exercice"
-          value={exercise.titre}
-          onChange={e => edit({ titre: e.target.value })}
-          className={`${field} flex-1 text-base font-semibold`}
-          style={{ minWidth: 200 }}
-        />
-        <input
-          aria-label="Numéro de question (facultatif)"
-          placeholder="Question"
-          value={exercise.question}
-          onChange={e => edit({ question: e.target.value })}
-          className={field}
-          style={{ width: 110 }}
-        />
-        <input
-          aria-label="Page (facultatif)"
-          placeholder="Page"
-          value={exercise.page}
-          onChange={e => edit({ page: e.target.value })}
-          className={field}
-          style={{ width: 80 }}
+      <header style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 12, borderBottom: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <input
+            aria-label="Titre de l'exercice"
+            value={exercise.titre}
+            onChange={e => edit({ titre: e.target.value })}
+            className={`${field} flex-1 text-base font-semibold`}
+            style={{ minWidth: 200 }}
+          />
+          <input
+            aria-label="Numéro de question (facultatif)"
+            placeholder="Question"
+            value={exercise.question}
+            onChange={e => edit({ question: e.target.value })}
+            className={field}
+            style={{ width: 110 }}
+          />
+          <input
+            aria-label="Page (facultatif)"
+            placeholder="Page"
+            value={exercise.page}
+            onChange={e => edit({ page: e.target.value })}
+            className={field}
+            style={{ width: 80 }}
+          />
+        </div>
+        <textarea
+          aria-label="Énoncé de l'exercice"
+          placeholder="Quelle est la question ?"
+          value={exercise.enonce}
+          rows={Math.max(2, exercise.enonce.split('\n').length)}
+          onChange={e => edit({ enonce: e.target.value })}
+          className={`${field} w-full`}
         />
       </header>
 
       <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
-        <Toolbar target={target} onSymbol={insertSymbol} onAddBlock={addBlockOfType} />
+        <Toolbar target={target} onSymbol={insertSymbol} />
         <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: 16 }}>
-          <BlockStack value={exercise.blocs} onChange={blocs => edit({ blocs })} showAddButtons={false} />
+          <BlockStack value={exercise.blocs} onChange={blocs => edit({ blocs })} />
         </div>
       </div>
 
@@ -121,7 +127,7 @@ export function ExerciseWorkspace() {
         style={{ padding: 12, background: 'color-mix(in oklab, #3b82f6 18%, var(--background))', borderTop: '2px solid #3b82f6' }}
       >
         <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }} htmlFor="reponse-finale">
-          Réponse finale
+          Réponse
         </label>
         <textarea
           id="reponse-finale"

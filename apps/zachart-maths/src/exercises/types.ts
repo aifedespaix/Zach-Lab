@@ -13,6 +13,8 @@ export interface Exercise {
   id: string
   titre: string
   question: string
+  /** La question posée, en toutes lettres (en-tête de l'exercice) ; `question` n'en est que le numéro. */
+  enonce: string
   page: string
   blocs: unknown[]
   reponse: string
@@ -21,7 +23,7 @@ export interface Exercise {
 }
 
 export function newExercise(titre: string): Exercise {
-  return { version: EXERCISE_VERSION, id: crypto.randomUUID(), titre, question: '', page: '', blocs: [], reponse: '', notes: '' }
+  return { version: EXERCISE_VERSION, id: crypto.randomUUID(), titre, question: '', enonce: '', page: '', blocs: [], reponse: '', notes: '' }
 }
 
 /** Relit un fichier d'exercice ; `null` si ce n'est pas un exercice exploitable. */
@@ -36,6 +38,7 @@ export function validateExercise(raw: unknown): Exercise | null {
     id: r.id,
     titre: r.titre,
     question: text(r.question),
+    enonce: text(r.enonce),
     page: text(r.page),
     blocs: Array.isArray(r.blocs) ? r.blocs : [],
     reponse: text(r.reponse),

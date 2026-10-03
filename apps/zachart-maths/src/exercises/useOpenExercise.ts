@@ -8,7 +8,7 @@ export const AUTOSAVE_DELAY_MS = 600
 type Status = 'empty' | 'loading' | 'unreadable' | 'saved' | 'dirty' | 'saving' | 'failed'
 
 /** Les champs que l'élève modifie dans l'éditeur ; `id` et `version` ne bougent pas. */
-export type ExerciseEdit = Partial<Pick<Exercise, 'titre' | 'question' | 'page' | 'blocs' | 'reponse' | 'notes'>>
+export type ExerciseEdit = Partial<Pick<Exercise, 'titre' | 'question' | 'enonce' | 'page' | 'blocs' | 'reponse' | 'notes'>>
 
 interface OpenExerciseStore {
   path: string | null

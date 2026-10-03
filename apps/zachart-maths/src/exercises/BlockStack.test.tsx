@@ -19,7 +19,7 @@ describe('BlockStack', () => {
   it('invite à ajouter un premier bloc, puis empile les blocs dans l\'ordre', async () => {
     const user = userEvent.setup()
     render(<Harness />)
-    expect(screen.getByText(/Aucun bloc/)).toBeInTheDocument()
+    expect(screen.getByText(/Par quoi veux-tu commencer/)).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /Texte/ }))
     await user.click(screen.getByRole('button', { name: /Calcul/ }))
     await user.click(screen.getByRole('button', { name: /Tableau/ }))

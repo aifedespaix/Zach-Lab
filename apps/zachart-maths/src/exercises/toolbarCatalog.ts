@@ -1,5 +1,3 @@
-import type { BlockType } from './blocks'
-
 /**
  * Le contenu de la barre d'outils verticale, en données : une famille = une couleur.
  * Retirer ou ajouter un signe ne touche que ce fichier.
@@ -25,8 +23,6 @@ export interface SymbolFamily {
   hue: number
   symbols: readonly SymbolEntry[]
 }
-
-export interface ActionEntry { type: BlockType; label: string }
 
 export const SYMBOL_FAMILIES: readonly SymbolFamily[] = [
   {
@@ -102,18 +98,6 @@ export const SYMBOL_FAMILIES: readonly SymbolFamily[] = [
     ],
   },
 ]
-
-/** Les actions : elles agissent sur la pile de blocs, pas sur un champ. */
-export const ACTIONS: { name: string; hue: number; actions: readonly ActionEntry[] } = {
-  name: 'Ajouter un bloc',
-  hue: 350,
-  actions: [
-    { type: 'texte', label: 'Texte' },
-    { type: 'calcul', label: 'Calcul' },
-    { type: 'tableau', label: 'Tableau' },
-    { type: 'equation', label: 'Équation' },
-  ],
-}
 
 export const toneOf = (hue: number) => `color-mix(in oklab, hsl(${hue} 75% 50%) 24%, var(--background))`
 export const borderOf = (hue: number) => `color-mix(in oklab, hsl(${hue} 75% 50%) 55%, var(--background))`

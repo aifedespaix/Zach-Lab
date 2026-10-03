@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ExerciseWorkspace } from './ExerciseWorkspace'
@@ -59,7 +59,7 @@ describe('ExerciseWorkspace', () => {
     const fs = await setup({ 'A/a.json': exo('Premier'), 'A/b.json': exo('Second') })
     await open('A/a.json')
     const user = userEvent.setup()
-    await user.type(screen.getByLabelText('Réponse finale'), 'x = 3')
+    await user.type(screen.getByLabelText('Réponse'), 'x = 3')
     await user.clear(screen.getByLabelText("Titre de l'exercice"))
     await user.type(screen.getByLabelText("Titre de l'exercice"), 'Renommé')
     await open('A/b.json')
@@ -72,7 +72,7 @@ describe('ExerciseWorkspace', () => {
     const fs = await setup({ 'A/a.json': exo('Premier') })
     await open('A/a.json')
     fs.writeText = async () => { throw new Error('disque plein') }
-    await userEvent.setup().type(screen.getByLabelText('Réponse finale'), 'x')
+    await userEvent.setup().type(screen.getByLabelText('Réponse'), 'x')
     await act(async () => void (await useOpenExercise.getState().flush()))
     expect(screen.getByRole('alert')).toHaveTextContent(/a échoué/)
   })
@@ -86,6 +86,31 @@ describe('ExerciseWorkspace', () => {
     await user.click(screen.getAllByRole('button', { name: 'Monter le bloc' })[1])
     await act(async () => void (await useOpenExercise.getState().flush()))
     expect(stored(fs, 'A/a.json').blocs.map((b: { type: string }) => b.type)).toEqual(['calcul', 'texte'])
+  })
+
+  it('l\'énoncé de la question est écrit dans le fichier', async () => {
+    const fs = await setup({ 'A/a.json': exo('Premier') })
+    await open('A/a.json')
+    await userEvent.setup().type(screen.getByLabelText("Énoncé de l'exercice"), 'Calcule 3 × 4')
+    await act(async () => void (await useOpenExercise.getState().flush()))
+    expect(stored(fs, 'A/a.json').enonce).toBe('Calcule 3 × 4')
+  })
+
+  it('les boutons d\'ajout de bloc sont dans la zone de travail, plus dans la barre d\'outils', async () => {
+    await setup({ 'A/a.json': exo('Premier') })
+    await open('A/a.json')
+    const add = screen.getByRole('group', { name: 'Ajouter un bloc' })
+    expect(within(screen.getByRole('toolbar', { name: 'Outils' })).queryByRole('group', { name: 'Ajouter un bloc' })).toBeNull()
+    expect(within(add).getAllByRole('button').map(b => b.getAttribute('aria-label'))).toEqual([
+      'Ajouter un bloc Texte', 'Ajouter un bloc Calcul', 'Ajouter un bloc Tableau', 'Ajouter un bloc Équation',
+    ])
+  })
+
+  it('le curseur passe dans le bloc qu\'on vient d\'ajouter', async () => {
+    await setup({ 'A/a.json': exo('Premier') })
+    await open('A/a.json')
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Ajouter un bloc Texte' }))
+    expect(screen.getByLabelText('Texte')).toHaveFocus()
   })
 
   it('la barre d\'outils insère un signe au curseur du champ actif, et ça s\'enregistre', async () => {
@@ -110,7 +135,7 @@ describe('ExerciseWorkspace', () => {
     await setup({ 'A/a.json': exo('Premier') })
     await open('A/a.json')
     const user = userEvent.setup()
-    const reponse = screen.getByLabelText<HTMLTextAreaElement>('Réponse finale')
+    const reponse = screen.getByLabelText<HTMLTextAreaElement>('Réponse')
     await user.type(reponse, 'x ? 3')
     reponse.setSelectionRange(2, 3)
     await user.click(screen.getByRole('button', { name: 'Supérieur ou égal' }))
@@ -120,7 +145,7 @@ describe('ExerciseWorkspace', () => {
   it('n\'écrit plus dans l\'ancien champ après un changement d\'exercice', async () => {
     await setup({ 'A/a.json': exo('Premier'), 'A/b.json': exo('Second') })
     await open('A/a.json')
-    await userEvent.setup().click(screen.getByLabelText('Réponse finale'))
+    await userEvent.setup().click(screen.getByLabelText('Réponse'))
     await open('A/b.json')
     expect(screen.getByRole('button', { name: 'Plus' })).toBeDisabled()
   })
@@ -129,7 +154,7 @@ describe('ExerciseWorkspace', () => {
     const fs = await setup({ 'A/a.json': exo('Premier') })
     await open('A/a.json')
     const user = userEvent.setup()
-    await user.click(screen.getByLabelText('Réponse finale'))
+    await user.click(screen.getByLabelText('Réponse'))
     expect(screen.getByRole('button', { name: 'Fraction' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Multiplié par' })).toBeEnabled()
 

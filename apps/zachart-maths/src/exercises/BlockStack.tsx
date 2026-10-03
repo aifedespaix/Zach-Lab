@@ -1,10 +1,10 @@
-import { useMemo, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, type ReactNode } from 'react'
 import { ArrowDown, ArrowUp, Minus, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@suite/shared/ui'
 import { EquationEditor } from './EquationEditor'
 import {
-  BLOCK_TYPES, addBlock, addColumn, addRow, canGrow, isKnown, moveBlock, parseBlocks, removeBlock, removeColumn,
-  removeRow, setCell, updateBlock, type Block, type CalcBlock, type EquationBlock, type KnownBlock, type TableBlock, type TextBlock,
+  BLOCK_TYPES, newBlock, addColumn, addRow, canGrow, isKnown, moveBlock, parseBlocks, removeBlock, removeColumn,
+  removeRow, setCell, updateBlock, type Block, type BlockType, type CalcBlock, type EquationBlock, type KnownBlock, type TableBlock, type TextBlock,
 } from './blocks'
 
 const field = 'rounded border bg-background px-2 py-1 text-sm'
@@ -90,7 +90,7 @@ function BlockCard({ block, index, count, onMove, onRemove, children }: {
   const label = LABELS[block.type] ?? 'Bloc inconnu'
   return (
     <li>
-      <section aria-label={`Bloc ${label}, ${index + 1} sur ${count}`} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 8 }}>
+      <section aria-label={`Bloc ${label}, ${index + 1} sur ${count}`} data-block-id={block.id} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
           <strong style={{ fontSize: 12 }}>{label}</strong>
           <div style={{ display: 'flex', gap: 2 }}>
@@ -114,14 +114,28 @@ function editorFor(block: KnownBlock, onChange: (patch: Partial<KnownBlock>) => 
   }
 }
 
-/** La pile de blocs de la zone de travail : chaque bloc se déplace d'un cran et se supprime. */
-export function BlockStack({ value, onChange, showAddButtons = true }: {
+/** La pile de blocs de la zone de travail : chaque bloc se déplace d'un cran et se supprime, et les boutons d'ajout sont au bout. */
+export function BlockStack({ value, onChange }: {
   value: readonly unknown[]
   onChange: (blocs: Block[]) => void
-  /** Les boutons « + Texte »… sous la pile ; faux quand la barre d'outils les porte déjà. */
-  showAddButtons?: boolean
 }) {
   const blocks = useMemo(() => parseBlocks(value), [value])
+  const toFocus = useRef<string | null>(null)
+
+  // Le bloc qu'on vient d'ajouter reçoit le curseur : on peut écrire sans cliquer une seconde fois.
+  useEffect(() => {
+    if (toFocus.current === null) return
+    const target = document.querySelector<HTMLElement>(`[data-block-id="${toFocus.current}"]`)
+    toFocus.current = null
+    target?.querySelector<HTMLElement>('textarea, input, math-field')?.focus()
+  }, [blocks])
+
+  const add = (type: BlockType) => {
+    const block = newBlock(type)
+    toFocus.current = block.id
+    onChange([...blocks, block])
+  }
+
   return (
     <div>
       <ul aria-label="Blocs de l'exercice" style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -142,15 +156,21 @@ export function BlockStack({ value, onChange, showAddButtons = true }: {
       </ul>
 
       {blocks.length === 0 && (
-        <p style={{ fontSize: 14, color: 'var(--muted-foreground)' }}>Aucun bloc. Ajoute-en un pour commencer.</p>
+        <p style={{ fontSize: 14, color: 'var(--muted-foreground)' }}>Par quoi veux-tu commencer ?</p>
       )}
-      {showAddButtons && <div role="group" aria-label="Ajouter un bloc" style={{ display: 'flex', gap: 6, marginTop: 12 }}>
+      <div role="group" aria-label="Ajouter un bloc" style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
         {BLOCK_TYPES.map(({ type, label }) => (
-          <Button key={type} variant="outline" size="sm" onClick={() => onChange(addBlock(blocks, type))}>
+          <Button
+            key={type}
+            variant={blocks.length === 0 ? 'default' : 'outline'}
+            size="sm"
+            aria-label={`Ajouter un bloc ${label}`}
+            onClick={() => add(type)}
+          >
             <Plus />{label}
           </Button>
         ))}
-      </div>}
+      </div>
     </div>
   )
 }
