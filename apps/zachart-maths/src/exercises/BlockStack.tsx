@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { BlockEdgeHandle } from '@suite/shared/equation'
-import { Minus, Plus } from 'lucide-react'
+import { TableGrid, type BlockEdgeHandle } from '@suite/shared/equation'
 import { motion, useReducedMotion } from 'motion/react'
 import { Button } from '@suite/shared/ui'
 import { BlockCard } from './BlockCard'
@@ -12,7 +11,7 @@ import { EquationEditor, type SubBlockContext } from './EquationEditor'
 import { FieldContextMenu } from './FieldContextMenu'
 import { borderOf, toneOf } from './toolbarCatalog'
 import {
-  BLOCK_TYPES, newBlock, addColumn, addRow, canGrow, convertBlock, duplicateBlock, insertBlockAfter, isKnown, moveBlock, parseBlocks,
+  BLOCK_TYPES, newBlock, addColumn, addRow, convertBlock, duplicateBlock, insertBlockAfter, isKnown, moveBlock, parseBlocks,
   removeBlock, removeColumn, removeRow, setCell, updateBlock, type Block, type BlockType, type EquationBlock, type KnownBlock, type TableBlock, type TextBlock,
 } from './blocks'
 
@@ -32,49 +31,40 @@ function TextEditor({ block, onChange }: { block: TextBlock; onChange: (patch: P
   )
 }
 
-function TableEditor({ block, onChange }: { block: TableBlock; onChange: (patch: Partial<TableBlock>) => void }) {
+function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: (patch: Partial<TableBlock>) => void; index: number }) {
   const cells = block.cellules
   const set = (next: string[][]) => onChange({ cellules: next })
   return (
-    <div>
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ borderCollapse: 'collapse' }}>
-          <tbody>
-            {cells.map((row, r) => (
-              <tr key={r}>
-                {row.map((value, c) => (
-                  <td key={c} style={{ border: '1px solid var(--border)', padding: 0 }}>
-                    <FieldContextMenu kind="text">
-                      <input
-                        aria-label={`Ligne ${r + 1}, colonne ${c + 1}`}
-                        value={value}
-                        onChange={e => set(setCell(cells, r, c, e.target.value))}
-                        className="bg-background px-2 py-1 text-sm"
-                        style={{ width: 90 }}
-                      />
-                    </FieldContextMenu>
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
-        <Button variant="outline" size="xs" aria-label="Ajouter une ligne" disabled={!canGrow(cells, 'row')} onClick={() => set(addRow(cells))}><Plus />Ligne</Button>
-        <Button variant="outline" size="xs" aria-label="Retirer la dernière ligne" disabled={cells.length <= 1} onClick={() => set(removeRow(cells, cells.length - 1))}><Minus />Ligne</Button>
-        <Button variant="outline" size="xs" aria-label="Ajouter une colonne" disabled={!canGrow(cells, 'col')} onClick={() => set(addColumn(cells))}><Plus />Colonne</Button>
-        <Button variant="outline" size="xs" aria-label="Retirer la dernière colonne" disabled={cells[0].length <= 1} onClick={() => set(removeColumn(cells, cells[0].length - 1))}><Minus />Colonne</Button>
-      </div>
+    <div style={{ overflowX: 'auto' }}>
+      <TableGrid
+        tableLabel={String(index + 1)}
+        rowCount={cells.length}
+        columnCount={cells[0].length}
+        renderCell={(r, c) => (
+          <FieldContextMenu kind="text">
+            <input
+              aria-label={`Ligne ${r + 1}, colonne ${c + 1}`}
+              value={cells[r][c]}
+              onChange={e => set(setCell(cells, r, c, e.target.value))}
+              className="w-full bg-background px-2 py-1 text-sm"
+              style={{ border: '1px solid var(--border)' }}
+            />
+          </FieldContextMenu>
+        )}
+        onAddRow={after => set(addRow(cells, after))}
+        onAddColumn={after => set(addColumn(cells, after))}
+        onRemoveRow={row => set(removeRow(cells, row))}
+        onRemoveColumn={column => set(removeColumn(cells, column))}
+      />
     </div>
   )
 }
 
-function editorFor(block: KnownBlock, onChange: (patch: Partial<KnownBlock>) => void, ctx: SubBlockContext) {
+function editorFor(block: KnownBlock, onChange: (patch: Partial<KnownBlock>) => void, ctx: SubBlockContext, index: number) {
   switch (block.type) {
     case 'texte': return <TextEditor block={block} onChange={onChange} />
     case 'calcul': return <CalcEditor block={block} onChange={onChange} ctx={ctx} />
-    case 'tableau': return <TableEditor block={block} onChange={onChange} />
+    case 'tableau': return <TableEditor block={block} onChange={onChange} index={index} />
     case 'equation': return <EquationEditor block={block} onChange={onChange as (patch: Partial<EquationBlock>) => void} ctx={ctx} />
   }
 }
@@ -202,7 +192,7 @@ export function BlockStack({ value, onChange, label = "Blocs de l'exercice", onS
                         onDeleteForward: () => removeAndFocus(i, 'after'),
                         // La barre de symboles suit le champ par `onFocus` de la zone de travail.
                         onFieldChange: () => {},
-                      })
+                      }, i)
                     : <p style={{ fontSize: 13, color: 'var(--muted-foreground)', margin: 0 }}>Ce type de bloc n'est pas encore pris en charge ; il est conservé tel quel.</p>}
                 </BlockCard>
               </div>

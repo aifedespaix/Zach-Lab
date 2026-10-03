@@ -159,14 +159,21 @@ export const canGrow = (cells: readonly string[][], axis: 'row' | 'col') =>
 export const setCell = (cells: readonly string[][], r: number, c: number, value: string): string[][] =>
   cells.map((row, i) => (i === r ? row.map((v, j) => (j === c ? value : v)) : [...row]))
 
-export function addRow(cells: readonly string[][]): string[][] {
+/** `after` : l'indice après lequel insérer (`-1` = avant la première) ; par défaut, à la fin. */
+export function addRow(cells: readonly string[][], after: number = cells.length - 1): string[][] {
   if (!canGrow(cells, 'row')) return cells.map(r => [...r])
-  return [...cells.map(r => [...r]), Array(cells[0].length).fill('')]
+  const next = cells.map(r => [...r])
+  next.splice(after + 1, 0, Array(cells[0].length).fill(''))
+  return next
 }
 
-export function addColumn(cells: readonly string[][]): string[][] {
+export function addColumn(cells: readonly string[][], after: number = cells[0].length - 1): string[][] {
   if (!canGrow(cells, 'col')) return cells.map(r => [...r])
-  return cells.map(r => [...r, ''])
+  return cells.map(r => {
+    const row = [...r]
+    row.splice(after + 1, 0, '')
+    return row
+  })
 }
 
 /** Garde toujours au moins une ligne. */

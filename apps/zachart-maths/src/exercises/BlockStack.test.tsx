@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { TooltipProvider } from '@suite/shared/ui'
 import { BlockStack } from './BlockStack'
 import type { Block } from './blocks'
 
@@ -13,7 +14,7 @@ let current: unknown[] = []
 function Harness({ initial = [] }: { initial?: unknown[] }) {
   const [value, setValue] = useState<unknown[]>(initial)
   current = value
-  return <BlockStack value={value} onChange={(b: Block[]) => setValue(b)} />
+  return <TooltipProvider><BlockStack value={value} onChange={(b: Block[]) => setValue(b)} /></TooltipProvider>
 }
 
 const names = () => screen.queryAllByRole('region').map(r => r.getAttribute('aria-label'))
@@ -55,12 +56,26 @@ describe('BlockStack', () => {
     await user.type(screen.getByLabelText('Texte'), 'Je pars de')
     await user.type(screen.getByLabelText('Ligne 1 du calcul (LaTeX)'), '3+4')
     await user.type(screen.getByLabelText('Ligne 2, colonne 1'), 'x')
-    await user.click(screen.getByRole('button', { name: 'Ajouter une colonne' }))
+    await user.click(screen.getByRole('button', { name: 'Insérer une colonne après la colonne 2 du tableau 3' }))
     expect(current).toEqual([
       { id: 'a', type: 'texte', contenu: 'Je pars de' },
       { id: 'b', type: 'calcul', lignes: [{ id: expect.any(String), latex: '3+4' }] },
       { id: 'c', type: 'tableau', cellules: [['', '', ''], ['x', '', '']] },
     ])
+  })
+
+  it('insère et supprime lignes et colonnes par les poignées du tableau', async () => {
+    const user = userEvent.setup()
+    render(<Harness initial={[{ id: 'c', type: 'tableau', cellules: [['', ''], ['', '']] }]} />)
+    expect(screen.queryByRole('button', { name: 'Ajouter une ligne' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Insérer une colonne après la colonne 1 du tableau 1' }))
+    expect((current as { cellules: string[][] }[])[0].cellules[0]).toHaveLength(3)
+    // La poubelle se révèle au focus d'une cellule de sa colonne.
+    await user.click(screen.getByLabelText('Ligne 1, colonne 2'))
+    await user.click(screen.getByRole('button', { name: 'Supprimer la colonne 2 du tableau 1' }))
+    await user.click(screen.getByLabelText('Ligne 2, colonne 2'))
+    await user.click(screen.getByRole('button', { name: 'Supprimer la colonne 2 du tableau 1' }))
+    expect((current as { cellules: string[][] }[])[0].cellules[0]).toHaveLength(1)
   })
 
   it('conserve un bloc inconnu, déplaçable et supprimable', async () => {

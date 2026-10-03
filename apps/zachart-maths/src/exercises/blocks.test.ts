@@ -106,6 +106,8 @@ describe('tableau', () => {
   it('ajoute et retire lignes et colonnes', () => {
     expect(addRow(grid)).toEqual([['a', 'b'], ['c', 'd'], ['', '']])
     expect(addColumn(grid)).toEqual([['a', 'b', ''], ['c', 'd', '']])
+    expect(addColumn([['a', 'b']], 0)).toEqual([['a', '', 'b']])
+    expect(addRow([['a'], ['b']], -1)).toEqual([[''], ['a'], ['b']])
     expect(removeRow(grid, 0)).toEqual([['c', 'd']])
     expect(removeColumn(grid, 1)).toEqual([['a'], ['c']])
   })
