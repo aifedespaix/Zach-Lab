@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { BlockStack } from './BlockStack'
@@ -98,5 +98,17 @@ describe('BlockStack — carte, gouttière et ajout', () => {
     await user.click(screen.getByRole('button', { name: 'Supprimer le bloc' }))
     expect(screen.queryAllByRole('region')).toHaveLength(0)
     expect(screen.getByRole('button', { name: 'Ajouter un bloc Texte' })).toBeInTheDocument()
+  })
+})
+
+describe('BlockStack — calcul', () => {
+  it('Entrée passe au résultat, puis crée un bloc Calcul juste en dessous', async () => {
+    const user = userEvent.setup()
+    render(<Harness initial={[{ id: 'a', type: 'calcul', expression: '', resultat: '' }]} />)
+    await user.type(screen.getByLabelText('Calcul'), '3x4{Enter}')
+    expect(screen.getByLabelText('Résultat du calcul')).toHaveFocus()
+    await user.keyboard('12{Enter}')
+    expect(names()).toEqual(['Bloc Calcul, 1 sur 2', 'Bloc Calcul, 2 sur 2'])
+    await waitFor(() => expect(screen.getAllByLabelText('Calcul')[1]).toHaveFocus())
   })
 })

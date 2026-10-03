@@ -8,10 +8,11 @@ export interface TextBlock { id: string; type: 'texte'; contenu: string }
 export interface CalcBlock { id: string; type: 'calcul'; expression: string; resultat: string }
 export interface TableBlock { id: string; type: 'tableau'; cellules: string[][] }
 /**
- * Une résolution pas à pas. `action` de l'étape *i* est ce que l'élève a fait pour passer de
- * l'étape *i − 1* à celle-ci (« − 5 des deux côtés ») ; celle de la première étape reste vide.
+ * Une résolution pas à pas, comme dans Zachar't Mentale : chaque étape a deux membres LaTeX
+ * (`left = right`) et `operation` est ce que l'élève fait POUR PASSER à l'étape suivante
+ * (« − 5 des deux côtés »), écrit entre les deux étapes.
  */
-export interface EquationStep { id: string; action: string; latex: string }
+export interface EquationStep { id: string; left: string; right: string; operation: string }
 export interface EquationBlock { id: string; type: 'equation'; etapes: EquationStep[] }
 export interface UnknownBlock { id: string; type: string; [key: string]: unknown }
 
@@ -30,7 +31,7 @@ export const isKnown = (block: Block): block is KnownBlock => BLOCK_TYPES.some(t
 
 const MAX_TABLE = 12
 
-export const newStep = (): EquationStep => ({ id: crypto.randomUUID(), action: '', latex: '' })
+export const newStep = (): EquationStep => ({ id: crypto.randomUUID(), left: '', right: '', operation: '' })
 
 export function newBlock(type: BlockType): KnownBlock {
   const id = crypto.randomUUID()
@@ -52,20 +53,35 @@ function normalizeCells(raw: unknown): string[][] {
   return grid.length > 0 ? grid : [Array(width).fill('')]
 }
 
-/** Au moins une étape, des identifiants uniques, et pas d'action sur la première. */
+/** Coupe au premier `=` ; sans `=`, tout est à gauche. Sert à relire les anciennes fiches (une ligne LaTeX par étape). */
+export function splitAtEquals(latex: string): { left: string; right: string } {
+  const i = latex.indexOf('=')
+  return i < 0
+    ? { left: latex.trim(), right: '' }
+    : { left: latex.slice(0, i).trim(), right: latex.slice(i + 1).trim() }
+}
+
+type Raw = Record<string, unknown>
+/** Une étape de l'ancien format : `latex` seul, sans membres. */
+const isLegacyStep = (r: Raw) => !('left' in r) && !('right' in r)
+
+/**
+ * Au moins une étape, des identifiants uniques. Une étape de l'ancien format (`latex`, `action`
+ * AVANT l'étape) est découpée sur son premier `=`, et son `action` devient l'`operation` de
+ * l'étape précédente. Rien n'est écrit ici : la fiche ne change sur le disque qu'à l'édition.
+ */
 function normalizeSteps(raw: unknown): EquationStep[] {
+  const items = (Array.isArray(raw) ? raw : []).filter((x): x is Raw => typeof x === 'object' && x !== null)
   const seen = new Set<string>()
-  const steps = (Array.isArray(raw) ? raw : []).flatMap((item): EquationStep[] => {
-    if (typeof item !== 'object' || item === null) return []
-    const r = item as Record<string, unknown>
+  const steps = items.map((r, i): EquationStep => {
     let id = typeof r.id === 'string' && r.id !== '' ? r.id : crypto.randomUUID()
     if (seen.has(id)) id = crypto.randomUUID()
     seen.add(id)
-    return [{ id, action: str(r.action), latex: str(r.latex) }]
+    if (!isLegacyStep(r)) return { id, left: str(r.left), right: str(r.right), operation: str(r.operation) }
+    const next = items[i + 1]
+    return { id, ...splitAtEquals(str(r.latex)), operation: next !== undefined && isLegacyStep(next) ? str(next.action) : '' }
   })
-  if (steps.length === 0) return [newStep()]
-  steps[0] = { ...steps[0], action: '' }
-  return steps
+  return steps.length === 0 ? [newStep()] : steps
 }
 
 /**
@@ -88,6 +104,15 @@ export function parseBlocks(raw: readonly unknown[]): Block[] {
     }
   }
   return blocks
+}
+
+/** Insère un bloc juste après `id` (à la fin si `id` est inconnu) ; `added` est le bloc créé. */
+export function insertBlockAfter(blocks: readonly Block[], id: string, type: BlockType): { blocks: Block[]; added: KnownBlock } {
+  const added = newBlock(type)
+  const at = blocks.findIndex(b => b.id === id)
+  const next = [...blocks]
+  next.splice(at < 0 ? next.length : at + 1, 0, added)
+  return { blocks: next, added }
 }
 
 export const addBlock = (blocks: readonly Block[], type: BlockType): Block[] => [...blocks, newBlock(type)]

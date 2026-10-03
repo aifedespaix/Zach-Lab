@@ -1,37 +1,26 @@
 import { describe, expect, it } from 'vitest'
-import type { EquationStep } from './blocks'
 import { addStepAfter, patchStep, removeStep } from './equation'
+import type { EquationStep } from './blocks'
 
-const steps = (): EquationStep[] => [
-  { id: 'a', action: '', latex: '2x+5=11' },
-  { id: 'b', action: '− 5 des deux côtés', latex: '2x=6' },
-  { id: 'c', action: '÷ 2', latex: 'x=3' },
-]
+const s = (id: string, left = '', right = '', operation = ''): EquationStep => ({ id, left, right, operation })
 
-describe('étapes d\'une équation', () => {
-  it('ajoute une étape vide juste après celle visée, sans toucher à l\'original', () => {
-    const original = steps()
-    const { steps: next, added } = addStepAfter(original, 0)
-    expect(next.map(s => s.id)).toEqual(['a', added.id, 'b', 'c'])
-    expect(added).toMatchObject({ action: '', latex: '' })
-    expect(original).toHaveLength(3)
+describe('equation', () => {
+  it("ajoute une étape vide juste après l'index", () => {
+    const { steps, added } = addStepAfter([s('a'), s('b')], 0)
+    expect(steps.map(x => x.id)).toEqual(['a', added.id, 'b'])
+    expect(added).toMatchObject({ left: '', right: '', operation: '' })
   })
-
-  it('retire une étape, jamais la dernière', () => {
-    expect(removeStep(steps(), 'b').map(s => s.id)).toEqual(['a', 'c'])
-    expect(removeStep([steps()[0]], 'a')).toHaveLength(1)
-    expect(removeStep(steps(), 'absent')).toHaveLength(3)
+  it('retire une étape, jamais la dernière restante', () => {
+    expect(removeStep([s('a'), s('b')], 'a').map(x => x.id)).toEqual(['b'])
+    expect(removeStep([s('a')], 'a')).toHaveLength(1)
+    expect(removeStep([s('a'), s('b')], 'zz')).toHaveLength(2)
   })
-
-  it('retirer la première vide l\'action de la nouvelle première', () => {
-    const next = removeStep(steps(), 'a')
-    expect(next[0]).toMatchObject({ id: 'b', action: '', latex: '2x=6' })
+  it("retirer la dernière étape efface l'opération de la nouvelle dernière : elle ne mène plus nulle part", () => {
+    const next = removeStep([s('a', '', '', 'op'), s('b')], 'b')
+    expect(next[0].operation).toBe('')
   })
-
-  it('modifie une étape précise', () => {
-    const next = patchStep(steps(), 'b', { action: '− 5' })
-    expect(next[1].action).toBe('− 5')
-    expect(next[2]).toBe(steps()[2] ? next[2] : next[2])
-    expect(next[0].action).toBe('')
+  it("modifie un membre ou l'opération", () => {
+    expect(patchStep([s('a')], 'a', { left: 'x' })[0].left).toBe('x')
+    expect(patchStep([s('a')], 'a', { operation: '+1' })[0].operation).toBe('+1')
   })
 })

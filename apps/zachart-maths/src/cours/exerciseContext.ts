@@ -15,8 +15,8 @@ export function contextOf(path: string, titre: string, exercise: Exercise): Exer
       case 'tableau': texts.push(block.cellules.flat().join(' ')); break
       case 'equation':
         for (const step of block.etapes) {
-          texts.push(step.action)
-          formules.push(step.latex)
+          texts.push(step.operation)
+          formules.push(`${step.left}=${step.right}`)
         }
     }
   }

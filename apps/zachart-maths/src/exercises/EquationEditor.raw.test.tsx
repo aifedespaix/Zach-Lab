@@ -10,7 +10,7 @@ vi.mock('mathlive', () => { throw new Error('indisponible') })
 
 let current: EquationBlock
 function Harness() {
-  const [block, setBlock] = useState<EquationBlock>({ id: 'q', type: 'equation', etapes: [{ id: 'a', action: '', latex: '' }] })
+  const [block, setBlock] = useState<EquationBlock>({ id: 'q', type: 'equation', etapes: [{ id: 'a', left: '', right: '', operation: '' }] })
   current = block
   return <EquationEditor block={block} onChange={patch => setBlock(b => ({ ...b, ...patch }))} />
 }
@@ -19,12 +19,12 @@ describe('EquationEditor sans MathLive', () => {
   it('reste utilisable : champ LaTeX brut, aperçu composé, étape suivante sur Entrée', async () => {
     const user = userEvent.setup()
     const { container } = render(<Harness />)
-    const raw = screen.getByLabelText('Étape 1 (LaTeX)')
+    const raw = screen.getByLabelText("Membre gauche de l'étape 1 (LaTeX)")
     await user.type(raw, '\\frac{{1}{{2}')
-    expect(current.etapes[0].latex).toBe('\\frac{1}{2}')
+    expect(current.etapes[0].left).toBe('\\frac{1}{2}')
     await waitFor(() => expect(container.querySelector('.katex')).not.toBeNull())
     await user.keyboard('{Enter}')
     expect(current.etapes).toHaveLength(2)
-    await waitFor(() => expect(screen.getByLabelText('Étape 2 (LaTeX)')).toHaveFocus())
+    await waitFor(() => expect(screen.getByLabelText("Membre gauche de l'étape 2 (LaTeX)")).toHaveFocus())
   })
 })

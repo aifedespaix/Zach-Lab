@@ -9,16 +9,16 @@ export function addStepAfter(steps: readonly EquationStep[], index: number): { s
 }
 
 /**
- * Retire une étape. La dernière ne part jamais (un bloc équation a toujours une ligne), et
- * retirer la première donne son rôle de départ à la suivante : son action n'a plus de sens.
+ * Retire une étape. La dernière ne part jamais (un bloc équation a toujours une ligne). Retirer
+ * la dernière étape efface l'opération de la précédente : elle menait à une étape qui n'existe plus.
  */
 export function removeStep(steps: readonly EquationStep[], id: string): EquationStep[] {
-  if (steps.length <= 1) return [...steps]
+  const index = steps.findIndex(s => s.id === id)
+  if (steps.length <= 1 || index < 0) return [...steps]
   const next = steps.filter(s => s.id !== id)
-  if (next.length === steps.length) return [...steps]
-  next[0] = { ...next[0], action: '' }
+  if (index === steps.length - 1) next[next.length - 1] = { ...next[next.length - 1], operation: '' }
   return next
 }
 
-export const patchStep = (steps: readonly EquationStep[], id: string, patch: Partial<Pick<EquationStep, 'action' | 'latex'>>): EquationStep[] =>
+export const patchStep = (steps: readonly EquationStep[], id: string, patch: Partial<Pick<EquationStep, 'left' | 'right' | 'operation'>>): EquationStep[] =>
   steps.map(s => (s.id === id ? { ...s, ...patch } : s))

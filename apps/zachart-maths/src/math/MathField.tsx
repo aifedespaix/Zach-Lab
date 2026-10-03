@@ -1,16 +1,22 @@
 import { useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { renderMathToHtml } from '@suite/shared/math'
+import { edgeMove, isFlatLatex, type EdgeMove } from './edgeMove'
 
 /** Le `<math-field>` de MathLive, tel que l'app l'utilise. */
 export type MathfieldElement = HTMLElement & {
   value: string
   insert?: (fragment: string, options?: { focus?: boolean }) => void
+  position?: number
+  lastOffset?: number
+  selectionIsCollapsed?: boolean
+  executeCommand?: (command: string) => void
 }
 
 export const isMathField = (el: unknown): el is MathfieldElement => el instanceof HTMLElement && el.tagName === 'MATH-FIELD'
 
 export interface MathFieldHandle {
-  focus: () => void
+  /** Donne le curseur au champ, au début ou à la fin de son contenu si `at` est précisé. */
+  focus: (at?: 'start' | 'end') => void
 }
 
 interface MathFieldProps {
@@ -21,6 +27,8 @@ interface MathFieldProps {
   onEnter?: () => void
   /** Retour arrière dans un champ vide : l'étape disparaît. */
   onBackspaceWhenEmpty?: () => void
+  /** Une flèche qui sort du champ (curseur au bord, ou ↑/↓ hors d'une structure) : où aller ensuite. */
+  onNavigate?: (move: EdgeMove) => void
   ref?: React.Ref<MathFieldHandle>
 }
 
@@ -50,7 +58,7 @@ function loadMathLive(): Promise<boolean> {
  * Le repli n'est pas qu'une attente : si MathLive ne se charge jamais, il reste l'éditeur
  * complet, et l'élève peut écrire tout de suite sans attendre l'import.
  */
-export function MathField({ latex, onChange, ariaLabel, onEnter, onBackspaceWhenEmpty, ref }: MathFieldProps) {
+export function MathField({ latex, onChange, ariaLabel, onEnter, onBackspaceWhenEmpty, onNavigate, ref }: MathFieldProps) {
   const [ready, setReady] = useState(() => loaded)
   const hostRef = useRef<HTMLDivElement>(null)
   const rawRef = useRef<HTMLTextAreaElement>(null)
@@ -58,13 +66,24 @@ export function MathField({ latex, onChange, ariaLabel, onEnter, onBackspaceWhen
   const refocus = useRef(false)
 
   // Les écouteurs du champ vivent aussi longtemps que lui : ils lisent la dernière version.
-  const latest = useRef({ latex, onChange, onEnter, onBackspaceWhenEmpty })
-  latest.current = { latex, onChange, onEnter, onBackspaceWhenEmpty }
+  const latest = useRef({ latex, onChange, onEnter, onBackspaceWhenEmpty, onNavigate })
+  latest.current = { latex, onChange, onEnter, onBackspaceWhenEmpty, onNavigate }
 
   useImperativeHandle(ref, () => ({
-    focus() {
-      if (fieldRef.current !== null) fieldRef.current.focus()
-      else rawRef.current?.focus()
+    focus(at) {
+      const field = fieldRef.current
+      if (field !== null) {
+        field.focus()
+        if (at !== undefined) field.executeCommand?.(at === 'end' ? 'moveToMathfieldEnd' : 'moveToMathfieldStart')
+        return
+      }
+      const raw = rawRef.current
+      if (raw === null) return
+      raw.focus()
+      if (at !== undefined) {
+        const n = at === 'end' ? raw.value.length : 0
+        raw.setSelectionRange(n, n)
+      }
     },
   }), [])
 
@@ -93,6 +112,20 @@ export function MathField({ latex, onChange, ariaLabel, onEnter, onBackspaceWhen
     // `preventDefault` n'y arrive à temps que s'il passe avant lui.
     field.addEventListener('keydown', event => {
       if (event.isComposing) return
+      const { onNavigate: navigateOut } = latest.current
+      if (navigateOut !== undefined && !event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        const move = edgeMove(event.key, {
+          atStart: field.position === 0,
+          atEnd: typeof field.lastOffset === 'number' && field.position === field.lastOffset,
+          collapsed: field.selectionIsCollapsed !== false,
+          flat: isFlatLatex(field.value),
+        })
+        if (move !== null) {
+          event.preventDefault()
+          navigateOut(move)
+          return
+        }
+      }
       if (event.key === 'Enter' && !event.shiftKey && latest.current.onEnter !== undefined) {
         event.preventDefault()
         latest.current.onEnter()
@@ -129,6 +162,16 @@ export function MathField({ latex, onChange, ariaLabel, onEnter, onBackspaceWhen
         rows={1}
         onChange={e => onChange(e.target.value)}
         onKeyDown={e => {
+          if (onNavigate !== undefined && !e.nativeEvent.isComposing && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            const { selectionStart: start, selectionEnd: end } = e.currentTarget
+            // Champ d'une ligne : ↑/↓ n'ont jamais d'autre sens que de sortir.
+            const move = edgeMove(e.key, { atStart: start === 0, atEnd: end === latex.length, collapsed: start === end, flat: true })
+            if (move !== null) {
+              e.preventDefault()
+              onNavigate(move)
+              return
+            }
+          }
           if (e.key === 'Enter' && !e.shiftKey && onEnter !== undefined) {
             e.preventDefault()
             onEnter()
