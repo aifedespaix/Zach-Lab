@@ -12,7 +12,8 @@
     "./settings": "./src/settings/index.ts",
     "./shell": "./src/shell/index.ts",
     "./search": "./src/search/index.ts",
-    "./math": "./src/math/index.ts"
+    "./math": "./src/math/index.ts",
+    "./tree": "./src/tree/index.ts"
   },
   "scripts": {
     "test": "vitest run"
