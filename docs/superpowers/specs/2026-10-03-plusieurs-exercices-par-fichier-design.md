@@ -20,6 +20,8 @@ sans perdre le moindre fichier existant.
 - « Suivant » au dernier exercice en crée un après ; « précédent » au premier en crée un avant.
   Si l'exercice courant est encore vierge, la flèche au bord ne fait rien (pas d'exercices vides
   empilés), plutôt qu'une confirmation.
+- On peut supprimer un **exercice** (dans la fiche) comme un **fichier** (dans l'arbre), toujours
+  après une confirmation.
 
 ## 1. Format de fichier (v2)
 
@@ -65,6 +67,13 @@ sans perdre le moindre fichier existant.
 - Suivant au dernier : crée un exercice après et s'y place. Précédent au premier : en crée un
   avant. Si l'exercice courant est vierge (`isBlank`), la flèche au bord est désactivée.
 - Le champ « Question » devient « Numéro » ; vide, l'exercice s'affiche par sa position (« 3 »).
+- **Supprimer un exercice** : un bouton « Supprimer l'exercice » (corbeille) à côté de « + », avec
+  une confirmation (`ConfirmDialog`, voir « Partage de code »). Il est désactivé quand la fiche n'a
+  qu'un exercice : pour tout effacer, on supprime le fichier. Après suppression, on se place sur
+  l'exercice suivant, ou sur le précédent si c'était le dernier.
+- **Supprimer un fichier** : déjà en place dans l'arbre (menu contextuel + confirmation). Le texte
+  de confirmation annonce désormais le nombre d'exercices perdus (« et ses 7 exercices »), d'où un
+  champ `exercices: number` dans `ExerciseEntry`. Un chapitre annonce déjà son nombre de fichiers.
 - Changer d'exercice écrit tout de suite la fiche (comportement actuel du changement de fichier)
   et remet `lastField` à zéro, pour que la barre de symboles n'écrive pas dans un champ disparu.
 
@@ -81,7 +90,9 @@ sans perdre le moindre fichier existant.
 
 - Fichier illisible : inchangé (reste visible dans l'arbre, ne s'ouvre pas).
 - Échec d'écriture : même message qu'aujourd'hui, la fiche reste en mémoire.
-- Suppression d'un exercice : hors périmètre de ce lot (seule la suppression du fichier existe).
+- Supprimer l'exercice ouvert : l'écriture en attente est annulée (l'exercice disparaît de toute
+  façon), puis la fiche est écrite sans lui.
+- Supprimer le fichier ouvert : `selected` retombe à `null`, comme aujourd'hui.
 - Renommage de chapitre ou déplacement de fichier : `selected.path` suit, `exerciseId` reste.
 
 ## Tests
@@ -91,11 +102,35 @@ sans perdre le moindre fichier existant.
 - `sheet.ts` : `addExercise`, `neighbour`, `isBlank`, `removeExercise`.
 - `ExerciseWorkspace` : précédent/suivant, création au bord, flèche désactivée sur un exercice
   vierge, compteur `3 / 7`, écriture du fichier v2.
+- Suppression : confirmation obligatoire, bouton désactivé sur le dernier exercice, bon exercice
+  affiché ensuite, fichier réécrit sans l'exercice ; le dialogue de fichier annonce le nombre
+  d'exercices.
 - `SheetOutline` : une ligne par exercice, coche de réponse, clic de navigation.
 - Les tests existants qui écrivent des fichiers v1 continuent de passer (ils servent de test de
   migration).
 
+## Partage de code avec Zachar't Mentale
+
+Vérifié dans le code des deux apps. Dans ce lot, on partage seulement ce qui sert vraiment :
+
+- **`ConfirmDialog`** (nouveau, `@suite/shared/ui`) : titre, description, bouton destructif. Zach'Math
+  l'utilise pour la suppression d'exercice et remplace son dialogue en ligne de l'arbre. Mentale
+  n'est pas migré dans ce lot : on ne touche pas à une app de 2 400 tests sans raison.
+- **`renderMathToHtml`** : la version de Mentale (`content/renderMath.ts`) n'importe rien de l'app
+  et ajoute `mhchem` ; celle de Zach'Math est une copie réduite. Les deux vont dans
+  `@suite/shared` (sous-chemin sans Tauri, sûr pour l'admin web), et les deux apps l'importent de
+  là. Les tests des deux copies sont fusionnés.
+
+Ce qui se recoupe **beaucoup plus**, et n'entre pas dans ce lot : l'éditeur de blocs de Mentale
+(`content/` : `EquationEditor`, `MathFieldEditor`, `equationNav`, `fieldIntents`, `SymbolBand`,
+`symbolSets`, `symbolTabs`) fait déjà la navigation clavier entre champs, les familles de signes
+par teinte et l'insertion à la position du curseur, c'est-à-dire les lots B et C. Il dépend de
+`types/cardBlock` et `types/symbolBand` de l'app. Ces lots passeront donc **après une extraction**
+dans `shared` (types injectés, jamais importés de l'app) pour ne pas écrire une seconde fois le
+même éditeur. C'est un lot à part, avec son propre spec.
+
 ## Hors périmètre
 
-Réordonner les exercices, les déplacer entre fiches, supprimer un exercice, statistiques de
-progression ; lot B (sous-lignes du bloc Calcul) et lot C (groupes de symboles).
+Réordonner les exercices, les déplacer entre fiches, statistiques de progression ; lot B
+(sous-lignes du bloc Calcul), lot C (groupes de symboles), et l'extraction de l'éditeur de blocs
+vers `shared`.
