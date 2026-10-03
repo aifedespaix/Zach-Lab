@@ -843,49 +843,6 @@
 }
 
 /*
- * The ghost that follows the cursor during a drag: what is being carried, and
- * where it would land. Fixed and portalled to the body, because the sidebar
- * clips and scrolls its content — a ghost drawn inside it would vanish exactly
- * when the drag reaches the bottom of the list.
- */
-.tree-drag-ghost {
-  position: fixed;
-  z-index: 50;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  max-width: 260px;
-  padding: 6px 10px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--popover);
-  color: var(--popover-foreground);
-  box-shadow: 0 8px 20px -8px oklch(0 0 0 / 45%);
-  pointer-events: none;
-  font-size: 12px;
-}
-.tree-drag-ghost__name {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.tree-drag-ghost__target {
-  color: var(--muted-foreground);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-/* A valid destination is stated in the same accent blue as the row it points
-   at, so the two halves of the answer agree at a glance. */
-.tree-drag-ghost[data-valid='true'] .tree-drag-ghost__target {
-  color: oklch(0.6 0.2 260);
-}
-
-/*
  * The sidebar's search field. Hand-rolled rather than added to `components/ui`:
  * it is one field with one job, sitting above one list.
  */
