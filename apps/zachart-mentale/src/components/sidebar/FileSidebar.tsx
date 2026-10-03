@@ -1,13 +1,12 @@
 import {
   useEffect,
   useMemo,
-  useRef,
   useState,
   type ReactNode,
 } from 'react'
 import { open } from '@tauri-apps/plugin-dialog'
 import { revealItemInDir } from '@tauri-apps/plugin-opener'
-import { CloudSync, Eye, EyeOff, FolderPlus, FolderSearch, FoldVertical, PanelLeftClose, PanelLeftOpen, RefreshCw, Search, ClipboardCopy, X } from 'lucide-react'
+import { CloudSync, Eye, EyeOff, FolderPlus, FolderSearch, FoldVertical, PanelLeftClose, PanelLeftOpen, RefreshCw, ClipboardCopy, X } from 'lucide-react'
 import {
   Button,
   Tooltip,
@@ -30,7 +29,7 @@ import { TreeDragGhost } from './TreeDragGhost'
 import { filterTree } from './treeFilter'
 import { useMindMapTypeIndex } from '../../hooks/useMindMapTypeIndex'
 import { prefersReducedMotion } from '@suite/shared/theme'
-import { PanelResizeHandle, usePanelCollapsed, usePanelResize } from '@suite/shared/shell'
+import { PanelFooter, PanelResizeHandle, PanelSearch, usePanelCollapsed, usePanelResize } from '@suite/shared/shell'
 import { sidebarWidthStorage } from '../../persistence/sidebarWidth'
 import { loadShowUnreadableFiles, saveShowUnreadableFiles } from '../../persistence/showUnreadableFiles'
 import { createSubfolder, freeSiblingPath } from '../../persistence/fileOps'
@@ -165,7 +164,6 @@ export function FileSidebar({ onOpenFile }: FileSidebarProps) {
   const [syncDetailsOpen, setSyncDetailsOpen] = useState(false)
   /** Hovering the sync banner holds off the auto-hide timer below. */
   const [syncFeedbackHovered, setSyncFeedbackHovered] = useState(false)
-  const searchInputRef = useRef<HTMLInputElement>(null)
 
   const syncRunning = syncStatus === 'syncing'
   // While a run is in flight, the running banner IS the message: showing last
@@ -183,15 +181,6 @@ export function FileSidebar({ onOpenFile }: FileSidebarProps) {
     const timer = setTimeout(() => setSyncFeedbackDismissed(true), 5000)
     return () => clearTimeout(timer)
   }, [showSyncError, showSyncResult, syncFeedbackHovered])
-
-  // Selecting what is already there is what makes the shortcut a REPLACEMENT:
-  // pressing it again retypes the query from scratch rather than appending to
-  // the last one.
-  useEffect(() => {
-    if (searchFocusRequest === 0) return
-    searchInputRef.current?.focus()
-    searchInputRef.current?.select()
-  }, [searchFocusRequest])
 
   // Right-clicking the sidebar's own empty space (the header, the gap under the
   // tree, the footer bar) targets the FIRST configured folder: it is the one
@@ -501,57 +490,29 @@ export function FileSidebar({ onOpenFile }: FileSidebarProps) {
             */}
             <div style={{ padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
               <span style={{ fontWeight: 600, fontSize: 13 }}>Cartes mentales</span>
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                <div style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
-                  <Search
-                    size={13}
-                    style={{ position: 'absolute', left: 7, color: 'var(--muted-foreground)', pointerEvents: 'none' }}
-                  />
-                  <input
-                    ref={searchInputRef}
-                    className="sidebar-search"
-                    type="text"
-                    value={search}
-                    placeholder="Rechercher…"
-                    aria-label="Rechercher une carte ou un dossier"
-                    onChange={event => setSearch(event.target.value)}
-                    onKeyDown={event => {
-                      // Échap hands the keyboard back to the tree without leaving
-                      // the field through a second, different gesture.
-                      if (event.key !== 'Escape') return
-                      setSearch('')
-                      event.currentTarget.blur()
-                    }}
-                    style={{ paddingLeft: 24, paddingRight: search === '' ? 8 : 26 }}
-                  />
-                  {search !== '' && (
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label="Effacer la recherche"
-                      onClick={() => setSearch('')}
-                      style={{ position: 'absolute', right: 2 }}
-                    >
-                      <X size={13} />
-                    </Button>
-                  )}
-                </div>
-                <select
-                  className="sidebar-search sidebar-type-filter"
-                  aria-label="Filtrer par type"
-                  title="Filtrer par type"
-                  value={typeFilter}
-                  onChange={event => setTypeFilter(event.target.value as MapType | 'all')}
-                >
-                  <option value="all">Tous types</option>
-                  {MAP_TYPES.map(type => (
-                    <option key={type} value={type}>
-                      {MAP_TYPE_LABELS[type]}
-                    </option>
-                  ))}
-                  <option value="default">{MAP_TYPE_LABELS.default}</option>
-                </select>
-              </div>
+              <PanelSearch
+                value={search}
+                onChange={setSearch}
+                ariaLabel="Rechercher une carte ou un dossier"
+                focusRequest={searchFocusRequest}
+                trailing={
+                  <select
+                    className="sidebar-search sidebar-type-filter"
+                    aria-label="Filtrer par type"
+                    title="Filtrer par type"
+                    value={typeFilter}
+                    onChange={event => setTypeFilter(event.target.value as MapType | 'all')}
+                  >
+                    <option value="all">Tous types</option>
+                    {MAP_TYPES.map(type => (
+                      <option key={type} value={type}>
+                        {MAP_TYPE_LABELS[type]}
+                      </option>
+                    ))}
+                    <option value="default">{MAP_TYPE_LABELS.default}</option>
+                  </select>
+                }
+              />
             </div>
 
             {/* Portalled to `document.body`, so its place in this tree is only
@@ -699,20 +660,7 @@ export function FileSidebar({ onOpenFile }: FileSidebarProps) {
               button is the one boxed control — it is the deliberate, occasional
               action of the bar, and the only one that can take noticeable time.
             */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 4,
-                rowGap: 4,
-                // A safety net for the 180 px minimum width: wrapping onto a second
-                // line beats clipping a button the user cannot reach.
-                flexWrap: 'wrap',
-                padding: '6px 8px',
-                borderTop: '1px solid var(--border)',
-                flexShrink: 0,
-              }}
-            >
+            <PanelFooter label="Actions de la barre latérale">
               <CommandButton command="file.addRootFolder" icon={FolderPlus} variant="ghost" size="icon-sm" />
               <CommandButton command="file.refresh" icon={RefreshCw} variant="ghost" size="icon-sm" />
               <CommandButton command="view.collapseFolders" icon={FoldVertical} variant="ghost" size="icon-sm" />
@@ -775,7 +723,7 @@ export function FileSidebar({ onOpenFile }: FileSidebarProps) {
                 variant="ghost"
                 size="icon-sm"
               />
-            </div>
+            </PanelFooter>
 
             <PanelResizeHandle resize={resize} side="left" label="Redimensionner la barre latérale" />
             {newFolderDialog}
