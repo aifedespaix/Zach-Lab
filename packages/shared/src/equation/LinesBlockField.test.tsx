@@ -44,6 +44,29 @@ describe('LinesBlockField', () => {
     expect(onEnterBlock).not.toHaveBeenCalled()
   })
 
+  it("Entrée donne le curseur à la nouvelle ligne même si le parent applique le changement plus tard (store, autosave)", async () => {
+    function AsyncHarness({ initial }: { initial: SubLine[] }) {
+      const [lines, setLines] = useState(initial)
+      return (
+        <LinesBlockField
+          lines={lines}
+          onChange={next => void setTimeout(() => setLines(next), 0)}
+          ariaLabel="Calcul"
+          onEnterBlock={vi.fn()}
+          onDeleteEmpty={vi.fn()}
+          onDeleteForward={vi.fn()}
+          onExitBlock={vi.fn()}
+          onFieldChange={vi.fn()}
+        />
+      )
+    }
+    render(<AsyncHarness initial={[L('a', '1+1')]} />)
+    await userEvent.click(line(1))
+    await userEvent.keyboard('{Enter}')
+    await screen.findByLabelText('Ligne 2 du calcul (LaTeX)')
+    expect(line(2)).toHaveFocus()
+  })
+
   it('Entrée saute à la ligne suivante si elle est déjà vide', async () => {
     render(<Harness initial={[L('a', 'x'), L('b')]} />)
     await userEvent.click(line(1))

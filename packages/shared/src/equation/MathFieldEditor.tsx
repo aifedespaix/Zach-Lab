@@ -167,6 +167,25 @@ function splitAtCaret(field: MathfieldElement): { before: string; after: string 
   return { before: field.value, after: '' }
 }
 
+/**
+ * Donne le focus à un champ MathLive TOUT DE SUITE.
+ *
+ * `focus()` de MathLive (0.110, `_Mathfield.onFocus`) marque le champ focalisé
+ * et y dessine le curseur immédiatement, mais ne déplace le vrai focus DOM (son
+ * `.ML__keyboard-sink`) qu'au bout d'un `setTimeout(…, 60)`. Pendant ce délai le
+ * champ PRÉCÉDENT garde le focus du document : après Entrée, les touches tapées
+ * vite partaient dans l'ancienne ligne au lieu de la nouvelle. Le focus natif de
+ * l'hôte, lui, est synchrone (l'ombre est attachée avec `delegatesFocus`) : c'est
+ * le chemin d'un clic, que MathLive gère déjà.
+ */
+function focusNow(field: MathfieldElement): void {
+  field.focus()
+  // Vu du document, un focus dans l'ombre du champ EST le champ (reciblage).
+  if (document.activeElement !== field) {
+    HTMLElement.prototype.focus.call(field, { preventScroll: true })
+  }
+}
+
 /** Module-level: the import is shared by every math block and resolves once. */
 let loadPromise: Promise<boolean> | undefined
 let loaded = false
@@ -311,7 +330,7 @@ export function MathFieldEditor({
       focusEnd() {
         const field = fieldRef.current
         if (field !== null) {
-          field.focus()
+          focusNow(field)
           field.executeCommand?.('moveToMathfieldEnd')
           return
         }
@@ -324,7 +343,7 @@ export function MathFieldEditor({
       focusStart() {
         const field = fieldRef.current
         if (field !== null) {
-          field.focus()
+          focusNow(field)
           field.executeCommand?.('moveToMathfieldStart')
           return
         }
@@ -336,7 +355,7 @@ export function MathFieldEditor({
       focusAt(offset) {
         const field = fieldRef.current
         if (field !== null) {
-          field.focus()
+          focusNow(field)
           if (typeof field.position === 'number') {
             const last = typeof field.lastOffset === 'number' ? field.lastOffset : offset
             field.position = Math.min(offset, last)
@@ -503,7 +522,7 @@ export function MathFieldEditor({
     const caret = pendingCaretRef.current
     pendingCaretRef.current = null
     if (caret !== null) {
-      field.focus()
+      focusNow(field)
       if (typeof field.position === 'number') {
         const last = typeof field.lastOffset === 'number' ? field.lastOffset : caret
         field.position = Math.min(caret, last)
