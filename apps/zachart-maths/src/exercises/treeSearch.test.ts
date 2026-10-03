@@ -13,6 +13,7 @@ describe('filterChapters', () => {
   it('requête vide : l’arbre tel quel', () => {
     const r = filterChapters(tree, '  ')
     expect(r.chapters).toEqual(tree)
+    expect(filterChapters(tree, ' ').chapters).toBe(tree)
     expect(r.forcedOpen.size).toBe(0)
   })
 

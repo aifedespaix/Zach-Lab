@@ -143,5 +143,29 @@ describe('ExerciseTree', () => {
       expect(screen.getByRole('status')).toHaveTextContent('Aucun résultat pour « zzzzzz ».')
       expect(screen.queryByText(/Aucun chapitre/)).toBeNull()
     })
+
+    it('pendant une recherche, Monter/Descendre suivent la position RÉELLE du chapitre', async () => {
+      const { user } = await setup({ 'A/a.json': mk('Alpha'), 'B/b.json': mk('Beta'), 'C/c.json': mk('Gamma') })
+      await screen.findByText('Alpha')
+      await user.type(screen.getByRole('textbox', { name: 'Rechercher un exercice' }), 'Gamma')
+      await user.pointer({ keys: '[MouseRight]', target: screen.getByRole('button', { name: /^C$/ }) })
+      expect(await screen.findByRole('menuitem', { name: 'Monter' })).not.toHaveAttribute('data-disabled')
+      expect(screen.getByRole('menuitem', { name: 'Descendre' })).toHaveAttribute('data-disabled')
+    })
+
+    it('pendant une recherche, Monter/Descendre d’un exercice suivent sa position réelle', async () => {
+      const { user } = await setup({ 'A/a.json': mk('Un'), 'A/b.json': mk('Deux'), 'A/c.json': mk('Trois') })
+      await screen.findByText('Un')
+      await user.type(screen.getByRole('textbox', { name: 'Rechercher un exercice' }), 'Trois')
+      await user.pointer({ keys: '[MouseRight]', target: screen.getByRole('button', { name: 'Trois' }) })
+      expect(await screen.findByRole('menuitem', { name: 'Monter' })).not.toHaveAttribute('data-disabled')
+      expect(screen.getByRole('menuitem', { name: 'Descendre' })).toHaveAttribute('data-disabled')
+    })
+
+    it('bibliothèque vide + recherche : pas de « Aucun chapitre », seulement « Aucun résultat »', async () => {
+      const { user } = await setup()
+      await user.type(screen.getByRole('textbox', { name: 'Rechercher un exercice' }), 'abc')
+      expect(screen.queryByText(/Aucun chapitre/)).toBeNull()
+    })
   })
 })

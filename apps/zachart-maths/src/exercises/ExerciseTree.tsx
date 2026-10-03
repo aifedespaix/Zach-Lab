@@ -136,7 +136,7 @@ export function ExerciseTree() {
         {naming?.kind === 'new-chapter' && (
           <NameField label="Nom du nouveau chapitre" onSubmit={finishNaming} onCancel={() => setNaming(null)} />
         )}
-        {tree.length === 0 && naming === null && (
+        {tree.length === 0 && naming === null && search.trim() === '' && (
           <p style={{ padding: '4px 12px', fontSize: 13, color: 'var(--muted-foreground)' }}>
             Aucun chapitre. Crée-en un avec le bouton en bas du panneau.
           </p>
@@ -148,7 +148,10 @@ export function ExerciseTree() {
           </p>
         )}
 
-        {view.chapters.map((chapter, ci) => {
+        {view.chapters.map(chapter => {
+          // Les positions sont celles de l'arbre RÉEL : la recherche n'est qu'une vue.
+          const realCi = tree.findIndex(c => c.name === chapter.name)
+          const realExercises = tree[realCi]?.exercises ?? chapter.exercises
           const open = view.forcedOpen.has(chapter.name) || !folded.has(chapter.name)
           return (
             <div key={chapter.name} data-drop-folder={chapter.name}>
@@ -186,8 +189,8 @@ export function ExerciseTree() {
                     <FilePlus /> Nouvel exercice
                   </ContextMenuItem>
                   <ContextMenuItem onSelect={() => setNaming({ kind: 'rename-chapter', chapter: chapter.name })}>Renommer</ContextMenuItem>
-                  <ContextMenuItem disabled={ci === 0} onSelect={() => void store.moveChapter(chapter.name, -1)}>Monter</ContextMenuItem>
-                  <ContextMenuItem disabled={ci === tree.length - 1} onSelect={() => void store.moveChapter(chapter.name, 1)}>Descendre</ContextMenuItem>
+                  <ContextMenuItem disabled={realCi === 0} onSelect={() => void store.moveChapter(chapter.name, -1)}>Monter</ContextMenuItem>
+                  <ContextMenuItem disabled={realCi === tree.length - 1} onSelect={() => void store.moveChapter(chapter.name, 1)}>Descendre</ContextMenuItem>
                   <ContextMenuSeparator />
                   <ContextMenuItem variant="destructive" onSelect={() => setDeletion({ kind: 'chapter', chapter: chapter.name, count: chapter.exercises.length })}>
                     Supprimer
@@ -202,7 +205,9 @@ export function ExerciseTree() {
                       <NameField label="Titre du nouvel exercice" onSubmit={finishNaming} onCancel={() => setNaming(null)} />
                     </li>
                   )}
-                  {chapter.exercises.map((exo, ei) => (
+                  {chapter.exercises.map(exo => {
+                    const realEi = realExercises.findIndex(e => e.path === exo.path)
+                    return (
                     <li key={exo.path}>
                       {naming?.kind === 'rename-exercise' && naming.path === exo.path ? (
                         <div style={{ paddingLeft: 16 }}>
@@ -237,8 +242,8 @@ export function ExerciseTree() {
                           </ContextMenuTrigger>
                           <ContextMenuContent>
                             <ContextMenuItem disabled={exo.corrompu} onSelect={() => setNaming({ kind: 'rename-exercise', path: exo.path })}>Renommer</ContextMenuItem>
-                            <ContextMenuItem disabled={ei === 0} onSelect={() => void store.shiftExercise(exo.path, -1)}>Monter</ContextMenuItem>
-                            <ContextMenuItem disabled={ei === chapter.exercises.length - 1} onSelect={() => void store.shiftExercise(exo.path, 1)}>Descendre</ContextMenuItem>
+                            <ContextMenuItem disabled={realEi === 0} onSelect={() => void store.shiftExercise(exo.path, -1)}>Monter</ContextMenuItem>
+                            <ContextMenuItem disabled={realEi === realExercises.length - 1} onSelect={() => void store.shiftExercise(exo.path, 1)}>Descendre</ContextMenuItem>
                             <ContextMenuItem disabled={exo.corrompu} onSelect={() => void store.duplicateExercise(exo.path)}><CopyPlus /> Dupliquer</ContextMenuItem>
                             {tree.length > 1 && (
                               <ContextMenuSub>
@@ -256,7 +261,8 @@ export function ExerciseTree() {
                         </ContextMenu>
                       )}
                     </li>
-                  ))}
+                    )
+                  })}
                 </ul>
               )}
             </div>

@@ -16,12 +16,14 @@ export function filterChapters(tree: ChapterNode[], query: string): FilteredTree
   const term = query.trim()
   if (term === '') return { chapters: tree, forcedOpen: new Set() }
 
+  let documents = 0
   const index = createSearchIndex(['titre', 'chapitre'])
   for (const chapter of tree) {
     index.add({ id: `c:${chapter.name}`, chapitre: chapter.name })
+    documents += 1 + chapter.exercises.length
     for (const exo of chapter.exercises) index.add({ id: `e:${exo.path}`, titre: exo.titre })
   }
-  const hits = new Set(index.search(term, { limit: 200 }).map(hit => hit.id))
+  const hits = new Set(index.search(term, { limit: documents }).map(hit => hit.id))
 
   const chapters: ChapterNode[] = []
   const forcedOpen = new Set<string>()
