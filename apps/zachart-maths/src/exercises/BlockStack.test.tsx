@@ -78,6 +78,14 @@ describe('BlockStack', () => {
     expect((current as { cellules: string[][] }[])[0].cellules[0]).toHaveLength(1)
   })
 
+  it('laisse la place aux « + » de la dernière colonne et de la dernière ligne, que overflow-x:auto rognerait', () => {
+    render(<Harness initial={[{ id: 'c', type: 'tableau', cellules: [['', ''], ['', '']] }]} />)
+    const scroll = screen.getByTestId('table-scroll')
+    // Ils débordent de 13px (HANDLE_STRADDLE) à droite et en bas de la grille.
+    expect(parseFloat(scroll.style.paddingRight)).toBeGreaterThanOrEqual(13)
+    expect(parseFloat(scroll.style.paddingBottom)).toBeGreaterThanOrEqual(13)
+  })
+
   it('conserve un bloc inconnu, déplaçable et supprimable', async () => {
     const user = userEvent.setup()
     const unknown = { id: 'e', type: 'schema', etapes: [1] }

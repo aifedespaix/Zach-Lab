@@ -35,7 +35,10 @@ function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: 
   const cells = block.cellules
   const set = (next: string[][]) => onChange({ cellules: next })
   return (
-    <div style={{ overflowX: 'auto' }}>
+    // `overflow-x: auto` forces `overflow-y: auto`, which would clip the « + »
+    // after the last column / row: they straddle the grid's right and bottom
+    // edges by 13px (TableGrid's HANDLE_STRADDLE). 14px keeps them inside.
+    <div data-testid="table-scroll" style={{ overflowX: 'auto', paddingRight: 14, paddingBottom: 14 }}>
       <TableGrid
         tableLabel={String(index + 1)}
         rowCount={cells.length}
