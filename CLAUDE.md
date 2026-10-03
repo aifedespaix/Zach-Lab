@@ -60,8 +60,11 @@ ranking.
   `CollapsedRail` (the 32px strip with the unfold button) and `CollapsiblePanel` (`ResizablePanel` +
   fold + the app's toggle command, registered BEFORE the folded early-return so the shortcut still
   unfolds it). Maths uses it on both sides (`view.toggleTree` Mod+B, `view.toggleCourses`
-  Mod+Shift+B); Mentale only reuses `usePanelCollapsed` (left sidebar) and `CollapsedRail` (right
-  panel): their panel logic is too app-specific to migrate.
+  Mod+Shift+B); Mentale only reuses `usePanelCollapsed` (left sidebar), `CollapsedRail` (right
+  panel), `PanelSearch` (sidebar filter, type filter in `trailing`) and `PanelFooter`: their panel
+  logic is too app-specific to migrate. The fold button of a `CollapsiblePanel` lives in its footer
+  (toolbar label `Actions — ${label}`), last; an app passes its own actions through the `footer`
+  prop, as commands. Shared too: `PanelSearch`, `PanelFooter`, `PanelFooterSeparator`.
 - Tree drag-and-drop (`@suite/shared/tree`): `beginTreeDrag(event, source, handlers)` is a pointer-event
   engine (5px threshold, hover-to-expand after 600 ms, Escape/blur/pointercancel cancel, the click
   that follows a real drag is swallowed once — `consumeSwallowedClick`), NOT HTML5 drag & drop,
@@ -76,6 +79,13 @@ ranking.
   `{ id, latex }`). A block holds sub-blocks: Enter = new sub-block, Ctrl/Cmd+Enter = new block (Shift =
   « inside the group », same as outside in Maths, which has no groups). No buttons next to a sub-block.
   Mentale keeps `content/EquationEditor.tsx`, `fieldIntents.ts` and `MathFieldEditor.tsx` as thin facades.
+  `MathFieldEditor`'s `focusNow` calls MathLive `focus()` then the native `HTMLElement.focus()`:
+  MathLive moves DOM focus ~60 ms late, so keys typed right after Enter would miss the new line.
+- `TableGrid` (`@suite/shared/equation`): presentational grid with a « + » on every row/column boundary
+  and a trash on the hovered/focused row/column (`tableLabel`, `rowCount`, `columnCount`, optional
+  `renderHeader`, `renderCell`, `onAddRow/onAddColumn/onRemoveRow/onRemoveColumn`, `data-testid`
+  passthrough; headerless tables work). Data stays the app's; the app provides the `TooltipProvider`.
+  Mentale's `TableField` is an adapter around it; Maths' `TableEditor` uses it directly.
   `RecentFilesList` / `formatRelativeTime` are in `@suite/shared/shell` (slots `adornment`, `wrap`).
 
 A tauri app's `src-tauri/Cargo.toml` must declare **directly** every plugin its
@@ -133,6 +143,10 @@ under `src/`, wired together in `App.tsx`:
   An exercise has one work zone (`blocs`) or two independent ones: `blocsB` present, even empty,
   means split (`zones.ts`: `splitZones`, `mergeZones` appends B under A, `sendBlock`). Blocks
   always get an `id` when a file is read, so they can be moved between zones.
+  The tree's search (`treeSearch.ts`, `filterChapters(tree, query)`, Orama) covers chapter names and
+  exercise titles ONLY, not file contents; it is a view over the tree (matching chapters forced
+  open), never touching the real folded state. The left panel footer carries the commands
+  `tree.newChapter` and `tree.toggleAll` (category `tree`), then the fold button.
 - **Blocks** (`blocks.ts`): `texte`, `calcul`, `tableau`, `equation`. A new block type = a
   type in `blocks.ts` (`newBlock`, `parseBlocks`), an editor in `BlockStack.tsx`, an icon and
   hue in `blockMeta.ts`. A block of an unknown type is kept verbatim in the file, never dropped.
