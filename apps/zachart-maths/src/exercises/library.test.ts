@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   InvalidNameError, createChapter, createExercise, deleteChapter, deleteExercise, loadTree,
-  moveChapter, moveExercise, readExercise, renameChapter, renameExercise,
+  moveChapter, moveExercise, readSheet, renameChapter, renameExercise,
 } from './library'
 import { createMemoryFs } from './memoryFs'
 import { safeName, uniqueName } from './names'
-import { validateExercise } from './types'
+import { SHEET_VERSION } from './types'
 
 const titles = async (fs: ReturnType<typeof createMemoryFs>) =>
   (await loadTree(fs)).map(c => [c.name, c.exercises.map(e => e.titre)])
@@ -21,21 +21,6 @@ describe('names', () => {
   })
   it('choisit un nom libre sans tenir compte de la casse', () => {
     expect(uniqueName('Exo', ['exo', 'Exo 2'])).toBe('Exo 3')
-  })
-})
-
-describe('validateExercise', () => {
-  it('refuse ce qui n\'est pas un exercice, et un format plus récent', () => {
-    expect(validateExercise(null)).toBeNull()
-    expect(validateExercise({ titre: 'x' })).toBeNull()
-    expect(validateExercise({ version: 99, id: 'a', titre: 'x' })).toBeNull()
-  })
-  it('complète les champs manquants', () => {
-    expect(validateExercise({ version: 1, id: 'a', titre: 'x' })).toMatchObject({ question: '', blocs: [], reponse: '' })
-  })
-  it('lit l\'énoncé, et l\'ouvre vide dans un fichier qui n\'en a pas', () => {
-    expect(validateExercise({ version: 1, id: 'a', titre: 'x', enonce: 'Calcule 3 × 4' })?.enonce).toBe('Calcule 3 × 4')
-    expect(validateExercise({ version: 1, id: 'a', titre: 'x' })?.enonce).toBe('')
   })
 })
 
@@ -122,6 +107,28 @@ describe('bibliothèque', () => {
     await createExercise(fs, 'A', 'Bon')
     const tree = await loadTree(fs)
     expect(tree[0].exercises.find(e => e.path === 'A/cassé.json')).toMatchObject({ titre: 'cassé', corrompu: true })
-    expect(await readExercise(fs, 'A/cassé.json')).toBeNull()
+    expect(await readSheet(fs, 'A/cassé.json')).toBeNull()
+  })
+
+  it('compte les exercices de chaque fiche, et 0 pour un fichier illisible', async () => {
+    const fs = createMemoryFs({
+      'A/v1.json': JSON.stringify({ version: 1, id: 'a', titre: 'Ancien' }),
+      'A/v2.json': JSON.stringify({ version: 2, id: 'b', titre: 'Fiche', exercices: [{ id: '1' }, { id: '2' }, { id: '3' }] }),
+      'A/cassé.json': '{ pas du json',
+    })
+    const entries = (await loadTree(fs))[0].exercises
+    expect(entries.map(e => [e.titre, e.exercices, e.corrompu]).sort()).toEqual(
+      [['Ancien', 1, false], ['Fiche', 3, false], ['cassé', 0, true]].sort(),
+    )
+  })
+
+  it("lire un fichier v1 ne le réécrit pas ; le renommer l'écrit en v2 sans perdre l'exercice", async () => {
+    const v1 = JSON.stringify({ version: 1, id: 'a', titre: 'Ancien', question: '2', reponse: '7' })
+    const fs = createMemoryFs({ 'A/a.json': v1 })
+    await readSheet(fs, 'A/a.json')
+    await loadTree(fs)
+    expect(fs.files.get('A/a.json')).toBe(v1)
+    await renameExercise(fs, 'A/a.json', 'Nouveau')
+    expect(JSON.parse(fs.files.get('A/a.json')!)).toMatchObject({ version: SHEET_VERSION, titre: 'Nouveau', exercices: [{ numero: '2', reponse: '7' }] })
   })
 })

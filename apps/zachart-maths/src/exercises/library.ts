@@ -1,6 +1,6 @@
 import type { ExerciseFs } from './fsPort'
 import { EXERCISE_EXT, ORDER_FILE, joinPath, safeName, splitPath, uniqueName } from './names'
-import { newExercise, validateExercise, type ChapterNode, type Exercise, type ExerciseEntry } from './types'
+import { newSheet, validateSheet, type ChapterNode, type ExerciseEntry, type Sheet } from './types'
 
 /** Demandé par l'élève : un nom qui ne donne aucun nom de fichier utilisable. */
 export class InvalidNameError extends Error {
@@ -47,16 +47,16 @@ async function exerciseFiles(fs: ExerciseFs, chapter: string): Promise<string[]>
   return sortByOrder(files.map(e => e.name), await readOrder(fs, chapter))
 }
 
-export async function readExercise(fs: ExerciseFs, path: string): Promise<Exercise | null> {
+export async function readSheet(fs: ExerciseFs, path: string): Promise<Sheet | null> {
   try {
-    return validateExercise(JSON.parse(await fs.readText(path)))
+    return validateSheet(JSON.parse(await fs.readText(path)))
   } catch {
     return null
   }
 }
 
-export async function saveExercise(fs: ExerciseFs, path: string, exercise: Exercise): Promise<void> {
-  await fs.writeText(path, JSON.stringify(exercise, null, 2))
+export async function saveSheet(fs: ExerciseFs, path: string, sheet: Sheet): Promise<void> {
+  await fs.writeText(path, JSON.stringify(sheet, null, 2))
 }
 
 /** Lit toute l'arborescence : chapitres, puis leurs exercices. */
@@ -67,8 +67,13 @@ export async function loadTree(fs: ExerciseFs): Promise<ChapterNode[]> {
     const exercises: ExerciseEntry[] = []
     for (const file of await exerciseFiles(fs, name)) {
       const path = joinPath(name, file)
-      const exercise = await readExercise(fs, path)
-      exercises.push({ path, titre: exercise?.titre ?? file.slice(0, -EXERCISE_EXT.length), corrompu: exercise === null })
+      const sheet = await readSheet(fs, path)
+      exercises.push({
+        path,
+        titre: sheet?.titre ?? file.slice(0, -EXERCISE_EXT.length),
+        exercices: sheet?.exercices.length ?? 0,
+        corrompu: sheet === null,
+      })
     }
     tree.push({ name, exercises })
   }
@@ -108,7 +113,7 @@ export async function createExercise(fs: ExerciseFs, chapter: string, requestedT
   const files = await exerciseFiles(fs, chapter)
   const stem = uniqueName(base, files.map(f => f.slice(0, -EXERCISE_EXT.length)))
   const path = joinPath(chapter, stem + EXERCISE_EXT)
-  await saveExercise(fs, path, newExercise(requestedTitle.trim()))
+  await saveSheet(fs, path, newSheet(requestedTitle.trim()))
   await writeOrder(fs, chapter, [...files, stem + EXERCISE_EXT])
   return path
 }
@@ -117,9 +122,9 @@ export async function createExercise(fs: ExerciseFs, chapter: string, requestedT
 export async function renameExercise(fs: ExerciseFs, path: string, titre: string): Promise<void> {
   const trimmed = titre.trim()
   if (trimmed === '') throw new InvalidNameError()
-  const exercise = await readExercise(fs, path)
-  if (exercise === null) throw new Error("Cet exercice est illisible, il ne peut pas être renommé.")
-  await saveExercise(fs, path, { ...exercise, titre: trimmed })
+  const sheet = await readSheet(fs, path)
+  if (sheet === null) throw new Error("Cet exercice est illisible, il ne peut pas être renommé.")
+  await saveSheet(fs, path, { ...sheet, titre: trimmed })
 }
 
 export async function deleteExercise(fs: ExerciseFs, path: string): Promise<void> {

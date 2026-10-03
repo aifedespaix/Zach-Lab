@@ -3,9 +3,9 @@ import { splitPath } from '../exercises/names'
 import type { Exercise } from '../exercises/types'
 import type { ExerciseContext } from './suggest'
 
-/** Ce que l'exercice ouvert dit de son sujet : son chapitre, son titre, ce qu'il contient. */
-export function contextOf(path: string, exercise: Exercise): ExerciseContext {
-  const texts = [exercise.reponse]
+/** Ce que l'exercice ouvert dit de son sujet : son chapitre, le titre de sa fiche, ce qu'il contient. */
+export function contextOf(path: string, titre: string, exercise: Exercise): ExerciseContext {
+  const texts = [exercise.enonce, exercise.reponse]
   const formules: string[] = []
   for (const block of parseBlocks(exercise.blocs)) {
     if (!isKnown(block)) continue
@@ -20,5 +20,5 @@ export function contextOf(path: string, exercise: Exercise): ExerciseContext {
         }
     }
   }
-  return { chapter: splitPath(path)[0], titre: exercise.titre, texte: texts.join(' '), formules }
+  return { chapter: splitPath(path)[0], titre, texte: texts.join(' '), formules }
 }

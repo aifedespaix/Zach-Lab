@@ -1,19 +1,18 @@
-/** Version du format d'un fichier d'exercice ; à incrémenter si le format casse. */
-export const EXERCISE_VERSION = 1
+/** Version du format d'un fichier ; à incrémenter si le format casse. */
+export const SHEET_VERSION = 2
 
 /**
- * Un exercice, tel qu'il est écrit dans son fichier `.json`.
+ * Un exercice d'une fiche.
  *
- * Les blocs de travail et la réponse sont de simples valeurs JSON ici : leur
- * forme précise est celle des lots suivants, et `validateExercise` conserve ce
- * qu'il ne connaît pas pour ne rien perdre en passant d'une version à l'autre.
+ * Les blocs de travail sont de simples valeurs JSON ici : leur forme précise est celle de
+ * `blocks.ts`. Les champs qu'on ne connaît pas (écrits par une version plus récente) sont
+ * conservés tels quels à la lecture, pour ne rien perdre en passant d'une version à l'autre.
  */
 export interface Exercise {
-  version: number
   id: string
-  titre: string
-  question: string
-  /** La question posée, en toutes lettres (en-tête de l'exercice) ; `question` n'en est que le numéro. */
+  /** Texte libre (« 3.b ») ; vide, l'exercice s'affiche par sa position dans la fiche. */
+  numero: string
+  /** La question posée, en toutes lettres. */
   enonce: string
   page: string
   blocs: unknown[]
@@ -22,22 +21,36 @@ export interface Exercise {
   notes: string
 }
 
-export function newExercise(titre: string): Exercise {
-  return { version: EXERCISE_VERSION, id: crypto.randomUUID(), titre, question: '', enonce: '', page: '', blocs: [], reponse: '', notes: '' }
+/** Un fichier : une fiche (une feuille de manuel) et ses exercices. */
+export interface Sheet {
+  version: number
+  id: string
+  titre: string
+  /** Jamais vide : une fiche a toujours au moins un exercice. */
+  exercices: Exercise[]
 }
 
-/** Relit un fichier d'exercice ; `null` si ce n'est pas un exercice exploitable. */
-export function validateExercise(raw: unknown): Exercise | null {
+export function newExercise(): Exercise {
+  return { id: crypto.randomUUID(), numero: '', enonce: '', page: '', blocs: [], reponse: '', notes: '' }
+}
+
+export function newSheet(titre: string): Sheet {
+  return { version: SHEET_VERSION, id: crypto.randomUUID(), titre, exercices: [newExercise()] }
+}
+
+const text = (value: unknown) => (typeof value === 'string' ? value : '')
+
+function normalizeExercise(raw: unknown, seen: Set<string>): Exercise | null {
   if (typeof raw !== 'object' || raw === null) return null
   const r = raw as Record<string, unknown>
-  if (typeof r.titre !== 'string' || typeof r.id !== 'string') return null
-  if (typeof r.version !== 'number' || r.version > EXERCISE_VERSION) return null
-  const text = (value: unknown) => (typeof value === 'string' ? value : '')
+  let id = typeof r.id === 'string' && r.id !== '' ? r.id : crypto.randomUUID()
+  if (seen.has(id)) id = crypto.randomUUID()
+  seen.add(id)
+  // `...r` d'abord : les champs inconnus passent, les champs connus sont ensuite normalisés.
   return {
-    version: r.version,
-    id: r.id,
-    titre: r.titre,
-    question: text(r.question),
+    ...r,
+    id,
+    numero: text(r.numero),
     enonce: text(r.enonce),
     page: text(r.page),
     blocs: Array.isArray(r.blocs) ? r.blocs : [],
@@ -46,11 +59,46 @@ export function validateExercise(raw: unknown): Exercise | null {
   }
 }
 
-/** Un nœud de l'arborescence affichée : un chapitre (dossier) et ses exercices. */
+/**
+ * Relit un fichier ; `null` si ce n'est pas une fiche exploitable.
+ *
+ * Un fichier v1 (un exercice à plat, `question` pour le numéro) est lu comme une fiche à un
+ * exercice. Rien n'est écrit ici : le fichier ne passe en v2 qu'à la première modification.
+ */
+export function validateSheet(raw: unknown): Sheet | null {
+  if (typeof raw !== 'object' || raw === null) return null
+  const r = raw as Record<string, unknown>
+  if (typeof r.titre !== 'string' || typeof r.id !== 'string') return null
+  if (typeof r.version !== 'number' || r.version > SHEET_VERSION) return null
+
+  if (r.version < 2) {
+    const exercice: Exercise = {
+      id: crypto.randomUUID(),
+      numero: text(r.question),
+      enonce: text(r.enonce),
+      page: text(r.page),
+      blocs: Array.isArray(r.blocs) ? r.blocs : [],
+      reponse: text(r.reponse),
+      notes: text(r.notes),
+    }
+    return { version: SHEET_VERSION, id: r.id, titre: r.titre, exercices: [exercice] }
+  }
+
+  const seen = new Set<string>()
+  const exercices = (Array.isArray(r.exercices) ? r.exercices : []).flatMap(item => {
+    const exercise = normalizeExercise(item, seen)
+    return exercise === null ? [] : [exercise]
+  })
+  return { version: SHEET_VERSION, id: r.id, titre: r.titre, exercices: exercices.length > 0 ? exercices : [newExercise()] }
+}
+
+/** Un nœud de l'arborescence affichée : un chapitre (dossier) et ses fichiers. */
 export interface ExerciseEntry {
   /** Chemin relatif à la racine, ex. `Fractions/exo-1.json`. */
   path: string
   titre: string
+  /** Nombre d'exercices de la fiche (0 pour un fichier illisible). */
+  exercices: number
   /** `true` quand le fichier est illisible : il reste visible, mais ne s'ouvre pas. */
   corrompu: boolean
 }

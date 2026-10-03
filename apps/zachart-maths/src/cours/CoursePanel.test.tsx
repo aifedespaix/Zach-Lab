@@ -21,7 +21,7 @@ describe('CoursePanel', () => {
   beforeEach(() => {
     localStorage.clear()
     useExerciseStore.setState({ fs: null, tree: [], loaded: false, selected: null, error: null })
-    useOpenExercise.setState({ path: null, exercise: null, status: 'empty' })
+    useOpenExercise.setState({ path: null, sheet: null, currentId: null, exercise: null, status: 'empty' })
     useCoursesStore.setState({ selectedId: null, searchOpen: false, notesVisible: true })
   })
 
@@ -75,7 +75,7 @@ describe('CoursePanel', () => {
     await open('A/a.json')
     await user.type(screen.getByLabelText('Mes notes'), 'penser au dénominateur')
     await act(async () => void (await useOpenExercise.getState().flush()))
-    expect(JSON.parse(fs.files.get('A/a.json')!).notes).toBe('penser au dénominateur')
+    expect(JSON.parse(fs.files.get('A/a.json')!).exercices[0].notes).toBe('penser au dénominateur')
   })
 
   it('masquer les notes donne toute la place aux cours, et le choix est retenu', async () => {

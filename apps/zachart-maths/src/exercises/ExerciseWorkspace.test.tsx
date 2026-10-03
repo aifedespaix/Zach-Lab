@@ -31,7 +31,7 @@ vi.mock('mathlive', () => {
 describe('ExerciseWorkspace', () => {
   beforeEach(() => {
     useExerciseStore.setState({ fs: null, tree: [], loaded: false, selected: null, error: null })
-    useOpenExercise.setState({ path: null, exercise: null, status: 'empty' })
+    useOpenExercise.setState({ path: null, sheet: null, currentId: null, exercise: null, status: 'empty' })
   })
   afterEach(() => vi.useRealTimers())
 
@@ -43,15 +43,31 @@ describe('ExerciseWorkspace', () => {
     expect(screen.getByRole('contentinfo', { name: 'Zone de réponse' })).toBeInTheDocument()
   })
 
+  it("n'écrit rien en ouvrant un fichier v1", async () => {
+    const fs = await setup({ 'A/a.json': exo('Premier') })
+    const before = fs.files.get('A/a.json')
+    await open('A/a.json')
+    await act(async () => void (await useOpenExercise.getState().flush()))
+    expect(fs.files.get('A/a.json')).toBe(before)
+  })
+
+  it('un fichier v1 est écrit en v2, avec son exercice, à la première modification', async () => {
+    const fs = await setup({ 'A/a.json': JSON.stringify({ version: 1, id: 'a', titre: 'Premier', question: '4', page: '12', blocs: [], reponse: '' }) })
+    await open('A/a.json')
+    await userEvent.setup().type(screen.getByLabelText('Réponse'), 'x')
+    await act(async () => void (await useOpenExercise.getState().flush()))
+    expect(stored(fs, 'A/a.json')).toMatchObject({ version: 2, titre: 'Premier', exercices: [{ numero: '4', page: '12', reponse: 'x' }] })
+  })
+
   it('enregistre après le délai, pas à chaque frappe', async () => {
     const fs = await setup({ 'A/a.json': exo('Premier') })
     await open('A/a.json')
     vi.useFakeTimers({ shouldAdvanceTime: true })
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     await user.type(screen.getByLabelText('Page (facultatif)'), '42')
-    expect(stored(fs, 'A/a.json').page).toBe('')
+    expect(stored(fs, 'A/a.json').exercices).toBeUndefined()
     await act(async () => void (await vi.advanceTimersByTimeAsync(AUTOSAVE_DELAY_MS + 50)))
-    expect(stored(fs, 'A/a.json').page).toBe('42')
+    expect(stored(fs, 'A/a.json').exercices[0].page).toBe('42')
     expect(screen.getByRole('status')).toHaveTextContent('Enregistré')
   })
 
@@ -63,7 +79,7 @@ describe('ExerciseWorkspace', () => {
     await user.clear(screen.getByLabelText("Titre de l'exercice"))
     await user.type(screen.getByLabelText("Titre de l'exercice"), 'Renommé')
     await open('A/b.json')
-    expect(stored(fs, 'A/a.json')).toMatchObject({ reponse: 'x = 3', titre: 'Renommé' })
+    expect(stored(fs, 'A/a.json')).toMatchObject({ titre: 'Renommé', exercices: [{ reponse: 'x = 3' }] })
     expect(screen.getByLabelText("Titre de l'exercice")).toHaveValue('Second')
     expect(useExerciseStore.getState().tree[0].exercises.map(e => e.titre)).toEqual(['Renommé', 'Second'])
   })
@@ -85,7 +101,7 @@ describe('ExerciseWorkspace', () => {
     await user.click(screen.getByRole('button', { name: 'Ajouter un bloc Calcul' }))
     await user.click(screen.getAllByRole('button', { name: 'Monter le bloc' })[1])
     await act(async () => void (await useOpenExercise.getState().flush()))
-    expect(stored(fs, 'A/a.json').blocs.map((b: { type: string }) => b.type)).toEqual(['calcul', 'texte'])
+    expect(stored(fs, 'A/a.json').exercices[0].blocs.map((b: { type: string }) => b.type)).toEqual(['calcul', 'texte'])
   })
 
   it('l\'énoncé de la question est écrit dans le fichier', async () => {
@@ -93,7 +109,7 @@ describe('ExerciseWorkspace', () => {
     await open('A/a.json')
     await userEvent.setup().type(screen.getByLabelText("Énoncé de l'exercice"), 'Calcule 3 × 4')
     await act(async () => void (await useOpenExercise.getState().flush()))
-    expect(stored(fs, 'A/a.json').enonce).toBe('Calcule 3 × 4')
+    expect(stored(fs, 'A/a.json').exercices[0].enonce).toBe('Calcule 3 × 4')
   })
 
   it('les boutons d\'ajout de bloc sont dans la zone de travail, plus dans la barre d\'outils', async () => {
@@ -128,7 +144,7 @@ describe('ExerciseWorkspace', () => {
     await user.keyboard('2')
     expect(calcul).toHaveValue('3×24')
     await act(async () => void (await useOpenExercise.getState().flush()))
-    expect(stored(fs, 'A/a.json').blocs[0].expression).toBe('3×24')
+    expect(stored(fs, 'A/a.json').exercices[0].blocs[0].expression).toBe('3×24')
   })
 
   it('remplace la sélection, et fonctionne aussi dans la réponse finale', async () => {
@@ -165,6 +181,6 @@ describe('ExerciseWorkspace', () => {
     await user.click(screen.getByRole('button', { name: 'Fraction' }))
     await user.click(screen.getByRole('button', { name: 'Multiplié par' }))
     await act(async () => void (await useOpenExercise.getState().flush()))
-    expect(stored(fs, 'A/a.json').blocs[0]).toMatchObject({ type: 'equation', etapes: [{ latex: '\\frac{}{}\\times ' }] })
+    expect(stored(fs, 'A/a.json').exercices[0].blocs[0]).toMatchObject({ type: 'equation', etapes: [{ latex: '\\frac{}{}\\times ' }] })
   })
 })

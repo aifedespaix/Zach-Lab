@@ -1,37 +1,58 @@
 import { create } from 'zustand'
-import { readExercise, saveExercise } from './library'
-import type { Exercise } from './types'
+import { readSheet, saveSheet } from './library'
+import { dropExercise, insertExercise, isBlank, neighbour, patchExercise } from './sheet'
+import type { Exercise, Sheet } from './types'
 import { useExerciseStore } from './useExerciseStore'
 
 export const AUTOSAVE_DELAY_MS = 600
 
 type Status = 'empty' | 'loading' | 'unreadable' | 'saved' | 'dirty' | 'saving' | 'failed'
 
-/** Les champs que l'élève modifie dans l'éditeur ; `id` et `version` ne bougent pas. */
-export type ExerciseEdit = Partial<Pick<Exercise, 'titre' | 'question' | 'enonce' | 'page' | 'blocs' | 'reponse' | 'notes'>>
+/** Les champs que l'élève modifie dans l'éditeur ; `id` et le titre de la fiche ont leurs propres actions. */
+export type ExerciseEdit = Partial<Pick<Exercise, 'numero' | 'enonce' | 'page' | 'blocs' | 'reponse' | 'notes'>>
 
 interface OpenExerciseStore {
   path: string | null
+  /** La fiche entière : c'est elle qui est lue et écrite. */
+  sheet: Sheet | null
+  /** L'exercice affiché dans la fiche. */
+  currentId: string | null
+  /** L'exercice affiché, dérivé de `sheet` et `currentId` et gardé à jour pour ses lecteurs. */
   exercise: Exercise | null
   status: Status
   edit(patch: ExerciseEdit): void
-  /** Écrit tout de suite ce qui attend (changement d'exercice, fermeture). */
+  editTitle(titre: string): void
+  /** Affiche un autre exercice de la fiche ; sans effet si `id` n'y est pas. */
+  goTo(id: string): void
+  /** Voisin ; au bord, crée un exercice (avant ou après), sauf si l'exercice affiché est vierge. */
+  step(delta: -1 | 1): void
+  /** Ajoute un exercice vierge à la fin et l'affiche. */
+  addExercise(): void
+  /** Retire l'exercice affiché ; sans effet sur le seul exercice de la fiche. */
+  removeCurrent(): void
+  /** Écrit tout de suite ce qui attend (changement de fichier, fermeture). */
   flush(): Promise<void>
 }
 
 let timer: ReturnType<typeof setTimeout> | undefined
-/** Chaque ouverture prend un numéro : une lecture lente d'un exercice déjà quitté est ignorée. */
+/** Chaque ouverture prend un numéro : une lecture lente d'un fichier déjà quitté est ignorée. */
 let generation = 0
+
+const show = (sheet: Sheet, currentId: string) => ({
+  sheet,
+  currentId,
+  exercise: sheet.exercices.find(e => e.id === currentId) ?? null,
+})
 
 export const useOpenExercise = create<OpenExerciseStore>((set, get) => {
   async function write() {
     clearTimeout(timer)
-    const { path, exercise, status } = get()
+    const { path, sheet, status } = get()
     const fs = useExerciseStore.getState().fs
-    if (path === null || exercise === null || fs === null || status !== 'dirty') return
+    if (path === null || sheet === null || fs === null || status !== 'dirty') return
     set({ status: 'saving' })
     try {
-      await saveExercise(fs, path, exercise)
+      await saveSheet(fs, path, sheet)
       // Une frappe pendant l'écriture a remis l'état à « dirty » : ne pas l'écraser.
       if (get().path === path && get().status === 'saving') set({ status: 'saved' })
       if (get().path === path) void useExerciseStore.getState().refresh()
@@ -40,38 +61,79 @@ export const useOpenExercise = create<OpenExerciseStore>((set, get) => {
     }
   }
 
+  /** Une modification de la fiche : à l'écran tout de suite, sur le disque après le délai. */
+  function change(sheet: Sheet, currentId: string) {
+    set({ ...show(sheet, currentId), status: 'dirty' })
+    clearTimeout(timer)
+    timer = setTimeout(() => void write(), AUTOSAVE_DELAY_MS)
+  }
+
   return {
     path: null,
+    sheet: null,
+    currentId: null,
     exercise: null,
     status: 'empty',
 
     edit(patch) {
-      const { exercise } = get()
-      if (exercise === null) return
-      set({ exercise: { ...exercise, ...patch }, status: 'dirty' })
-      clearTimeout(timer)
-      timer = setTimeout(() => void write(), AUTOSAVE_DELAY_MS)
+      const { sheet, currentId } = get()
+      if (sheet === null || currentId === null) return
+      change(patchExercise(sheet, currentId, patch), currentId)
+    },
+    editTitle(titre) {
+      const { sheet, currentId } = get()
+      if (sheet === null || currentId === null) return
+      change({ ...sheet, titre }, currentId)
+    },
+    goTo(id) {
+      const { sheet } = get()
+      if (sheet === null || !sheet.exercices.some(e => e.id === id)) return
+      set(show(sheet, id))
+    },
+    step(delta) {
+      const { sheet, currentId, exercise } = get()
+      if (sheet === null || currentId === null || exercise === null) return
+      const next = neighbour(sheet, currentId, delta)
+      if (next !== null) return set(show(sheet, next))
+      // Au bord : un nouvel exercice, mais pas par-dessus un exercice encore vierge.
+      if (isBlank(exercise)) return
+      const grown = insertExercise(sheet, delta < 0 ? 'start' : 'end')
+      change(grown.sheet, grown.added.id)
+    },
+    addExercise() {
+      const { sheet } = get()
+      if (sheet === null) return
+      const grown = insertExercise(sheet, 'end')
+      change(grown.sheet, grown.added.id)
+    },
+    removeCurrent() {
+      const { sheet, currentId } = get()
+      if (sheet === null || currentId === null || sheet.exercices.length <= 1) return
+      const dropped = dropExercise(sheet, currentId)
+      change(dropped.sheet, dropped.focus)
     },
     flush: write,
   }
 })
 
-/** Ouvre `path` (ou ferme si `null`) après avoir écrit l'exercice précédent. */
+const closed = { path: null, sheet: null, currentId: null, exercise: null, status: 'empty' } as const
+
+/** Ouvre `path` (ou ferme si `null`) après avoir écrit la fiche précédente. */
 async function open(path: string | null) {
   const mine = ++generation
   await useOpenExercise.getState().flush()
   if (mine !== generation) return
-  if (path === null) return void useOpenExercise.setState({ path: null, exercise: null, status: 'empty' })
+  if (path === null) return void useOpenExercise.setState(closed)
 
-  useOpenExercise.setState({ path, exercise: null, status: 'loading' })
+  useOpenExercise.setState({ path, sheet: null, currentId: null, exercise: null, status: 'loading' })
   const fs = useExerciseStore.getState().fs
-  const exercise = fs === null ? null : await readExercise(fs, path)
+  const sheet = fs === null ? null : await readSheet(fs, path)
   if (mine !== generation) return
-  useOpenExercise.setState(exercise === null ? { status: 'unreadable' } : { exercise, status: 'saved' })
+  useOpenExercise.setState(sheet === null ? { status: 'unreadable' } : { ...show(sheet, sheet.exercices[0].id), status: 'saved' })
 }
 
-// L'exercice ouvert suit la sélection de l'arbre, y compris quand un renommage de chapitre ou un
-// déplacement en change le chemin : dans ce cas l'exercice est déjà à jour en mémoire.
+// La fiche ouverte suit la sélection de l'arbre, y compris quand un renommage de chapitre ou un
+// déplacement en change le chemin : dans ce cas la fiche est déjà à jour en mémoire.
 useExerciseStore.subscribe((state, previous) => {
   if (state.selected === previous.selected) return
   if (state.selected !== null && state.selected === useOpenExercise.getState().path) return

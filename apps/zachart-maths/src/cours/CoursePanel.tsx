@@ -19,11 +19,14 @@ function CoursesSection({ courses }: { courses: readonly Course[] }) {
   const notesVisible = useCoursesStore(s => s.notesVisible)
   const { select, setSearchOpen, setNotesVisible } = useCoursesStore.getState()
   const path = useOpenExercise(s => s.path)
+  const sheet = useOpenExercise(s => s.sheet)
   const exercise = useOpenExercise(s => s.exercise)
 
   const index = useMemo(() => indexCourses(courses), [courses])
   // L'exercice change à chaque frappe ; les suggestions peuvent suivre avec un temps de retard.
-  const context = useDeferredValue(useMemo(() => (path !== null && exercise !== null ? contextOf(path, exercise) : null), [path, exercise]))
+  const context = useDeferredValue(
+    useMemo(() => (path !== null && sheet !== null && exercise !== null ? contextOf(path, sheet.titre, exercise) : null), [path, sheet, exercise]),
+  )
   const suggestions = useMemo(() => (context === null ? [] : suggestCourses(index, courses, context)), [index, courses, context])
   const selected = courses.find(c => c.id === selectedId) ?? null
 

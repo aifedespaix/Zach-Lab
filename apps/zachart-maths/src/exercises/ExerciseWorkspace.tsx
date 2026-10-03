@@ -19,8 +19,9 @@ const field = 'rounded border bg-background px-2 py-1 text-sm'
 
 /** La zone centrale : l'exercice ouvert, de son titre jusqu'à la réponse finale. */
 export function ExerciseWorkspace() {
-  const { exercise, status } = useOpenExercise()
+  const { exercise, sheet, status } = useOpenExercise()
   const edit = useOpenExercise(s => s.edit)
+  const editTitle = useOpenExercise(s => s.editTitle)
   const selected = useExerciseStore(s => s.selected)
   const lastField = useRef<TextField | MathfieldElement | null>(null)
   const [target, setTarget] = useState<InsertTarget>('none')
@@ -73,7 +74,7 @@ export function ExerciseWorkspace() {
     )
   }
   if (status === 'loading') return <p style={{ padding: 16, fontSize: 14 }}>Ouverture…</p>
-  if (status === 'unreadable' || exercise === null) {
+  if (status === 'unreadable' || exercise === null || sheet === null) {
     return <p role="alert" style={{ padding: 16, fontSize: 14 }}>Ce fichier d'exercice est illisible.</p>
   }
 
@@ -83,16 +84,16 @@ export function ExerciseWorkspace() {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           <input
             aria-label="Titre de l'exercice"
-            value={exercise.titre}
-            onChange={e => edit({ titre: e.target.value })}
+            value={sheet.titre}
+            onChange={e => editTitle(e.target.value)}
             className={`${field} flex-1 text-base font-semibold`}
             style={{ minWidth: 200 }}
           />
           <input
-            aria-label="Numéro de question (facultatif)"
-            placeholder="Question"
-            value={exercise.question}
-            onChange={e => edit({ question: e.target.value })}
+            aria-label="Numéro de l'exercice (facultatif)"
+            placeholder="N°"
+            value={exercise.numero}
+            onChange={e => edit({ numero: e.target.value })}
             className={field}
             style={{ width: 110 }}
           />
