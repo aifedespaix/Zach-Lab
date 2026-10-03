@@ -88,7 +88,9 @@ export function runDeploy({ root, plan, git, log = console.log }) {
   git(['push', 'origin', BRANCH])
   log(`✔ push ${BRANCH}`)
   for (const { tag } of plan) git(['tag', tag])
-  git(['push', 'origin', ...plan.map(p => p.tag)])
+  // One push per tag: GitHub starts no workflow at all when a single push carries
+  // more than three tags.
+  for (const { tag } of plan) git(['push', 'origin', tag])
   log(`✔ tag(s) poussé(s) : ${plan.map(p => p.tag).join(', ')}`)
 }
 

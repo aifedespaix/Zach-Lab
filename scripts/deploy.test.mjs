@@ -78,7 +78,7 @@ describe('runDeploy', () => {
     runDeploy({ root, plan: planDeploy(root, apps, 'patch'), git: a => { calls.push(a.join(' ')); return '' }, log: () => {} })
     expect(JSON.parse(readFileSync(join(root, 'apps/zachart-maths/src-tauri/tauri.conf.json'), 'utf8')).version).toBe('0.4.1')
     expect(calls.filter(c => c.startsWith('commit'))).toHaveLength(2)
-    expect(calls.at(-1)).toBe('push origin zachart-maths-v0.4.1 zachart-v1.2.4')
+    expect(calls.slice(-2)).toEqual(['push origin zachart-maths-v0.4.1', 'push origin zachart-v1.2.4'])
     expect(calls.indexOf('push origin main')).toBeLessThan(calls.indexOf('tag zachart-v1.2.4'))
   })
 })

@@ -7,6 +7,11 @@ name: build
 # moment via « Run workflow ».
 on:
   pull_request:
+  # Un push sur main chauffe le cache Rust : un cache n'est lisible que depuis sa
+  # ref ou la branche par défaut, donc sans ce déclencheur chaque tag de release
+  # recompilerait tout Tauri à froid.
+  push:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
