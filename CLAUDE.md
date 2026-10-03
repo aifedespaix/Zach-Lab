@@ -54,6 +54,8 @@ ranking.
   `loadSearchIndex(fields, serialized)`. French, accent- and typo-tolerant.
 - Math is KaTeX (`@suite/shared/math`): `renderMathToHtml(latex, display?)`, bounded, never
   throws, `trust: false`, with `\ce` / `\pu` (mhchem). It touches no Tauri, so the web admin may use it.
+  It also holds the pure equation logic both apps share: `equationStepIsSolved`, `isBareVariable`,
+  and the keyboard map `navigate` / `readingOrder` / `operationVisible` (steps are `{ left, right, operation? }`).
 
 A tauri app's `src-tauri/Cargo.toml` must declare **directly** every plugin its
 capability names (`fs`, `updater`…): `tauri-build` reads plugin permissions from
@@ -102,9 +104,19 @@ under `src/`, wired together in `App.tsx`:
   new file logic in `library.ts` against the port, never against `@tauri-apps/plugin-fs`.
   `useOpenExercise` loads the selected sheet whole, exposes the current exercise as
   `exercise`, and autosaves the sheet (600 ms, and on switching file).
+  An exercise has one work zone (`blocs`) or two independent ones: `blocsB` present, even empty,
+  means split (`zones.ts`: `splitZones`, `mergeZones` appends B under A, `sendBlock`). Blocks
+  always get an `id` when a file is read, so they can be moved between zones.
 - **Blocks** (`blocks.ts`): `texte`, `calcul`, `tableau`, `equation`. A new block type = a
-  type in `blocks.ts` (`newBlock`, `parseBlocks`), an editor in `BlockStack.tsx`, a button in
-  `toolbarCatalog.ts`. A block of an unknown type is kept verbatim in the file, never dropped.
+  type in `blocks.ts` (`newBlock`, `parseBlocks`), an editor in `BlockStack.tsx`, an icon and
+  hue in `blockMeta.ts`. A block of an unknown type is kept verbatim in the file, never dropped.
+  An equation step is `{ left, right, operation }` like Mentale's, and `operation` is read AFTER
+  its step; an old `{ latex, action }` step is split on its first `=` at read time (the `action`
+  of step *i+1* becomes the `operation` of step *i*). `BlockCard` is the gutter (icon, ▲ ▼, trash);
+  moves are animated with `motion` (`layout="position"`) plus a `block-halo` ring, with no slide
+  under `prefers-reduced-motion`. Right-click has three levels, each stopping propagation to the
+  next: `FieldContextMenu` (a field), `BlockContextMenu` (a card), `EmptyAreaContextMenu` (blank
+  space of a zone). Radix submenus do not activate on click under jsdom: drive them by keyboard in tests.
 - **Toolbar** (`toolbarCatalog.ts`): symbols are data, one hue per family. A symbol has a
   `glyph` (plain fields), a `latex` (MathLive; `#0`/`#?` placeholders) and an optional `plain`.
   Text fields are filled with `insertAtCursor` (`setRangeText`, not `value =`: React and
