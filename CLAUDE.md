@@ -41,7 +41,7 @@ what is theirs by props, slots, options, or by registering it — the command
 catalogue (`defineCommandCatalog`), the settings panels and sources, the search
 ranking.
 
-- Public entry points only: `@suite/shared/{ui,theme,update,shell,commands,settings,search,math}`
+- Public entry points only: `@suite/shared/{ui,theme,update,shell,commands,settings,search,math,tree}`
   and `@suite/shared/theme.css`. Never import a file inside a sub-path.
 - Sources are consumed as TypeScript, with no build step. Inside `shared`, imports
   are **relative**, never `@suite/shared/…`.
@@ -62,6 +62,14 @@ ranking.
   unfolds it). Maths uses it on both sides (`view.toggleTree` Mod+B, `view.toggleCourses`
   Mod+Shift+B); Mentale only reuses `usePanelCollapsed` (left sidebar) and `CollapsedRail` (right
   panel): their panel logic is too app-specific to migrate.
+- Tree drag-and-drop (`@suite/shared/tree`): `beginTreeDrag(event, source, handlers)` is a pointer-event
+  engine (5px threshold, hover-to-expand after 600 ms, Escape/blur/pointercancel cancel, the click
+  that follows a real drag is swallowed once — `consumeSwallowedClick`), NOT HTML5 drag & drop,
+  which is unreliable in the Tauri webview. The app injects `canDrop` / `isExpanded` / `expand` /
+  `onDrop`; rows carry `data-tree-row`, `data-tree-kind` and the enclosing branch `data-drop-folder`.
+  `TreeDragGhost` + `useTreeDragStore` are shared too (the ghost's CSS is in `theme.css`). Mentale
+  keeps `sidebar/treeDrag.ts`, `state/useTreeDragStore.ts` and `sidebar/TreeDragGhost.tsx` as thin
+  facades over it; Maths' `ExerciseTree` uses it directly. `admin/` must not import it.
 
 A tauri app's `src-tauri/Cargo.toml` must declare **directly** every plugin its
 capability names (`fs`, `updater`…): `tauri-build` reads plugin permissions from
