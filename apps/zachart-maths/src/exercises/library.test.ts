@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  InvalidNameError, createChapter, createExercise, deleteChapter, deleteExercise, loadTree,
+  InvalidNameError, createChapter, createExercise, deleteChapter, deleteExercise, duplicateExercise, loadTree,
   moveChapter, moveExercise, readSheet, renameChapter, renameExercise,
 } from './library'
 import { createMemoryFs } from './memoryFs'
@@ -130,5 +130,42 @@ describe('bibliothèque', () => {
     expect(fs.files.get('A/a.json')).toBe(v1)
     await renameExercise(fs, 'A/a.json', 'Nouveau')
     expect(JSON.parse(fs.files.get('A/a.json')!)).toMatchObject({ version: SHEET_VERSION, titre: 'Nouveau', exercices: [{ numero: '2', reponse: '7' }] })
+  })
+})
+
+describe('duplicateExercise', () => {
+  const setup = async () => {
+    const fs = createMemoryFs()
+    await createChapter(fs, 'Fractions')
+    const path = await createExercise(fs, 'Fractions', 'Calculs')
+    return { fs, path }
+  }
+
+  it("crée une copie « (copie) » juste après l'original, avec de nouveaux ids", async () => {
+    const { fs, path } = await setup()
+    await createExercise(fs, 'Fractions', 'Autre')
+    const original = (await readSheet(fs, path))!
+    const copyPath = await duplicateExercise(fs, path)
+    expect(copyPath).toBe('Fractions/Calculs (copie).json')
+    const copy = (await readSheet(fs, copyPath))!
+    expect(copy.titre).toBe('Calculs (copie)')
+    expect(copy.id).not.toBe(original.id)
+    expect(copy.exercices[0].id).not.toBe(original.exercices[0].id)
+    expect((await loadTree(fs))[0].exercises.map(e => e.titre)).toEqual(['Calculs', 'Calculs (copie)', 'Autre'])
+  })
+
+  it("une seconde copie prend un nom libre, sans jamais écraser", async () => {
+    const { fs, path } = await setup()
+    const first = await duplicateExercise(fs, path)
+    const second = await duplicateExercise(fs, path)
+    expect(second).not.toBe(first)
+    expect(fs.files.has(first)).toBe(true)
+    expect(fs.files.has(second)).toBe(true)
+  })
+
+  it("un fichier illisible ne se duplique pas : erreur claire, rien n'est créé", async () => {
+    const fs = createMemoryFs({ 'Fractions/cassé.json': '{pas du json' })
+    await expect(duplicateExercise(fs, 'Fractions/cassé.json')).rejects.toThrow(/illisible/)
+    expect([...fs.files.keys()]).toEqual(['Fractions/cassé.json'])
   })
 })

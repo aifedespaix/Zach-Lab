@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dropExercise, insertExercise, isBlank, neighbour, patchExercise } from './sheet'
+import { dropExercise, insertExercise, insertExerciseAt, isBlank, moveExercise, neighbour, patchExercise } from './sheet'
 import { newExercise, type Sheet } from './types'
 
 const sheet = (...ids: string[]): Sheet => ({ version: 2, id: 'f', titre: 'T', exercices: ids.map(id => ({ ...newExercise(), id })) })
@@ -67,5 +67,32 @@ describe('patchExercise', () => {
     const out = patchExercise(base, 'a', { reponse: '7' })
     expect(out.exercices[0]).toMatchObject({ reponse: '7', futur: 1 })
     expect(out.exercices[1]).toBe(base.exercices[1])
+  })
+})
+
+describe('moveExercise', () => {
+  it("réordonne d'un cran, dans les deux sens", () => {
+    expect(ids(moveExercise(sheet('a', 'b', 'c'), 'b', -1))).toEqual(['b', 'a', 'c'])
+    expect(ids(moveExercise(sheet('a', 'b', 'c'), 'b', 1))).toEqual(['a', 'c', 'b'])
+  })
+  it('sans effet au premier et au dernier rang, ou sur un id inconnu (la même fiche est rendue)', () => {
+    const s = sheet('a', 'b')
+    expect(moveExercise(s, 'a', -1)).toBe(s)
+    expect(moveExercise(s, 'b', 1)).toBe(s)
+    expect(moveExercise(s, 'zz', 1)).toBe(s)
+  })
+})
+
+describe('insertExerciseAt', () => {
+  it('insère un exercice vierge avant ou après celui visé', () => {
+    const before = insertExerciseAt(sheet('a', 'b'), 'b', 'before')
+    expect(ids(before.sheet)).toEqual(['a', before.added.id, 'b'])
+    const after = insertExerciseAt(sheet('a', 'b'), 'b', 'after')
+    expect(ids(after.sheet)).toEqual(['a', 'b', after.added.id])
+    expect(isBlank(after.added)).toBe(true)
+  })
+  it("un id inconnu : l'exercice est ajouté à la fin, jamais perdu", () => {
+    const r = insertExerciseAt(sheet('a'), 'zz', 'before')
+    expect(ids(r.sheet)).toEqual(['a', r.added.id])
   })
 })

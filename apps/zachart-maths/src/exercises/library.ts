@@ -134,6 +134,32 @@ export async function deleteExercise(fs: ExerciseFs, path: string): Promise<void
 }
 
 /**
+ * Copie un fichier juste après l'original : titre et fichier « … (copie) », avec de nouveaux
+ * identifiants (la fiche et ses exercices) pour que rien ne soit partagé avec l'original.
+ * Retourne le chemin de la copie.
+ */
+export async function duplicateExercise(fs: ExerciseFs, path: string): Promise<string> {
+  const sheet = await readSheet(fs, path)
+  if (sheet === null) throw new Error("Cet exercice est illisible, il ne peut pas être dupliqué.")
+  const [chapter, file] = splitPath(path)
+  const files = await exerciseFiles(fs, chapter)
+  const stems = files.map(f => f.slice(0, -EXERCISE_EXT.length))
+  const stem = uniqueName(`${file.slice(0, -EXERCISE_EXT.length)} (copie)`, stems)
+  const copyFile = stem + EXERCISE_EXT
+  const copy: Sheet = {
+    ...sheet,
+    id: crypto.randomUUID(),
+    titre: `${sheet.titre} (copie)`,
+    exercices: sheet.exercices.map(e => ({ ...e, id: crypto.randomUUID() })),
+  }
+  await saveSheet(fs, joinPath(chapter, copyFile), copy)
+  const order = files.filter(f => f !== copyFile)
+  order.splice(files.indexOf(file) + 1, 0, copyFile)
+  await writeOrder(fs, chapter, order)
+  return joinPath(chapter, copyFile)
+}
+
+/**
  * Déplace un exercice dans `toChapter`, à la position `index` (à la fin par défaut),
  * y compris au sein du même chapitre. Retourne son nouveau chemin.
  */

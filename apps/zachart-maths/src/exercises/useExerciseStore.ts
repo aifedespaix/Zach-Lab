@@ -25,6 +25,8 @@ interface ExerciseStore {
   addExercise(chapter: string, titre: string): Promise<void>
   renameExercise(path: string, titre: string): Promise<void>
   removeExercise(path: string): Promise<void>
+  /** Copie le fichier juste après lui et sélectionne la copie. */
+  duplicateExercise(path: string): Promise<void>
   /** `index` absent : à la fin du chapitre ; `delta` : un cran vers le haut ou le bas. */
   moveExercise(path: string, toChapter: string, index?: number): Promise<void>
   shiftExercise(path: string, delta: -1 | 1): Promise<void>
@@ -93,6 +95,10 @@ export const useExerciseStore = create<ExerciseStore>((set, get) => {
     async removeExercise(path) {
       await run(fs => library.deleteExercise(fs, path))
       if (get().selected === path) set({ selected: null })
+    },
+    async duplicateExercise(path) {
+      const copy = await run(fs => library.duplicateExercise(fs, path))
+      if (copy !== undefined) set({ selected: copy })
     },
     async moveExercise(path, toChapter, index) {
       const moved = await run(fs => library.moveExercise(fs, path, toChapter, index))

@@ -34,7 +34,26 @@ export function dropExercise(sheet: Sheet, id: string): { sheet: Sheet; focus: s
   return { sheet: { ...sheet, exercices }, focus: exercices[Math.min(i, exercices.length - 1)].id }
 }
 
-export const patchExercise = (sheet: Sheet, id: string, patch: Partial<Exercise>): Sheet => ({
+/** Déplace un exercice d'un cran ; sans effet (la même fiche est rendue) au bord ou si `id` n'y est pas. */
+export function moveExercise(sheet: Sheet, id: string, delta: -1 | 1): Sheet {
+  const from = indexOf(sheet, id)
+  const to = from + delta
+  if (from < 0 || to < 0 || to >= sheet.exercices.length) return sheet
+  const exercices = [...sheet.exercices]
+  ;[exercices[from], exercices[to]] = [exercices[to], exercices[from]]
+  return { ...sheet, exercices }
+}
+
+/** Un exercice vierge juste avant ou après `id` ; à la fin si `id` n'y est pas. `added` est le créé. */
+export function insertExerciseAt(sheet: Sheet, id: string, where: 'before' | 'after'): { sheet: Sheet; added: Exercise } {
+  const added = newExercise()
+  const at = indexOf(sheet, id)
+  const exercices = [...sheet.exercices]
+  exercices.splice(at < 0 ? exercices.length : where === 'before' ? at : at + 1, 0, added)
+  return { sheet: { ...sheet, exercices }, added }
+}
+
+export const patchExercise =(sheet: Sheet, id: string, patch: Partial<Exercise>): Sheet => ({
   ...sheet,
   exercices: sheet.exercices.map(e => (e.id === id ? { ...e, ...patch } : e)),
 })

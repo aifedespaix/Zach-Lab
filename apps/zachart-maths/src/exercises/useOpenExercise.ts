@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { readSheet, saveSheet } from './library'
-import { dropExercise, insertExercise, isBlank, neighbour, patchExercise } from './sheet'
+import { dropExercise, insertExercise, insertExerciseAt, isBlank, moveExercise as moveInSheet, neighbour, patchExercise } from './sheet'
 import type { Exercise, Sheet } from './types'
 import { useExerciseStore } from './useExerciseStore'
 
@@ -30,6 +30,12 @@ interface OpenExerciseStore {
   addExercise(): void
   /** Retire l'exercice affiché ; sans effet sur le seul exercice de la fiche. */
   removeCurrent(): void
+  /** Déplace un exercice de la fiche d'un cran ; l'exercice affiché ne change pas. */
+  reorder(id: string, delta: -1 | 1): void
+  /** Un exercice vierge avant ou après `id` ; il devient l'exercice affiché. */
+  insertAt(id: string, where: 'before' | 'after'): void
+  /** Retire `id` ; l'exercice affiché ne change que s'il s'agissait de lui. */
+  removeById(id: string): void
   /** Écrit tout de suite ce qui attend (changement de fichier, fermeture). */
   flush(): Promise<void>
 }
@@ -111,6 +117,25 @@ export const useOpenExercise = create<OpenExerciseStore>((set, get) => {
       if (sheet === null || currentId === null || sheet.exercices.length <= 1) return
       const dropped = dropExercise(sheet, currentId)
       change(dropped.sheet, dropped.focus)
+    },
+    reorder(id, delta) {
+      const { sheet, currentId } = get()
+      if (sheet === null || currentId === null) return
+      const moved = moveInSheet(sheet, id, delta)
+      if (moved !== sheet) change(moved, currentId)
+    },
+    insertAt(id, where) {
+      const { sheet } = get()
+      if (sheet === null) return
+      const grown = insertExerciseAt(sheet, id, where)
+      change(grown.sheet, grown.added.id)
+    },
+    removeById(id) {
+      const { sheet, currentId } = get()
+      if (sheet === null || currentId === null || sheet.exercices.length <= 1) return
+      const dropped = dropExercise(sheet, id)
+      if (dropped.sheet === sheet) return
+      change(dropped.sheet, id === currentId ? dropped.focus : currentId)
     },
     flush: write,
   }
