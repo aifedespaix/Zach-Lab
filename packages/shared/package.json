@@ -13,6 +13,7 @@
     "./shell": "./src/shell/index.ts",
     "./search": "./src/search/index.ts",
     "./math": "./src/math/index.ts",
+    "./equation": "./src/equation/index.ts",
     "./tree": "./src/tree/index.ts"
   },
   "scripts": {
@@ -32,6 +33,7 @@
     "class-variance-authority": "^0.7.1",
     "cn": "^0.2.5",
     "katex": "^0.18.7",
+    "mathlive": "^0.110.0",
     "lucide-react": "^1.41.0",
     "motion": "^13.2.0",
     "radix-ui": "^1.6.7",
