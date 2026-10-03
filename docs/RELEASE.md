@@ -9,6 +9,12 @@ Chaque app a **sa version, son tag et sa release**. Un tag pousse le workflow
 | Base | `apps/base` | `base-vX.Y.Z` | **pré-release** | non (pas encore de clé) |
 | Zach'Math | `apps/zachart-maths` | `zachart-maths-vX.Y.Z` | **pré-release** | oui (clé de Zachar’t Mentale) |
 
+**Liens de téléchargement stables.** Chaque app a une release roulante
+`updater-<préfixe>` qui porte son dernier installeur sous un nom fixe
+(`releases/download/updater-<préfixe>/<Nom>-setup.exe`) : les liens du README
+donnent toujours la dernière version, sans toucher au « latest » du dépôt. Le nom
+fixe est la valeur `asset` de `release.yml`.
+
 **Voir la dernière version de chaque logiciel sur /releases.** GitHub liste toutes
 les releases à la suite. Pour n'y garder que la plus récente de chaque app, active
 la variable de dépôt `PRUNE_OLD_RELEASES=true` (Settings → Secrets and variables →
@@ -112,10 +118,13 @@ découlent :
 
 ### Migration de l’endpoint de Zachar’t Mentale
 
-Le workflow alimente déjà `updater-zachart` à chaque release de Zachar’t
-Mentale ; **la configuration, elle, interroge encore l'ancienne adresse**
-(`apps/zachart-mentale/src-tauri/tauri.conf.json`, et le test
-`packaging.test.ts` qui la fige). Basculer est une décision à part, en deux temps :
+Le workflow alimente `updater-zachart` à chaque release de Zachar’t Mentale, et
+la configuration l'interroge **en premier**, l'ancienne adresse venant après
+(`apps/zachart-mentale/src-tauri/tauri.conf.json`, et le test `packaging.test.ts`
+qui le fige). L'étape 1 ci-dessous est donc faite ; la première version publiée
+avec cette configuration est la version de transition. Elle doit avoir un numéro
+**supérieur** à celui des installations existantes, sinon elles ne la voient pas.
+Les deux temps :
 
 1. **Version de transition.** Dans `tauri.conf.json`, `plugins.updater.endpoints`
    devient `[ <adresse roulante>, <ancienne adresse> ]` (Tauri essaie les

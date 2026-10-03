@@ -30,6 +30,16 @@ bun install
 bun run --filter maths tauri dev
 ```
 
+## Télécharger
+
+Dernière version de chaque logiciel (Windows), le lien ne change jamais :
+
+| Logiciel | Installeur |
+|---|---|
+| Zachar’t Mentale | [Zachart-Mentale-setup.exe](https://github.com/aifedespaix/Zachar-t-Mentale/releases/download/updater-zachart/Zachart-Mentale-setup.exe) |
+| Zach'Math | [Zachart-Maths-setup.exe](https://github.com/aifedespaix/Zachar-t-Mentale/releases/download/updater-zachart-maths/Zachart-Maths-setup.exe) |
+| Base (gabarit) | [Base-setup.exe](https://github.com/aifedespaix/Zachar-t-Mentale/releases/download/updater-base/Base-setup.exe) |
+
 ## Publier
 
 Une version, un tag et une release **par app** : voir [docs/RELEASE.md](docs/RELEASE.md).

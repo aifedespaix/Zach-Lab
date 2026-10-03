@@ -28,6 +28,7 @@ jobs:
       #   prerelease true pour toute app sauf Zachar’t : `releases/latest` sert
       #              encore de point d'entrée aux installations de Zachar’t
       #              existantes, une release d'une autre app ne doit pas le voler.
+      #   asset      nom FIXE (ASCII) de l'installeur sur la release roulante
       #   key/pass   noms des secrets de signature de l'app
       - name: pick the app from the tag
         id: app
@@ -36,12 +37,15 @@ jobs:
           case "$GITHUB_REF_NAME" in
             zachart-v*)
               app=zachart-mentale prefix=zachart title='Zachar’t Mentale' updater=true prerelease=false
+              asset=Zachart-Mentale-setup.exe
               key=TAURI_SIGNING_PRIVATE_KEY pass=TAURI_SIGNING_PRIVATE_KEY_PASSWORD ;;
             base-v*)
               app=base prefix=base title='Base' updater=false prerelease=true
+              asset=Base-setup.exe
               key=TAURI_SIGNING_PRIVATE_KEY_BASE pass=TAURI_SIGNING_PRIVATE_KEY_BASE_PASSWORD ;;
             zachart-maths-v*)
               app=zachart-maths prefix=zachart-maths title="Zach'Math" updater=true prerelease=true
+              asset=Zachart-Maths-setup.exe
               key=TAURI_SIGNING_PRIVATE_KEY pass=TAURI_SIGNING_PRIVATE_KEY_PASSWORD ;;
             *)
               echo "::error::Le tag $GITHUB_REF_NAME ne correspond à aucune app." ; exit 1 ;;
@@ -49,7 +53,7 @@ jobs:
           {
             echo "app=$app"; echo "prefix=$prefix"; echo "title=$title"
             echo "updater=$updater"; echo "prerelease=$prerelease"
-            echo "key=$key"; echo "pass=$pass"
+            echo "asset=$asset"; echo "key=$key"; echo "pass=$pass"
           } >> "$GITHUB_OUTPUT"
 
       # Un tag posé sur une version qui n'est pas celle du code publierait un
@@ -76,10 +80,12 @@ jobs:
           workspaces: '. -> target'
 
       - name: install frontend dependencies
-        run: bun install
+        run: bun install --frozen-lockfile
 
+      # Seulement l'app publiée et le code partagé : les autres apps ont déjà été
+      # testées par build.yml sur la PR, et ne changent pas avec ce tag.
       - name: run tests
-        run: bun run test
+        run: bun run --filter '@suite/shared' --filter '${{ steps.app.outputs.app }}' test
 
       - uses: tauri-apps/tauri-action@v1
         env:
@@ -101,8 +107,11 @@ jobs:
       # donc recopié sur une release roulante `updater-<app>`, réécrite à chaque
       # publication. Voir docs/RELEASE.md pour la migration des installations
       # existantes de Zachar’t Mentale.
-      - name: publish latest.json on the rolling updater release
-        if: steps.app.outputs.updater == 'true'
+      #
+      # Elle porte aussi l'installeur sous un nom FIXE (`asset`) : le lien
+      # `releases/download/updater-<prefix>/<asset>` donne toujours la dernière
+      # version, pour toutes les apps au même endroit (voir le README).
+      - name: publish the installer and latest.json on the rolling release
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -111,11 +120,16 @@ jobs:
           if ! gh release view "$rolling" > /dev/null 2>&1; then
             gh release create "$rolling" \
               --prerelease --latest=false \
-              --title "Mises à jour de ${{ steps.app.outputs.title }}" \
-              --notes "Release technique : elle porte le latest.json que l'application interroge. Ne pas la supprimer."
+              --title "Téléchargement et mises à jour de ${{ steps.app.outputs.title }}" \
+              --notes "Release technique : elle porte la dernière version de l'installeur et le latest.json que l'application interroge. Ne pas la supprimer."
           fi
-          gh release download "$GITHUB_REF_NAME" --pattern latest.json --clobber
-          gh release upload "$rolling" latest.json --clobber
+          installer=$(ls target/release/bundle/nsis/*-setup.exe | head -n 1)
+          cp "$installer" "${{ steps.app.outputs.asset }}"
+          gh release upload "$rolling" "${{ steps.app.outputs.asset }}" --clobber
+          if [ "${{ steps.app.outputs.updater }}" = "true" ]; then
+            gh release download "$GITHUB_REF_NAME" --pattern latest.json --clobber
+            gh release upload "$rolling" latest.json --clobber
+          fi
 
       # La page /releases liste toutes les releases, toutes apps confondues. Pour
       # n'y voir que la dernière version de chaque logiciel, les anciennes
