@@ -76,6 +76,8 @@ export function BlockStack({ value, onChange, label = "Blocs de l'exercice", arr
   value: readonly unknown[]
   onChange: (blocs: Block[]) => void
   label?: string
+  /** Présent quand l'exercice est scindé : envoie un bloc dans l'autre zone (câblé au clic droit). */
+  onSend?: (id: string) => void
   /** Le bloc qui vient de l'autre zone : fondu d'entrée, halo et curseur. */
   arrivedId?: string | null
 }) {

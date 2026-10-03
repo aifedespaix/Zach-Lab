@@ -104,10 +104,14 @@ describe('ExerciseWorkspace', () => {
     expect(screen.getByRole('button', { name: 'Exercice suivant' })).toBeEnabled()
   })
 
-  it("« Nouvel exercice » ajoute à la fin et s'y place", async () => {
-    await setup({ 'A/a.json': sheetFile('Fiche', [ex('1'), ex('2')]) })
+  it("« Nouvel exercice », dans la zone de réponse du dernier exercice, ajoute à la fin et s'y place", async () => {
+    await setup({ 'A/a.json': sheetFile('Fiche', [ex('1'), ex('2', { enonce: 'Q2' })]) })
     await open('A/a.json')
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Nouvel exercice' }))
+    const user = userEvent.setup()
+    // Avant le dernier, le bouton du bas passe à l'exercice suivant : il ne crée rien.
+    expect(screen.queryByRole('button', { name: 'Nouvel exercice' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: "Passer à l'exercice suivant" }))
+    await user.click(screen.getByRole('button', { name: 'Nouvel exercice' }))
     expect(screen.getByText('3 / 3')).toBeInTheDocument()
   })
 
@@ -290,5 +294,57 @@ describe('ExerciseWorkspace', () => {
     await user.click(screen.getByRole('button', { name: 'Multiplié par' }))
     await act(async () => void (await useOpenExercise.getState().flush()))
     expect(stored(fs, 'A/a.json').exercices[0].blocs[0]).toMatchObject({ type: 'equation', etapes: [{ left: '\\frac{}{}\\times ' }] })
+  })
+
+  describe('deux zones et zone de réponse', () => {
+    const twoExercises = () => ({
+      'Ch/f.json': sheetFile('F', [ex('e1', { enonce: 'Q1', blocs: [{ id: 'b1', type: 'texte', contenu: 'x' }] }), ex('e2')]),
+    })
+
+    it('« scinder » crée la zone de droite vide ; « réunir » remet ses blocs à la suite', async () => {
+      const user = userEvent.setup()
+      await setup(twoExercises())
+      await open('Ch/f.json')
+      await user.click(await screen.findByRole('button', { name: 'Scinder la zone de travail en deux' }))
+      expect(useOpenExercise.getState().exercise!.blocsB).toEqual([])
+      expect(screen.getByRole('group', { name: 'Zone de travail de droite' })).toBeInTheDocument()
+      act(() => useOpenExercise.getState().edit({ blocsB: [{ id: 'b2', type: 'texte', contenu: 'y' }] }))
+      await user.click(screen.getByRole('button', { name: 'Réunir les zones de travail' }))
+      const e = useOpenExercise.getState().exercise!
+      expect(e.blocs.map(b => (b as { id: string }).id)).toEqual(['b1', 'b2'])
+      expect(e.blocsB).toBeUndefined()
+    })
+
+    it("la zone de droite vide garde ses boutons d'ajout", async () => {
+      const user = userEvent.setup()
+      await setup(twoExercises())
+      await open('Ch/f.json')
+      await user.click(await screen.findByRole('button', { name: 'Scinder la zone de travail en deux' }))
+      const right = screen.getByRole('group', { name: 'Zone de travail de droite' })
+      await user.click(within(right).getByRole('button', { name: 'Ajouter un bloc Texte' }))
+      expect(useOpenExercise.getState().exercise!.blocsB).toHaveLength(1)
+      expect(useOpenExercise.getState().exercise!.blocs).toHaveLength(1)
+    })
+
+    it("le bouton du bas passe au suivant, puis crée un exercice au dernier, curseur dans l'énoncé", async () => {
+      const user = userEvent.setup()
+      await setup(twoExercises())
+      await open('Ch/f.json')
+      await user.click(await screen.findByRole('button', { name: "Passer à l'exercice suivant" }))
+      expect(useOpenExercise.getState().currentId).toBe('e2')
+      // e2 est vierge au dernier rang : rien à créer par-dessus, le bouton est désactivé
+      expect(screen.getByRole('button', { name: 'Nouvel exercice' })).toBeDisabled()
+      await user.type(screen.getByLabelText("Énoncé de l'exercice"), 'Q2')
+      await user.click(screen.getByRole('button', { name: 'Nouvel exercice' }))
+      expect(useOpenExercise.getState().sheet!.exercices).toHaveLength(3)
+      await waitFor(() => expect(screen.getByLabelText("Énoncé de l'exercice")).toHaveFocus())
+    })
+
+    it("le bouton « Nouvel exercice » n'est plus dans l'en-tête", async () => {
+      await setup(twoExercises())
+      await open('Ch/f.json')
+      await screen.findByRole('button', { name: 'Exercice suivant' })
+      expect(within(document.querySelector('header')!).queryByRole('button', { name: 'Nouvel exercice' })).toBeNull()
+    })
   })
 })

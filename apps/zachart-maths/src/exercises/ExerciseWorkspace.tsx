@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Columns2, Plus, Trash2 } from 'lucide-react'
 import { Button, ConfirmDialog } from '@suite/shared/ui'
 import { AnimatedLogo } from '../AnimatedLogo'
 import { BlockStack } from './BlockStack'
@@ -10,6 +10,7 @@ import { Toolbar, type InsertTarget } from './Toolbar'
 import type { SymbolEntry } from './toolbarCatalog'
 import { useExerciseStore } from './useExerciseStore'
 import { useOpenExercise } from './useOpenExercise'
+import { isSplit, mergeZones, sendBlock, splitZones, type Zone } from './zones'
 
 const STATUS_TEXT = {
   saved: 'Enregistré',
@@ -30,6 +31,11 @@ export function ExerciseWorkspace() {
   const [target, setTarget] = useState<InsertTarget>('none')
   const currentId = useOpenExercise(s => s.currentId)
   const [confirming, setConfirming] = useState(false)
+  const enonce = useRef<HTMLTextAreaElement>(null)
+  /** Vrai quand une action vient de créer un exercice : le curseur va dans son énoncé, qu'on remplit d'abord. */
+  const focusEnonce = useRef(false)
+  /** Le bloc qui vient de passer dans l'autre zone, et la zone où il est arrivé. */
+  const [arrived, setArrived] = useState<{ zone: Zone; id: string } | null>(null)
 
   // Le dernier champ où l'élève a écrit reçoit les signes de la barre, même si le focus est
   // passé sur un bouton (clavier) depuis.
@@ -57,11 +63,20 @@ export function ExerciseWorkspace() {
     insertAtCursor(field, field.dataset.mathRaw !== undefined ? (symbol.plain ?? symbol.latex.replace(/#[0?]/g, '')) : symbol.glyph)
     field.focus()
   }
-  // Un autre exercice, d'autres champs : l'ancien champ ne doit plus recevoir de signes.
+  // Un autre exercice, d'autres champs : l'ancien champ ne doit plus recevoir de signes, et le
+  // « bloc arrivé » de l'ancien n'a plus de sens.
   useEffect(() => {
     lastField.current = null
     setTarget('none')
+    setArrived(null)
   }, [selected, currentId])
+
+  // Un exercice vient d'être créé : le curseur va dans son énoncé.
+  useEffect(() => {
+    if (!focusEnonce.current) return
+    focusEnonce.current = false
+    enonce.current?.focus()
+  }, [currentId])
 
   // Ne rien perdre si la fenêtre se ferme avant la fin du délai d'autosauvegarde.
   useEffect(() => {
@@ -85,9 +100,27 @@ export function ExerciseWorkspace() {
 
   const position = sheet.exercices.findIndex(e => e.id === exercise.id) + 1
   const count = sheet.exercices.length
-  const { step, addExercise, removeCurrent } = useOpenExercise.getState()
+  const { removeCurrent } = useOpenExercise.getState()
   // Au bord, la flèche crée un exercice : pas par-dessus un exercice encore vierge.
   const blank = isBlank(exercise)
+  const split = isSplit(exercise)
+
+  /** Avance d'un exercice ; si l'action en a créé un (au bord de la fiche), le curseur ira dans son énoncé. */
+  const advance = (delta: -1 | 1) => {
+    const total = () => useOpenExercise.getState().sheet?.exercices.length ?? 0
+    const before = total()
+    useOpenExercise.getState().step(delta)
+    if (total() > before) focusEnonce.current = true
+  }
+  const toggleSplit = () => edit(split ? mergeZones(exercise) : splitZones())
+  const send = (from: Zone, id: string) => {
+    const patch = sendBlock(exercise, id, from)
+    if (patch === null) return
+    edit(patch)
+    setArrived({ zone: from === 'a' ? 'b' : 'a', id })
+  }
+
+  const zone = { minWidth: 0, minHeight: 0, overflowY: 'auto', padding: 16, background: 'var(--background)' } as const
 
   return (
     <section aria-label="Exercice" onFocus={rememberField} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
@@ -121,16 +154,15 @@ export function ExerciseWorkspace() {
               variant="ghost" size="icon-sm" aria-label="Exercice précédent"
               title={position === 1 && blank ? "Écris dans cet exercice avant d'en ajouter un avant" : 'Exercice précédent'}
               disabled={position === 1 && blank}
-              onClick={() => step(-1)}
+              onClick={() => advance(-1)}
             ><ChevronLeft /></Button>
             <span aria-live="polite" style={{ fontSize: 13, minWidth: 44, textAlign: 'center' }}>{position} / {count}</span>
             <Button
               variant="ghost" size="icon-sm" aria-label="Exercice suivant"
               title={position === count && blank ? "Écris dans cet exercice avant d'en ajouter un après" : 'Exercice suivant'}
               disabled={position === count && blank}
-              onClick={() => step(1)}
+              onClick={() => advance(1)}
             ><ChevronRight /></Button>
-            <Button variant="ghost" size="icon-sm" aria-label="Nouvel exercice" title="Nouvel exercice" onClick={addExercise}><Plus /></Button>
             <Button
               variant="ghost" size="icon-sm" aria-label="Supprimer l'exercice" title="Supprimer l'exercice"
               disabled={count <= 1}
@@ -138,20 +170,54 @@ export function ExerciseWorkspace() {
             ><Trash2 /></Button>
           </div>
         </div>
-        <textarea
-          aria-label="Énoncé de l'exercice"
-          placeholder="Quelle est la question ?"
-          value={exercise.enonce}
-          rows={Math.max(2, exercise.enonce.split('\n').length)}
-          onChange={e => edit({ enonce: e.target.value })}
-          className={`${field} w-full`}
-        />
+        <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+          <textarea
+            ref={enonce}
+            aria-label="Énoncé de l'exercice"
+            placeholder="Quelle est la question ?"
+            value={exercise.enonce}
+            rows={Math.max(2, exercise.enonce.split('\n').length)}
+            onChange={e => edit({ enonce: e.target.value })}
+            className={`${field} w-full`}
+          />
+          <Button
+            variant={split ? 'secondary' : 'ghost'}
+            size="icon-sm"
+            aria-pressed={split}
+            aria-label={split ? 'Réunir les zones de travail' : 'Scinder la zone de travail en deux'}
+            title={split ? 'Réunir les zones de travail' : 'Scinder la zone de travail en deux'}
+            onClick={toggleSplit}
+          ><Columns2 /></Button>
+        </div>
       </header>
 
       <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
         <Toolbar target={target} onSymbol={insertSymbol} />
-        <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: 16 }}>
-          <BlockStack value={exercise.blocs} onChange={blocs => edit({ blocs })} />
+        <div
+          style={{
+            flex: 1, minWidth: 0, minHeight: 0, display: 'grid',
+            gridTemplateColumns: split ? '1fr 1fr' : '1fr', gap: split ? 1 : 0, background: split ? 'var(--border)' : undefined,
+          }}
+        >
+          <div role="group" aria-label={split ? 'Zone de travail de gauche' : 'Zone de travail'} style={zone}>
+            <BlockStack
+              value={exercise.blocs}
+              onChange={blocs => edit({ blocs })}
+              onSend={split ? id => send('a', id) : undefined}
+              arrivedId={arrived?.zone === 'a' ? arrived.id : null}
+            />
+          </div>
+          {split && (
+            <div role="group" aria-label="Zone de travail de droite" style={zone}>
+              <BlockStack
+                label="Blocs de la zone de droite"
+                value={exercise.blocsB ?? []}
+                onChange={blocsB => edit({ blocsB })}
+                onSend={id => send('b', id)}
+                arrivedId={arrived?.zone === 'b' ? arrived.id : null}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -169,12 +235,23 @@ export function ExerciseWorkspace() {
           rows={2}
           className={`${field} w-full`}
         />
-        <p
-          role={status === 'failed' ? 'alert' : 'status'}
-          style={{ margin: '4px 0 0', fontSize: 11, color: status === 'failed' ? 'var(--destructive)' : 'var(--muted-foreground)' }}
-        >
-          {status in STATUS_TEXT ? STATUS_TEXT[status as keyof typeof STATUS_TEXT] : ''}
-        </p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 4 }}>
+          <p
+            role={status === 'failed' ? 'alert' : 'status'}
+            style={{ margin: 0, fontSize: 11, color: status === 'failed' ? 'var(--destructive)' : 'var(--muted-foreground)' }}
+          >
+            {status in STATUS_TEXT ? STATUS_TEXT[status as keyof typeof STATUS_TEXT] : ''}
+          </p>
+          <Button
+            variant="outline" size="sm"
+            aria-label={position < count ? "Passer à l'exercice suivant" : 'Nouvel exercice'}
+            title={position === count && blank ? "Écris dans cet exercice avant d'en ajouter un après" : undefined}
+            disabled={position === count && blank}
+            onClick={() => advance(1)}
+          >
+            {position < count ? <>Exercice suivant<ChevronRight /></> : <>Nouvel exercice<Plus /></>}
+          </Button>
+        </div>
       </footer>
       <ConfirmDialog
         open={confirming}
