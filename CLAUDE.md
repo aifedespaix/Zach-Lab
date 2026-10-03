@@ -41,7 +41,7 @@ what is theirs by props, slots, options, or by registering it — the command
 catalogue (`defineCommandCatalog`), the settings panels and sources, the search
 ranking.
 
-- Public entry points only: `@suite/shared/{ui,theme,update,shell,commands,settings,search}`
+- Public entry points only: `@suite/shared/{ui,theme,update,shell,commands,settings,search,math}`
   and `@suite/shared/theme.css`. Never import a file inside a sub-path.
 - Sources are consumed as TypeScript, with no build step. Inside `shared`, imports
   are **relative**, never `@suite/shared/…`.
@@ -52,6 +52,8 @@ ranking.
   `bun scripts/move-module.mjs <app> <old path> @suite/shared/ui`.
 - Search is Orama (`@suite/shared/search`): `createSearchIndex(fields)`,
   `loadSearchIndex(fields, serialized)`. French, accent- and typo-tolerant.
+- Math is KaTeX (`@suite/shared/math`): `renderMathToHtml(latex, display?)`, bounded, never
+  throws, `trust: false`, with `\ce` / `\pu` (mhchem). It touches no Tauri, so the web admin may use it.
 
 A tauri app's `src-tauri/Cargo.toml` must declare **directly** every plugin its
 capability names (`fs`, `updater`…): `tauri-build` reads plugin permissions from
@@ -90,12 +92,16 @@ other apps of the suite have none.
 Born from `apps/base` with `new-app`; it has no sync and no PocketBase. Three areas, each
 under `src/`, wired together in `App.tsx`:
 
-- **`exercises/`** — the student's files and the centre area. An exercise is one `.json` file
-  (`types.ts`, versioned) in a chapter folder under `Documents/Zach'Math/`; the order
-  of a folder lives in its `_ordre.json`. Everything touching the disk goes through the
+- **`exercises/`** — the student's files and the centre area. A file is a *sheet* (`Sheet`
+  in `types.ts`, v2, `exercices[]`) in a chapter folder under `Documents/Zach'Math/`; a v1
+  file (one flat exercise) is read as a one-exercise sheet and only rewritten on its first
+  edit. The order of a folder lives in its `_ordre.json`. `sheet.ts` holds the pure
+  operations (`insertExercise`, `neighbour`, `dropExercise`…) and `SheetOutline` lists the
+  open sheet under the file tree. Everything touching the disk goes through the
   `ExerciseFs` port (`fsPort.ts`): `tauriFs.ts` in the app, `memoryFs.ts` in tests — write
   new file logic in `library.ts` against the port, never against `@tauri-apps/plugin-fs`.
-  `useOpenExercise` loads the selected exercise and autosaves it (600 ms, and on switch).
+  `useOpenExercise` loads the selected sheet whole, exposes the current exercise as
+  `exercise`, and autosaves the sheet (600 ms, and on switching file).
 - **Blocks** (`blocks.ts`): `texte`, `calcul`, `tableau`, `equation`. A new block type = a
   type in `blocks.ts` (`newBlock`, `parseBlocks`), an editor in `BlockStack.tsx`, a button in
   `toolbarCatalog.ts`. A block of an unknown type is kept verbatim in the file, never dropped.

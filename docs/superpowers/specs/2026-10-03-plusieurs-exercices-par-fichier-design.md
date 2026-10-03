@@ -50,8 +50,8 @@ sans perdre le moindre fichier existant.
 
 ## 2. État et sauvegarde
 
-- `useExerciseStore.selected` devient `{ path, exerciseId }`. L'arbre liste toujours des
-  fichiers ; sélectionner un fichier ouvre son premier exercice.
+- `useExerciseStore.selected` reste le chemin du fichier. L'exercice affiché est `currentId`
+  dans `useOpenExercise`, qui s'ouvre sur le premier exercice du fichier.
 - `useOpenExercise` charge la **fiche entière** ; `edit(patch)` modifie l'exercice courant ;
   l'autosauvegarde (600 ms, au changement de fiche, à la fermeture) écrit toute la fiche.
 - Le titre de l'arbre continue de venir du titre de la fiche (`ExerciseEntry.titre`).
@@ -74,8 +74,10 @@ sans perdre le moindre fichier existant.
 - **Supprimer un fichier** : déjà en place dans l'arbre (menu contextuel + confirmation). Le texte
   de confirmation annonce désormais le nombre d'exercices perdus (« et ses 7 exercices »), d'où un
   champ `exercices: number` dans `ExerciseEntry`. Un chapitre annonce déjà son nombre de fichiers.
-- Changer d'exercice écrit tout de suite la fiche (comportement actuel du changement de fichier)
-  et remet `lastField` à zéro, pour que la barre de symboles n'écrive pas dans un champ disparu.
+- Changer d'exercice dans une fiche n'écrit rien de plus : la fiche entière est en mémoire et
+  l'autosauvegarde l'écrit ; seul un changement de fichier l'écrit tout de suite. Dans les deux
+  cas `lastField` est remis à zéro, pour que la barre de symboles n'écrive pas dans un champ
+  disparu.
 
 ## 4. Vue d'ensemble : liste en bas de la sidebar gauche
 
@@ -90,8 +92,7 @@ sans perdre le moindre fichier existant.
 
 - Fichier illisible : inchangé (reste visible dans l'arbre, ne s'ouvre pas).
 - Échec d'écriture : même message qu'aujourd'hui, la fiche reste en mémoire.
-- Supprimer l'exercice ouvert : l'écriture en attente est annulée (l'exercice disparaît de toute
-  façon), puis la fiche est écrite sans lui.
+- Supprimer l'exercice ouvert : la fiche est réécrite sans lui par l'autosauvegarde habituelle.
 - Supprimer le fichier ouvert : `selected` retombe à `null`, comme aujourd'hui.
 - Renommage de chapitre ou déplacement de fichier : `selected.path` suit, `exerciseId` reste.
 
