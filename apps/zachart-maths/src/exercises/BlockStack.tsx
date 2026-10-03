@@ -1,6 +1,9 @@
-import { useEffect, useMemo, useRef, type ReactNode } from 'react'
-import { ArrowDown, ArrowUp, Minus, Plus, Trash2 } from 'lucide-react'
+import { useEffect, useMemo, useRef } from 'react'
+import { Minus, Plus } from 'lucide-react'
 import { Button } from '@suite/shared/ui'
+import { BlockCard } from './BlockCard'
+import { BLOCK_META } from './blockMeta'
+import { borderOf, toneOf } from './toolbarCatalog'
 import { EquationEditor } from './EquationEditor'
 import {
   BLOCK_TYPES, newBlock, addColumn, addRow, canGrow, isKnown, moveBlock, parseBlocks, removeBlock, removeColumn,
@@ -8,7 +11,6 @@ import {
 } from './blocks'
 
 const field = 'rounded border bg-background px-2 py-1 text-sm'
-const LABELS: Record<string, string> = Object.fromEntries(BLOCK_TYPES.map(t => [t.type, t.label]))
 
 function TextEditor({ block, onChange }: { block: TextBlock; onChange: (patch: Partial<TextBlock>) => void }) {
   return (
@@ -79,32 +81,6 @@ function TableEditor({ block, onChange }: { block: TableBlock; onChange: (patch:
   )
 }
 
-function BlockCard({ block, index, count, onMove, onRemove, children }: {
-  block: Block
-  index: number
-  count: number
-  onMove: (delta: -1 | 1) => void
-  onRemove: () => void
-  children: ReactNode
-}) {
-  const label = LABELS[block.type] ?? 'Bloc inconnu'
-  return (
-    <li>
-      <section aria-label={`Bloc ${label}, ${index + 1} sur ${count}`} data-block-id={block.id} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 8 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-          <strong style={{ fontSize: 12 }}>{label}</strong>
-          <div style={{ display: 'flex', gap: 2 }}>
-            <Button variant="ghost" size="icon-sm" aria-label="Monter le bloc" disabled={index === 0} onClick={() => onMove(-1)}><ArrowUp /></Button>
-            <Button variant="ghost" size="icon-sm" aria-label="Descendre le bloc" disabled={index === count - 1} onClick={() => onMove(1)}><ArrowDown /></Button>
-            <Button variant="ghost" size="icon-sm" aria-label="Supprimer le bloc" onClick={onRemove}><Trash2 /></Button>
-          </div>
-        </div>
-        {children}
-      </section>
-    </li>
-  )
-}
-
 function editorFor(block: KnownBlock, onChange: (patch: Partial<KnownBlock>) => void) {
   switch (block.type) {
     case 'texte': return <TextEditor block={block} onChange={onChange} />
@@ -115,9 +91,10 @@ function editorFor(block: KnownBlock, onChange: (patch: Partial<KnownBlock>) => 
 }
 
 /** La pile de blocs de la zone de travail : chaque bloc se déplace d'un cran et se supprime, et les boutons d'ajout sont au bout. */
-export function BlockStack({ value, onChange }: {
+export function BlockStack({ value, onChange, label = "Blocs de l'exercice" }: {
   value: readonly unknown[]
   onChange: (blocs: Block[]) => void
+  label?: string
 }) {
   const blocks = useMemo(() => parseBlocks(value), [value])
   const toFocus = useRef<string | null>(null)
@@ -138,10 +115,10 @@ export function BlockStack({ value, onChange }: {
 
   return (
     <div>
-      <ul aria-label="Blocs de l'exercice" style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <ul aria-label={label} style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
         {blocks.map((block, i) => (
+          <li key={block.id}>
           <BlockCard
-            key={block.id}
             block={block}
             index={i}
             count={blocks.length}
@@ -152,6 +129,7 @@ export function BlockStack({ value, onChange }: {
               ? editorFor(block, patch => onChange(updateBlock(blocks, block.id, patch)))
               : <p style={{ fontSize: 13, color: 'var(--muted-foreground)', margin: 0 }}>Ce type de bloc n'est pas encore pris en charge ; il est conservé tel quel.</p>}
           </BlockCard>
+          </li>
         ))}
       </ul>
 
@@ -159,17 +137,21 @@ export function BlockStack({ value, onChange }: {
         <p style={{ fontSize: 14, color: 'var(--muted-foreground)' }}>Par quoi veux-tu commencer ?</p>
       )}
       <div role="group" aria-label="Ajouter un bloc" style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
-        {BLOCK_TYPES.map(({ type, label }) => (
-          <Button
-            key={type}
-            variant={blocks.length === 0 ? 'default' : 'outline'}
-            size="sm"
-            aria-label={`Ajouter un bloc ${label}`}
-            onClick={() => add(type)}
-          >
-            <Plus />{label}
-          </Button>
-        ))}
+        {BLOCK_TYPES.map(({ type }) => {
+          const { label: name, icon: Icon, hue } = BLOCK_META[type]
+          return (
+            <Button
+              key={type}
+              variant="outline"
+              size="sm"
+              aria-label={`Ajouter un bloc ${name}`}
+              onClick={() => add(type)}
+              style={{ borderColor: borderOf(hue), background: toneOf(hue) }}
+            >
+              <Icon />{name}
+            </Button>
+          )
+        })}
       </div>
     </div>
   )

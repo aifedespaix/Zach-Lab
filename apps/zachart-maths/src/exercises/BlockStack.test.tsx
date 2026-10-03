@@ -70,3 +70,33 @@ describe('BlockStack', () => {
     expect(current[1]).toEqual(unknown)
   })
 })
+
+describe('BlockStack — carte, gouttière et ajout', () => {
+  it("chaque carte porte l'icône de son type, et la gouttière tient les trois actions", () => {
+    render(<Harness initial={[{ id: 'a', type: 'texte', contenu: '' }, { id: 'b', type: 'equation', etapes: [] }]} />)
+    const [first, second] = screen.getAllByRole('region')
+    expect(within(first).getByRole('img', { name: 'Type : Texte' })).toBeInTheDocument()
+    expect(within(second).getByRole('img', { name: 'Type : Équation' })).toBeInTheDocument()
+    const gutter = within(first).getByRole('group', { name: 'Actions du bloc' })
+    expect(within(gutter).getAllByRole('button').map(b => b.getAttribute('aria-label')))
+      .toEqual(['Monter le bloc', 'Descendre le bloc', 'Supprimer le bloc'])
+  })
+
+  it("les boutons d'ajout ont une icône et le libellé du type", () => {
+    render(<Harness />)
+    const add = screen.getByRole('group', { name: 'Ajouter un bloc' })
+    for (const label of ['Texte', 'Calcul', 'Tableau', 'Équation']) {
+      const button = within(add).getByRole('button', { name: `Ajouter un bloc ${label}` })
+      expect(button.querySelector('svg')).not.toBeNull()
+      expect(button).toHaveTextContent(label)
+    }
+  })
+
+  it("une zone vide garde ses boutons d'ajout", async () => {
+    const user = userEvent.setup()
+    render(<Harness initial={[{ id: 'a', type: 'texte', contenu: '' }]} />)
+    await user.click(screen.getByRole('button', { name: 'Supprimer le bloc' }))
+    expect(screen.queryAllByRole('region')).toHaveLength(0)
+    expect(screen.getByRole('button', { name: 'Ajouter un bloc Texte' })).toBeInTheDocument()
+  })
+})
