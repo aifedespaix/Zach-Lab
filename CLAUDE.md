@@ -41,7 +41,7 @@ what is theirs by props, slots, options, or by registering it — the command
 catalogue (`defineCommandCatalog`), the settings panels and sources, the search
 ranking.
 
-- Public entry points only: `@suite/shared/{ui,theme,update,shell,commands,settings,search,math,tree}`
+- Public entry points only: `@suite/shared/{ui,theme,update,shell,commands,settings,search,math,tree,equation}`
   and `@suite/shared/theme.css`. Never import a file inside a sub-path.
 - Sources are consumed as TypeScript, with no build step. Inside `shared`, imports
   are **relative**, never `@suite/shared/…`.
@@ -70,6 +70,13 @@ ranking.
   `TreeDragGhost` + `useTreeDragStore` are shared too (the ghost's CSS is in `theme.css`). Mentale
   keeps `sidebar/treeDrag.ts`, `state/useTreeDragStore.ts` and `sidebar/TreeDragGhost.tsx` as thin
   facades over it; Maths' `ExerciseTree` uses it directly. `admin/` must not import it.
+- Blocks and sub-blocks (`@suite/shared/equation`): `MathFieldEditor` (MathLive + raw-LaTeX fallback that is
+  a complete editor), the keyboard intents (`rawFieldKeyDown`, `latchEdgeKey`, `BlockPlace`…),
+  `EquationStepsField` (steps `{ left, right, operation? }`, no ids) and `LinesBlockField` (lines
+  `{ id, latex }`). A block holds sub-blocks: Enter = new sub-block, Ctrl/Cmd+Enter = new block (Shift =
+  « inside the group », same as outside in Maths, which has no groups). No buttons next to a sub-block.
+  Mentale keeps `content/EquationEditor.tsx`, `fieldIntents.ts` and `MathFieldEditor.tsx` as thin facades.
+  `RecentFilesList` / `formatRelativeTime` are in `@suite/shared/shell` (slots `adornment`, `wrap`).
 
 A tauri app's `src-tauri/Cargo.toml` must declare **directly** every plugin its
 capability names (`fs`, `updater`…): `tauri-build` reads plugin permissions from
@@ -108,7 +115,8 @@ other apps of the suite have none.
 Born from `apps/base` with `new-app`; it has no sync and no PocketBase. Three areas, each
 under `src/`, wired together in `App.tsx`:
 
-- **`exercises/`** — the student's files and the centre area. A file is a *sheet* (`Sheet`
+- **`exercises/`** — the student's files and the centre area. With no file open the centre shows the
+  recently opened ones (`recentFiles.ts`, `localStorage` key `zachart-maths:session`, 10 max). A file is a *sheet* (`Sheet`
   in `types.ts`, v2, `exercices[]`) in a chapter folder under `Documents/Zach'Math/`; a v1
   file (one flat exercise) is read as a one-exercise sheet and only rewritten on its first
   edit. The order of a folder lives in its `_ordre.json`. `sheet.ts` holds the pure
@@ -128,19 +136,22 @@ under `src/`, wired together in `App.tsx`:
 - **Blocks** (`blocks.ts`): `texte`, `calcul`, `tableau`, `equation`. A new block type = a
   type in `blocks.ts` (`newBlock`, `parseBlocks`), an editor in `BlockStack.tsx`, an icon and
   hue in `blockMeta.ts`. A block of an unknown type is kept verbatim in the file, never dropped.
-  An equation step is `{ left, right, operation }` like Mentale's, and `operation` is read AFTER
-  its step; an old `{ latex, action }` step is split on its first `=` at read time (the `action`
-  of step *i+1* becomes the `operation` of step *i*). `BlockCard` is the gutter (icon, ▲ ▼, trash);
+  `equation` and `calcul` use the shared sub-block editors: `EquationEditor` / `CalcEditor` are adapters.
+  An equation step is `{ id, left, right, operation }`; the shared engine has no ids, `stepIds.ts`
+  (`toPlain`, `withIds`) puts them back. `operation` is read AFTER its step; an old `{ latex, action }`
+  step is split on its first `=` at read time. `calcul` is `{ lignes: { id, latex }[] }` (sub-blocks); an
+  old `{ expression, resultat }` is read as two lines (an empty `resultat` is ignored). `BlockStack`
+  wires Ctrl/Cmd+Enter (new block of the same type), arrows leaving a block, and the removal of an empty
+  block (`edges`, `enterBlock`, `removeAndFocus`). `BlockCard` is the gutter (icon, ▲ ▼, trash);
   moves are animated with `motion` (`layout="position"`) plus a `block-halo` ring, with no slide
-  under `prefers-reduced-motion`. Right-click has three levels, each stopping propagation to the
-  next: `FieldContextMenu` (a field), `BlockContextMenu` (a card), `EmptyAreaContextMenu` (blank
-  space of a zone). Radix submenus do not activate on click under jsdom: drive them by keyboard in tests.
+  under `prefers-reduced-motion`. Right-click has two levels, each stopping propagation to the
+  next: `BlockContextMenu` (a card) and `EmptyAreaContextMenu` (blank space of a zone); text fields
+  keep `FieldContextMenu`, formula fields have none.
 - **Toolbar** (`toolbarCatalog.ts`): symbols are data, one hue per family. A symbol has a
   `glyph` (plain fields), a `latex` (MathLive; `#0`/`#?` placeholders) and an optional `plain`.
   Text fields are filled with `insertAtCursor` (`setRangeText`, not `value =`: React and
   user-event both track `value`).
-- **`math/`** — `MathField` (MathLive, loaded on demand, raw-LaTeX textarea as the fallback
-  that is also a complete editor) and `renderMathToHtml` (KaTeX, bounded, `trust: false`).
+- **`math/`** — `isMathField` (the toolbar's target check); MathLive itself and `renderMathToHtml` come from `@suite/shared`.
 - **`cours/`** — courses are Markdown files in `cours/contenu/` (front matter `titre`,
   `chapitre`, `mots-cles`), compiled in with `import.meta.glob`; adding a course is adding a
   file. `suggest.ts` ranks them from the exercise's chapter folder name (generic names like
