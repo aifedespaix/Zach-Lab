@@ -155,3 +155,47 @@ export const removeRow = (cells: readonly string[][], r: number): string[][] =>
 /** Garde toujours au moins une colonne. */
 export const removeColumn = (cells: readonly string[][], c: number): string[][] =>
   cells[0].length <= 1 ? cells.map(row => [...row]) : cells.map(row => row.filter((_, j) => j !== c))
+
+/** Le contenu d'un bloc en texte brut : ce qu'on garde en le convertissant vers un autre type. */
+export function blockToPlain(block: KnownBlock): string {
+  switch (block.type) {
+    case 'texte': return block.contenu
+    case 'calcul': return block.resultat === '' ? block.expression : `${block.expression} = ${block.resultat}`
+    case 'tableau': return block.cellules.map(row => row.join('\t')).join('\n')
+    case 'equation': return block.etapes.map(s => `${s.left} = ${s.right}`).join('\n')
+  }
+}
+
+/** Change le type d'un bloc en gardant son id et ce qu'il disait. Vers le même type : le bloc tel quel. */
+export function convertBlock(block: KnownBlock, to: BlockType): KnownBlock {
+  if (block.type === to) return block
+  const plain = blockToPlain(block)
+  const lines = plain.split('\n').filter(l => l.trim() !== '')
+  switch (to) {
+    case 'texte': return { id: block.id, type: 'texte', contenu: plain }
+    case 'calcul': {
+      const { left, right } = splitAtEquals(lines[0] ?? '')
+      return { id: block.id, type: 'calcul', expression: left, resultat: right }
+    }
+    case 'equation': {
+      const etapes = lines.map(l => ({ id: crypto.randomUUID(), ...splitAtEquals(l), operation: '' }))
+      return { id: block.id, type: 'equation', etapes: etapes.length > 0 ? etapes : [newStep()] }
+    }
+    case 'tableau': return { id: block.id, type: 'tableau', cellules: normalizeCells(plain.split('\n').map(l => l.split('\t'))) }
+  }
+}
+
+/** Copie un bloc juste après lui, avec de nouveaux ids (le sien et ceux de ses étapes). */
+export function duplicateBlock(blocks: readonly Block[], id: string): { blocks: Block[]; added: Block } {
+  const at = blocks.findIndex(b => b.id === id)
+  if (at < 0) return { blocks: [...blocks], added: blocks[0] }
+  const copy = structuredClone(blocks[at]) as Block
+  copy.id = crypto.randomUUID()
+  if (copy.type === 'equation') {
+    const eq = copy as EquationBlock
+    eq.etapes = eq.etapes.map(s => ({ ...s, id: crypto.randomUUID() }))
+  }
+  const next = [...blocks]
+  next.splice(at + 1, 0, copy)
+  return { blocks: next, added: copy }
+}

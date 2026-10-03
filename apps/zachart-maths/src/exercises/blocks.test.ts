@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   addBlock, addColumn, addRow, insertBlockAfter, moveBlock, newBlock, parseBlocks, removeBlock, removeColumn, removeRow, setCell, splitAtEquals, updateBlock,
-  type Block, type EquationBlock,
+  convertBlock, duplicateBlock, type Block, type EquationBlock, type KnownBlock, type TableBlock,
 } from './blocks'
 
 const ids = (blocks: { id: string }[]) => blocks.map(b => b.id)
@@ -116,5 +116,37 @@ describe('tableau', () => {
     for (let i = 0; i < 30; i++) big = addColumn(addRow(big))
     expect(big).toHaveLength(12)
     expect(big[0]).toHaveLength(12)
+  })
+})
+
+describe('duplicateBlock', () => {
+  it('copie le bloc juste après lui avec de nouveaux ids, étapes comprises', () => {
+    const eq: Block = { id: 'q', type: 'equation', etapes: [{ id: 's', left: 'x', right: '1', operation: '' }] }
+    const { blocks, added } = duplicateBlock([eq], 'q')
+    expect(blocks).toHaveLength(2)
+    expect(added.id).not.toBe('q')
+    expect((added as EquationBlock).etapes[0]).toMatchObject({ left: 'x', right: '1' })
+    expect((added as EquationBlock).etapes[0].id).not.toBe('s')
+  })
+  it('copie un bloc de type inconnu tel quel, hors son id', () => {
+    const u: Block = { id: 'u', type: 'futur', extra: { n: 1 } }
+    const { added } = duplicateBlock([u], 'u')
+    expect(added).toMatchObject({ type: 'futur', extra: { n: 1 } })
+    expect(added.id).not.toBe('u')
+  })
+})
+
+describe('convertBlock', () => {
+  const calc: KnownBlock = { id: 'c', type: 'calcul', expression: '3×4', resultat: '12' }
+  it("garde l'id et le contenu lisible d'un type à l'autre", () => {
+    expect(convertBlock(calc, 'texte')).toEqual({ id: 'c', type: 'texte', contenu: '3×4 = 12' })
+    expect(convertBlock({ id: 't', type: 'texte', contenu: '2x = 8' }, 'calcul')).toEqual({ id: 't', type: 'calcul', expression: '2x', resultat: '8' })
+    const eq = convertBlock({ id: 't', type: 'texte', contenu: '2x+5=11\nx=3' }, 'equation') as EquationBlock
+    expect(eq.etapes.map(s => [s.left, s.right])).toEqual([['2x+5', '11'], ['x', '3']])
+  })
+  it("vers le même type ou un contenu vide : un bloc valide, jamais d'exception", () => {
+    expect(convertBlock(calc, 'calcul')).toEqual(calc)
+    expect((convertBlock({ id: 't', type: 'texte', contenu: '' }, 'equation') as EquationBlock).etapes).toHaveLength(1)
+    expect((convertBlock({ id: 't', type: 'texte', contenu: '' }, 'tableau') as TableBlock).cellules.length).toBeGreaterThan(0)
   })
 })

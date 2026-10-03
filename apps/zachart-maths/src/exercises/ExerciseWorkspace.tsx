@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Columns2, Plus, Trash2 } from 'lucide-react'
 import { Button, ConfirmDialog } from '@suite/shared/ui'
 import { AnimatedLogo } from '../AnimatedLogo'
 import { BlockStack } from './BlockStack'
+import { FieldContextMenu } from './FieldContextMenu'
 import { insertAtCursor, isTextField, type TextField } from './insertAtCursor'
 import { isMathField, type MathfieldElement } from '../math/MathField'
 import { isBlank } from './sheet'
@@ -10,6 +11,7 @@ import { Toolbar, type InsertTarget } from './Toolbar'
 import type { SymbolEntry } from './toolbarCatalog'
 import { useExerciseStore } from './useExerciseStore'
 import { useOpenExercise } from './useOpenExercise'
+import { SymbolInsertContext } from './symbolInsert'
 import { isSplit, mergeZones, sendBlock, splitZones, type Zone } from './zones'
 
 const STATUS_TEXT = {
@@ -123,6 +125,7 @@ export function ExerciseWorkspace() {
   const zone = { minWidth: 0, minHeight: 0, overflowY: 'auto', padding: 16, background: 'var(--background)' } as const
 
   return (
+    <SymbolInsertContext value={insertSymbol}>
     <section aria-label="Exercice" onFocus={rememberField} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <header style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 12, borderBottom: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -171,15 +174,17 @@ export function ExerciseWorkspace() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
-          <textarea
-            ref={enonce}
-            aria-label="Énoncé de l'exercice"
-            placeholder="Quelle est la question ?"
-            value={exercise.enonce}
-            rows={Math.max(2, exercise.enonce.split('\n').length)}
-            onChange={e => edit({ enonce: e.target.value })}
-            className={`${field} w-full`}
-          />
+          <FieldContextMenu kind="text">
+            <textarea
+              ref={enonce}
+              aria-label="Énoncé de l'exercice"
+              placeholder="Quelle est la question ?"
+              value={exercise.enonce}
+              rows={Math.max(2, exercise.enonce.split('\n').length)}
+              onChange={e => edit({ enonce: e.target.value })}
+              className={`${field} w-full`}
+            />
+          </FieldContextMenu>
           <Button
             variant={split ? 'secondary' : 'ghost'}
             size="icon-sm"
@@ -204,6 +209,8 @@ export function ExerciseWorkspace() {
               value={exercise.blocs}
               onChange={blocs => edit({ blocs })}
               onSend={split ? id => send('a', id) : undefined}
+              split={split}
+              onToggleSplit={toggleSplit}
               arrivedId={arrived?.zone === 'a' ? arrived.id : null}
             />
           </div>
@@ -214,6 +221,8 @@ export function ExerciseWorkspace() {
                 value={exercise.blocsB ?? []}
                 onChange={blocsB => edit({ blocsB })}
                 onSend={id => send('b', id)}
+                split={split}
+                onToggleSplit={toggleSplit}
                 arrivedId={arrived?.zone === 'b' ? arrived.id : null}
               />
             </div>
@@ -228,13 +237,15 @@ export function ExerciseWorkspace() {
         <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }} htmlFor="reponse-finale">
           Réponse
         </label>
-        <textarea
-          id="reponse-finale"
-          value={exercise.reponse}
-          onChange={e => edit({ reponse: e.target.value })}
-          rows={2}
-          className={`${field} w-full`}
-        />
+        <FieldContextMenu kind="text">
+          <textarea
+            id="reponse-finale"
+            value={exercise.reponse}
+            onChange={e => edit({ reponse: e.target.value })}
+            rows={2}
+            className={`${field} w-full`}
+          />
+        </FieldContextMenu>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 4 }}>
           <p
             role={status === 'failed' ? 'alert' : 'status'}
@@ -261,5 +272,6 @@ export function ExerciseWorkspace() {
         onConfirm={() => { setConfirming(false); removeCurrent() }}
       />
     </section>
+    </SymbolInsertContext>
   )
 }

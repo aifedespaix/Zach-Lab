@@ -6,6 +6,7 @@ import { MathField } from '../math/MathField'
 import type { EdgeMove } from '../math/edgeMove'
 import type { EquationBlock } from './blocks'
 import { addStepAfter, patchStep, removeStep } from './equation'
+import { FieldContextMenu } from './FieldContextMenu'
 import { BOX, LEFT_TONE, RIGHT_TONE, SOLVED_TONE } from './eqTones'
 
 type At = 'start' | 'end'
@@ -61,6 +62,7 @@ export function EquationEditor({ block, onChange }: { block: EquationBlock; onCh
     const step = etapes[i]
     const other = field === 'left' ? step.right : step.left
     return (
+      <FieldContextMenu kind="math">
       <MathField
         ref={register(step.id, field)}
         latex={step[field]}
@@ -73,6 +75,7 @@ export function EquationEditor({ block, onChange }: { block: EquationBlock; onCh
           else if (other === '' && etapes.length > 1) remove(i)
         }}
       />
+      </FieldContextMenu>
     )
   }
 
@@ -99,6 +102,7 @@ export function EquationEditor({ block, onChange }: { block: EquationBlock; onCh
               <Button variant="ghost" size="icon-sm" aria-label={`Supprimer l'étape ${i + 1}`} disabled={etapes.length <= 1} onClick={() => remove(i)}><X /></Button>
             </div>
             {operationVisible(etapes, i) && (
+              <FieldContextMenu kind="text">
               <input
                 ref={el => register(step.id, 'operation')(el === null ? null : {
                   focus: at => {
@@ -122,6 +126,7 @@ export function EquationEditor({ block, onChange }: { block: EquationBlock; onCh
                 }}
                 className="mt-1 ml-4 w-[calc(100%-1rem)] rounded border bg-background px-2 py-1 text-sm italic"
               />
+              </FieldContextMenu>
             )}
           </li>
         )

@@ -4,25 +4,30 @@ import { motion, useReducedMotion } from 'motion/react'
 import { Button } from '@suite/shared/ui'
 import { BlockCard } from './BlockCard'
 import { BLOCK_META } from './blockMeta'
+import { BlockContextMenu } from './BlockContextMenu'
 import { CalcEditor } from './CalcEditor'
+import { EmptyAreaContextMenu } from './EmptyAreaContextMenu'
 import { EquationEditor } from './EquationEditor'
+import { FieldContextMenu } from './FieldContextMenu'
 import { borderOf, toneOf } from './toolbarCatalog'
 import {
-  BLOCK_TYPES, newBlock, addColumn, addRow, canGrow, insertBlockAfter, isKnown, moveBlock, parseBlocks, removeBlock, removeColumn,
-  removeRow, setCell, updateBlock, type Block, type BlockType, type EquationBlock, type KnownBlock, type TableBlock, type TextBlock,
+  BLOCK_TYPES, newBlock, addColumn, addRow, canGrow, convertBlock, duplicateBlock, insertBlockAfter, isKnown, moveBlock, parseBlocks,
+  removeBlock, removeColumn, removeRow, setCell, updateBlock, type Block, type BlockType, type EquationBlock, type KnownBlock, type TableBlock, type TextBlock,
 } from './blocks'
 
 const field = 'rounded border bg-background px-2 py-1 text-sm'
 
 function TextEditor({ block, onChange }: { block: TextBlock; onChange: (patch: Partial<TextBlock>) => void }) {
   return (
-    <textarea
-      aria-label="Texte"
-      value={block.contenu}
-      rows={Math.max(2, block.contenu.split('\n').length)}
-      onChange={e => onChange({ contenu: e.target.value })}
-      className={`${field} w-full`}
-    />
+    <FieldContextMenu kind="text">
+      <textarea
+        aria-label="Texte"
+        value={block.contenu}
+        rows={Math.max(2, block.contenu.split('\n').length)}
+        onChange={e => onChange({ contenu: e.target.value })}
+        className={`${field} w-full`}
+      />
+    </FieldContextMenu>
   )
 }
 
@@ -38,13 +43,15 @@ function TableEditor({ block, onChange }: { block: TableBlock; onChange: (patch:
               <tr key={r}>
                 {row.map((value, c) => (
                   <td key={c} style={{ border: '1px solid var(--border)', padding: 0 }}>
-                    <input
-                      aria-label={`Ligne ${r + 1}, colonne ${c + 1}`}
-                      value={value}
-                      onChange={e => set(setCell(cells, r, c, e.target.value))}
-                      className="bg-background px-2 py-1 text-sm"
-                      style={{ width: 90 }}
-                    />
+                    <FieldContextMenu kind="text">
+                      <input
+                        aria-label={`Ligne ${r + 1}, colonne ${c + 1}`}
+                        value={value}
+                        onChange={e => set(setCell(cells, r, c, e.target.value))}
+                        className="bg-background px-2 py-1 text-sm"
+                        style={{ width: 90 }}
+                      />
+                    </FieldContextMenu>
                   </td>
                 ))}
               </tr>
@@ -72,12 +79,16 @@ function editorFor(block: KnownBlock, onChange: (patch: Partial<KnownBlock>) => 
 }
 
 /** La pile de blocs de la zone de travail : chaque bloc se déplace d'un cran et se supprime, et les boutons d'ajout sont au bout. */
-export function BlockStack({ value, onChange, label = "Blocs de l'exercice", arrivedId = null }: {
+export function BlockStack({ value, onChange, label = "Blocs de l'exercice", onSend, split = false, onToggleSplit, arrivedId = null }: {
   value: readonly unknown[]
   onChange: (blocs: Block[]) => void
   label?: string
   /** Présent quand l'exercice est scindé : envoie un bloc dans l'autre zone (câblé au clic droit). */
   onSend?: (id: string) => void
+  /** L'exercice est-il scindé ? Dit au clic droit sur le vide s'il faut proposer de scinder ou de réunir. */
+  split?: boolean
+  /** Scinder ou réunir les zones ; absent, le clic droit sur le vide ne le propose pas. */
+  onToggleSplit?: () => void
   /** Le bloc qui vient de l'autre zone : fondu d'entrée, halo et curseur. */
   arrivedId?: string | null
 }) {
@@ -120,7 +131,9 @@ export function BlockStack({ value, onChange, label = "Blocs de l'exercice", arr
   }
 
   return (
-    <div>
+    <EmptyAreaContextMenu onAdd={add} split={split} onToggleSplit={onToggleSplit}>
+    {/* `minHeight: 100%` : le clic droit sur le blanc sous les blocs, jusqu'au bas de la zone, ouvre le menu du vide. */}
+    <div data-testid="zone-vide" style={{ minHeight: '100%' }}>
       <ul aria-label={label} style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
         {blocks.map((block, i) => (
           <motion.li
@@ -132,19 +145,38 @@ export function BlockStack({ value, onChange, label = "Blocs de l'exercice", arr
             animate={{ opacity: 1 }}
             data-slide={reduced ? 'off' : 'on'}
           >
-            <BlockCard
-              block={block}
+            <BlockContextMenu
               index={i}
               count={blocks.length}
-              halo={halo === block.id}
-              onHaloEnd={() => setHalo(null)}
+              kind={isKnown(block) ? block.type : null}
               onMove={delta => move(block.id, delta)}
+              onDuplicate={() => {
+                const r = duplicateBlock(blocks, block.id)
+                setHalo(r.added.id)
+                onChange(r.blocks)
+              }}
               onRemove={() => onChange(removeBlock(blocks, block.id))}
+              onChangeKind={type => {
+                if (isKnown(block)) onChange(blocks.map(b => (b.id === block.id ? convertBlock(block, type) : b)))
+              }}
+              onSend={onSend === undefined ? undefined : () => onSend(block.id)}
             >
-              {isKnown(block)
-                ? editorFor(block, patch => onChange(updateBlock(blocks, block.id, patch)), () => insertAfter(block.id, 'calcul'))
-                : <p style={{ fontSize: 13, color: 'var(--muted-foreground)', margin: 0 }}>Ce type de bloc n'est pas encore pris en charge ; il est conservé tel quel.</p>}
-            </BlockCard>
+              <div>
+                <BlockCard
+                  block={block}
+                  index={i}
+                  count={blocks.length}
+                  halo={halo === block.id}
+                  onHaloEnd={() => setHalo(null)}
+                  onMove={delta => move(block.id, delta)}
+                  onRemove={() => onChange(removeBlock(blocks, block.id))}
+                >
+                  {isKnown(block)
+                    ? editorFor(block, patch => onChange(updateBlock(blocks, block.id, patch)), () => insertAfter(block.id, 'calcul'))
+                    : <p style={{ fontSize: 13, color: 'var(--muted-foreground)', margin: 0 }}>Ce type de bloc n'est pas encore pris en charge ; il est conservé tel quel.</p>}
+                </BlockCard>
+              </div>
+            </BlockContextMenu>
           </motion.li>
         ))}
       </ul>
@@ -170,5 +202,6 @@ export function BlockStack({ value, onChange, label = "Blocs de l'exercice", arr
         })}
       </div>
     </div>
+    </EmptyAreaContextMenu>
   )
 }
