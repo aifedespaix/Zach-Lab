@@ -439,7 +439,7 @@
    Nu au repos — ni bordure ni fond, juste le glyphe — et il ne prend l'apparence
    d'un bouton qu'au survol ou au focus clavier. Les couleurs sont ICI et pas en
    ligne sur le bouton : un style en ligne l'emporterait sur `:hover`, et le
-   bouton ne pourrait jamais apparaître (voir `BARE_HANDLE` dans `BlockEditor`).
+   bouton ne pourrait jamais apparaître (voir `BARE_HANDLE` dans `TableGrid`).
    --------------------------------------------------------------------------- */
 .table-handle {
   border: 1px solid transparent;

@@ -1,6 +1,6 @@
 import { useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
-import { Hint, TooltipProvider } from '../ui'
+import { Hint } from '../ui'
 
 export interface TableGridProps {
   /** Identifies the table in accessible names (« …du tableau 2 »). */
@@ -16,12 +16,15 @@ export interface TableGridProps {
   onAddColumn: (after: number) => void
   onRemoveRow: (row: number) => void
   onRemoveColumn: (column: number) => void
+  /** Put on the grid's root element (tests find the table by it). */
+  'data-testid'?: string
 }
 
 /**
  * A table drawn as a CSS grid with a `+` on every row and column boundary and a
  * bin next to it. Purely presentational: it knows counts and render callbacks,
- * never the data.
+ * never the data. Needs a `TooltipProvider` above it (the handles' hints): every
+ * app mounts one.
  *
  * A `+` sits on every boundary — above each column, left of each row — and a
  * bin next to it. That is the whole editing model: click where you want the new
@@ -40,7 +43,10 @@ export function TableGrid({
   onAddColumn,
   onRemoveRow,
   onRemoveColumn,
+  'data-testid': testId,
 }: TableGridProps) {
+  // At least one track: `repeat(0, …)` is invalid CSS and would drop the whole template.
+  const trackCount = Math.max(1, columnCount)
   const canRemoveColumn = columnCount > 1
   const canRemoveRow = rowCount > 1
 
@@ -83,9 +89,9 @@ export function TableGrid({
   const rows = Array.from({ length: rowCount }, (_, r) => r)
 
   return (
-    <TooltipProvider>
       <div
         ref={gridRef}
+        data-testid={testId}
         onMouseOver={event => {
           const cell = cellOf(event.target)
           if (cell) setHovered(cell)
@@ -106,7 +112,7 @@ export function TableGrid({
           // poubelle de la ligne, qui ne se chevauchent pas parce que l'un est
           // collé au bord droit et l'autre au bord gauche. La poubelle d'une
           // COLONNE, elle, est centrée sur sa colonne, donc hors de ce calcul.
-          gridTemplateColumns: `52px repeat(${columnCount}, minmax(84px, 1fr))`,
+          gridTemplateColumns: `52px repeat(${trackCount}, minmax(84px, 1fr))`,
           gap: TABLE_GRID_GAP,
           alignItems: 'stretch',
         }}
@@ -191,7 +197,6 @@ export function TableGrid({
           />
         ))}
       </div>
-    </TooltipProvider>
   )
 }
 
@@ -329,7 +334,7 @@ function TableHandle({
         ? { transform: `translateY(${HANDLE_STRADDLE}px)` }
         : straddle === 'row-start'
           ? // Headerless table: the boundary BEFORE the first row is its top edge.
-            { alignSelf: 'flex-start', transform: `translateY(${-HANDLE_STRADDLE}px)` }
+            { transform: `translateY(${-HANDLE_STRADDLE}px)` }
           : undefined
 
   return (
@@ -379,12 +384,18 @@ function TableGridRow({
     <>
       <div style={{ ...HANDLE_ROW, position: 'relative' }}>
         {insertBefore && (
-          <TableHandle
-            label={`Insérer une ligne avant la ligne 1 du tableau ${tableLabel}`}
-            onActivate={() => onAddRow(-1)}
-            icon={<Plus size={13} />}
-            straddle="row-start"
-          />
+          // Its OWN absolutely-positioned box on the top-right of the gutter,
+          // straddling the top boundary: never a flex sibling of the row's
+          // bin (left, x 0-22) nor of the after-+ (bottom-right), so on a
+          // 28px row the three boxes stay apart (bin x 0-22, + x 30-52).
+          <span data-testid="insert-before-first-row" style={{ position: 'absolute', top: 0, right: 0, display: 'flex' }}>
+            <TableHandle
+              label={`Insérer une ligne avant la ligne 1 du tableau ${tableLabel}`}
+              onActivate={() => onAddRow(-1)}
+              icon={<Plus size={13} />}
+              straddle="row-start"
+            />
+          </span>
         )}
         <TableHandle
           label={`Insérer une ligne après la ligne ${rowIndex + 1} du tableau ${tableLabel}`}
