@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { ChevronDown, ChevronRight, FilePlus, FileText, FileWarning, FolderPlus } from 'lucide-react'
+import { ChevronDown, ChevronRight, FilePlus, FileText, FileWarning, FolderPlus, PanelLeftClose } from 'lucide-react'
+import { CommandButton } from '@suite/shared/commands'
 import {
   Button, ConfirmDialog, ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuSub,
   ContextMenuSubContent, ContextMenuSubTrigger, ContextMenuTrigger,
@@ -87,9 +88,12 @@ export function ExerciseTree() {
     <nav aria-label="Exercices" style={{ display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px' }}>
         <strong style={{ fontSize: 13 }}>Mes exercices</strong>
-        <Button variant="ghost" size="icon-sm" aria-label="Nouveau chapitre" onClick={() => setNaming({ kind: 'new-chapter' })}>
-          <FolderPlus />
-        </Button>
+        <div style={{ display: 'flex', gap: 2 }}>
+          <Button variant="ghost" size="icon-sm" aria-label="Nouveau chapitre" onClick={() => setNaming({ kind: 'new-chapter' })}>
+            <FolderPlus />
+          </Button>
+          <CommandButton command="view.toggleTree" icon={PanelLeftClose} label="Replier l'arborescence" variant="ghost" size="icon-sm" />
+        </div>
       </div>
 
       {error !== null && (

@@ -8,7 +8,7 @@ import {
   useShortcutSettingsStore,
 } from '@suite/shared/commands'
 import { SettingsDialog, ShortcutSettingsPanel } from '@suite/shared/settings'
-import { AppShell, BootScreen, ResizablePanel, createPanelWidthStorage } from '@suite/shared/shell'
+import { AppShell, BootScreen, CollapsiblePanel, createPanelWidthStorage } from '@suite/shared/shell'
 import { startCircularThemeTransition, useResolvedTheme, useThemeDomSync, useThemeStore } from '@suite/shared/theme'
 import { TooltipProvider } from '@suite/shared/ui'
 import { UpdateReadyBanner, useAppUpdater } from '@suite/shared/update'
@@ -79,25 +79,33 @@ export default function App() {
     <TooltipProvider>
       <AppShell
         left={
-          <ResizablePanel
+          <CollapsiblePanel
             side="left"
             label="Panneau gauche"
             resizeLabel="Redimensionner le panneau de gauche"
             storage={leftPanel}
+            collapsedKey="zachart-maths:left-collapsed"
+            toggleCommand="view.toggleTree"
+            foldLabel="Replier l'arborescence"
+            unfoldLabel="Déplier l'arborescence"
           >
             <ExerciseTree />
             <SheetOutline />
-          </ResizablePanel>
+          </CollapsiblePanel>
         }
         right={
-          <ResizablePanel
+          <CollapsiblePanel
             side="right"
             label="Panneau droit"
             resizeLabel="Redimensionner le panneau de droite"
             storage={rightPanel}
+            collapsedKey="zachart-maths:right-collapsed"
+            toggleCommand="view.toggleCourses"
+            foldLabel="Replier le panneau des cours"
+            unfoldLabel="Déplier le panneau des cours"
           >
             <CoursePanel />
-          </ResizablePanel>
+          </CollapsiblePanel>
         }
         toolbar={
           <>

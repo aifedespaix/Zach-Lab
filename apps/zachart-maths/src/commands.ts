@@ -44,6 +44,20 @@ export const COMMANDS = [
     defaultBinding: 'Mod+Shift+N',
     allowInEditable: true,
   },
+  {
+    id: 'view.toggleTree',
+    label: 'Afficher ou masquer l’arborescence',
+    description: 'Replie le panneau des exercices pour donner toute la place à la zone de travail.',
+    category: 'view',
+    defaultBinding: 'Mod+B',
+  },
+  {
+    id: 'view.toggleCourses',
+    label: 'Afficher ou masquer les cours',
+    description: 'Replie le panneau des cours et des notes pour donner toute la place à la zone de travail.',
+    category: 'view',
+    defaultBinding: 'Mod+Shift+B',
+  },
 ] as const
 
 export type CommandId = (typeof COMMANDS)[number]['id']
@@ -51,6 +65,7 @@ export type CommandId = (typeof COMMANDS)[number]['id']
 defineCommandCatalog({
   categories: [
     { id: 'app', label: 'Application' },
+    { id: 'view', label: 'Affichage' },
     { id: 'cours', label: 'Cours et notes' },
   ],
   commands: COMMANDS,

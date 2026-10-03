@@ -1,7 +1,7 @@
 import { useDeferredValue, useMemo } from 'react'
-import { EyeOff, NotebookPen, Search } from 'lucide-react'
+import { EyeOff, NotebookPen, PanelRightClose, Search } from 'lucide-react'
 import { Button } from '@suite/shared/ui'
-import { useCommand } from '@suite/shared/commands'
+import { CommandButton, useCommand } from '@suite/shared/commands'
 import { useOpenExercise } from '../exercises/useOpenExercise'
 import { CourseSearchDialog } from './CourseSearchDialog'
 import { COURSES, type Course } from './courses'
@@ -38,6 +38,7 @@ function CoursesSection({ courses }: { courses: readonly Course[] }) {
         <Button variant="ghost" size="icon-sm" aria-label="Notes" aria-pressed={notesVisible} onClick={() => setNotesVisible(!notesVisible)}>
           <NotebookPen />
         </Button>
+        <CommandButton command="view.toggleCourses" icon={PanelRightClose} label="Replier le panneau des cours" variant="ghost" size="icon-sm" />
       </header>
 
       {suggestions.length > 0 && (

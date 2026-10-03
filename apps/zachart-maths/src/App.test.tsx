@@ -50,6 +50,48 @@ describe('App base', () => {
     expect(screen.getAllByRole('separator')).toHaveLength(2)
   })
 
+  it("le bouton d'en-tête range le panneau gauche, la bande le rouvre", async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await act(async () => {})
+    await user.click(await screen.findByRole('button', { name: "Replier l'arborescence" }))
+    expect(screen.queryByRole('complementary', { name: 'Panneau gauche' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: "Déplier l'arborescence" }))
+    expect(screen.getByRole('complementary', { name: 'Panneau gauche' })).toBeInTheDocument()
+  })
+
+  it('Ctrl+B range le panneau gauche et le rouvre, même rangé', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await act(async () => {})
+    await user.keyboard('{Control>}b{/Control}')
+    expect(screen.queryByRole('complementary', { name: 'Panneau gauche' })).toBeNull()
+    await user.keyboard('{Control>}b{/Control}')
+    expect(screen.getByRole('complementary', { name: 'Panneau gauche' })).toBeInTheDocument()
+  })
+
+  it('Ctrl+Maj+B range le panneau des cours, indépendamment de celui de gauche', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await act(async () => {})
+    await user.keyboard('{Control>}{Shift>}b{/Shift}{/Control}')
+    expect(screen.queryByRole('complementary', { name: 'Panneau droit' })).toBeNull()
+    expect(screen.getByRole('complementary', { name: 'Panneau gauche' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Déplier le panneau des cours' }))
+    expect(screen.getByRole('complementary', { name: 'Panneau droit' })).toBeInTheDocument()
+  })
+
+  it("l'état rangé d'un panneau est retenu au lancement suivant", async () => {
+    const user = userEvent.setup()
+    const { unmount } = render(<App />)
+    await act(async () => {})
+    await user.click(await screen.findByRole('button', { name: "Replier l'arborescence" }))
+    unmount()
+    render(<App />)
+    await act(async () => {})
+    expect(screen.queryByRole('complementary', { name: 'Panneau gauche' })).toBeNull()
+  })
+
   it('n\'affiche pas de bannière de mise à jour quand il n\'y en a pas', async () => {
     render(<App />)
     await act(async () => {})
