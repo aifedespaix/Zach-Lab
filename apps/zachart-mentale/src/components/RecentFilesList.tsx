@@ -1,17 +1,17 @@
 // src/components/RecentFilesList.tsx
 import { useState } from 'react'
 import { revealItemInDir } from '@tauri-apps/plugin-opener'
-import { FileJson, FolderSearch, ClipboardCopy, Download, Pencil, X } from 'lucide-react'
+import { FolderSearch, ClipboardCopy, Download, Pencil, X } from 'lucide-react'
 import { fileNameOf, mindMapBaseName, parentDirOf, separatorOf, mindMapExtensionSuffix } from '../persistence/paths'
 import { renamePath } from '../persistence/fileOps'
 import { loadMindMap } from '../persistence/fileStore'
 import { validateCards } from '../validation/cardsValidation'
 import type { Card } from '../types/card'
-import { formatRelativeTime } from '../utils/relativeTime'
 import type { RecentFile } from '../persistence/sessionState'
 import { useMindMapAuthor } from '../hooks/useMindMapAuthor'
 import { useWorkspaceStore, describeError } from '../state/useWorkspaceStore'
 import { MapTypeBadge } from './sidebar/MapTypeBadge'
+import { RecentFilesList as SharedRecentFilesList } from '@suite/shared/shell'
 import {
   TooltipProvider,
   ContextMenu,
@@ -40,28 +40,36 @@ interface RecentFilesListProps {
  */
 export function RecentFilesList({ files, onOpen }: RecentFilesListProps) {
   if (files.length === 0) return null
+  const items = files.map(f => ({
+    path: f.path,
+    name: mindMapBaseName(f.path),
+    folder: fileNameOf(parentDirOf(f.path)),
+    openedAt: f.openedAt,
+  }))
 
   return (
     // Own provider: this list lives in the main area, outside the one
     // `FileSidebar` mounts for its own tree's badges — without it, Radix
     // throws the moment a row's `MapTypeBadge` renders a `Tooltip`.
     <TooltipProvider>
-      <div className="recent-files">
-        <div className="recent-files__title">Cartes ouvertes récemment</div>
-        <ul className="recent-files__list">
-          {files.map(file => (
-            <RecentFileRow key={file.path} file={file} onOpen={onOpen} />
-          ))}
-        </ul>
-      </div>
+      <SharedRecentFilesList
+        title="Cartes ouvertes récemment"
+        items={items}
+        onOpen={onOpen}
+        adornment={item => <RecentBadge path={item.path} />}
+        wrap={(item, row) => <RecentFileMenu file={files.find(f => f.path === item.path)!}>{row}</RecentFileMenu>}
+      />
     </TooltipProvider>
   )
 }
 
-function RecentFileRow({ file, onOpen }: { file: RecentFile; onOpen: (path: string) => void }) {
-  // Same badge as the sidebar's tree row, and the same source for it: the
-  // map's own `meta.type` header, read straight off disk.
-  const meta = useMindMapAuthor(file.path)
+/** Same badge as the sidebar's tree row, from the map's own `meta.type` header read off disk. */
+function RecentBadge({ path }: { path: string }) {
+  const meta = useMindMapAuthor(path)
+  return <MapTypeBadge type={meta?.type} />
+}
+
+function RecentFileMenu({ file, children }: { file: RecentFile; children: React.ReactElement }) {
   const setWorkspaceError = useWorkspaceStore(s => s.setWorkspaceError)
   const removeRecentFile = useWorkspaceStore(s => s.removeRecentFile)
   const renameRecentFile = useWorkspaceStore(s => s.renameRecentFile)
@@ -140,19 +148,9 @@ function RecentFileRow({ file, onOpen }: { file: RecentFile; onOpen: (path: stri
   }
 
   return (
-    <li>
+    <>
       <ContextMenu>
-        <ContextMenuTrigger asChild>
-          <button type="button" className="recent-files__row" onClick={() => onOpen(file.path)}>
-            <FileJson size={16} className="recent-files__icon" aria-hidden="true" />
-            <span className="recent-files__text">
-              <span className="recent-files__name">{mindMapBaseName(file.path)}</span>
-              <span className="recent-files__folder">{fileNameOf(parentDirOf(file.path))}</span>
-            </span>
-            <MapTypeBadge type={meta?.type} />
-            <span className="recent-files__time">{formatRelativeTime(file.openedAt)}</span>
-          </button>
-        </ContextMenuTrigger>
+        <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
         <ContextMenuContent>
           {moveDestinations.length > 0 && <MoveToSubmenu destinations={moveDestinations} onSelect={moveTo} />}
           <ContextMenuItem onSelect={revealInExplorer}>
@@ -195,6 +193,6 @@ function RecentFileRow({ file, onOpen }: { file: RecentFile; onOpen: (path: stri
           onError={setWorkspaceError}
         />
       )}
-    </li>
+    </>
   )
 }
