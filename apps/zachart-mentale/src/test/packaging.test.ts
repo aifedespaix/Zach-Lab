@@ -93,14 +93,15 @@ describe('updater', () => {
     expect(tauriConfig.bundle.createUpdaterArtifacts).toBe(true)
   })
 
-  it('still polls the legacy endpoint: moving it is a decision of its own (docs/RELEASE.md)', () => {
-    // `releases/latest` means « the newest release of the WHOLE repository ». It
-    // works only while Zachar’t Mentale is the one app published as a normal
-    // release (the others are pre-releases). Installs already in the field
-    // depend on it, so the endpoint changes only WITH a transition release that
-    // lists the new one first and this one after — docs/RELEASE.md, « Migration
-    // de l’endpoint ». Change both this test and that document together.
+  it('polls the rolling release first, then the legacy endpoint (docs/RELEASE.md)', () => {
+    // Transition release: installs already in the field only know
+    // `releases/latest`, which means « the newest release of the WHOLE
+    // repository » and works only while Zachar’t Mentale is the one app published
+    // as a normal release. The legacy endpoint stays last, and valid, until no old
+    // install remains — docs/RELEASE.md, « Migration de l’endpoint ». Change both
+    // this test and that document together.
     expect(updater.endpoints).toEqual([
+      'https://github.com/aifedespaix/Zachar-t-Mentale/releases/download/updater-zachart/latest.json',
       'https://github.com/aifedespaix/Zachar-t-Mentale/releases/latest/download/latest.json',
     ])
   })
