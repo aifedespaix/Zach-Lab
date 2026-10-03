@@ -65,12 +65,14 @@ export function ExerciseTree() {
   // replié du moment, pas celui du rendu qui les a créées.
   const foldedRef = useRef(folded)
   foldedRef.current = folded
+  // Les chapitres que la recherche force ouverts : un chapitre ouvert à l'écran n'est pas à déplier au survol.
+  const forcedOpenRef = useRef<ReadonlySet<string>>(new Set())
 
   const startDrag = (e: React.PointerEvent<HTMLElement>, exo: { path: string; titre: string }) =>
     beginTreeDrag(e, { path: exo.path, name: exo.titre, kind: 'file' }, {
       // Un fichier ne se dépose que sur un AUTRE chapitre.
       canDrop: (source, target) => target !== splitPath(source.path)[0],
-      isExpanded: target => !foldedRef.current.has(target),
+      isExpanded: target => forcedOpenRef.current.has(target) || !foldedRef.current.has(target),
       expand: target => setFolded(prev => { const next = new Set(prev); next.delete(target); return next }),
       onDrop: (source, target) => void useExerciseStore.getState().moveExercise(source.path, target),
     })
@@ -86,6 +88,8 @@ export function ExerciseTree() {
     const current = naming
     setNaming(null)
     if (current === null) return
+    // Un élément créé pendant une recherche resterait invisible s'il ne correspond pas à la requête.
+    if (current.kind === 'new-chapter' || current.kind === 'new-exercise') setSearch('')
     switch (current.kind) {
       case 'new-chapter': return void store.addChapter(value)
       case 'rename-chapter': return void store.renameChapter(current.chapter, value)
@@ -101,7 +105,10 @@ export function ExerciseTree() {
     void (current.kind === 'chapter' ? store.removeChapter(current.chapter) : store.removeExercise(current.path))
   }
 
-  useCommand('tree.newChapter', () => setNaming({ kind: 'new-chapter' }))
+  useCommand('tree.newChapter', () => {
+    setSearch('')
+    setNaming({ kind: 'new-chapter' })
+  })
   useCommand('tree.toggleAll', () =>
     setFolded(prev => {
       // Seuls les chapitres qui existent comptent : `folded` garde les noms d'anciens chapitres.
@@ -111,6 +118,7 @@ export function ExerciseTree() {
   )
 
   const view = useMemo(() => filterChapters(tree, search), [tree, search])
+  forcedOpenRef.current = view.forcedOpen
 
   if (!loaded) return <p style={{ padding: 12, fontSize: 13 }}>Chargement des exercices…</p>
 
@@ -275,7 +283,7 @@ export function ExerciseTree() {
           <ContextMenuItem disabled={tree.length === 0} onSelect={() => setFolded(new Set(tree.map(c => c.name)))}>
             <ChevronsDownUp /> Tout replier
           </ContextMenuItem>
-          <ContextMenuItem disabled={folded.size === 0} onSelect={() => setFolded(new Set())}><ChevronsUpDown /> Tout déplier</ContextMenuItem>
+          <ContextMenuItem disabled={tree.every(c => !folded.has(c.name))} onSelect={() => setFolded(new Set())}><ChevronsUpDown /> Tout déplier</ContextMenuItem>
           <ContextMenuSeparator />
           <ContextMenuItem onSelect={() => void runCommand('view.toggleTree')}><PanelLeftClose /> Ranger le panneau</ContextMenuItem>
         </ContextMenuContent>

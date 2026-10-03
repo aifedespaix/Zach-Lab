@@ -162,6 +162,33 @@ describe('ExerciseTree', () => {
       expect(screen.getByRole('menuitem', { name: 'Descendre' })).toHaveAttribute('data-disabled')
     })
 
+    it('créer un chapitre ou un exercice pendant une recherche la vide, pour que le nouvel élément se voie', async () => {
+      const { user } = await setup(files)
+      await screen.findByText('Additionner')
+      const box = screen.getByRole('textbox', { name: 'Rechercher un exercice' })
+      await user.type(box, 'pyth')
+      await act(async () => void runCommand('tree.newChapter'))
+      expect(box).toHaveValue('')
+      await user.type(screen.getByLabelText('Nom du nouveau chapitre'), 'Zèbre{Enter}')
+      expect(await screen.findByRole('button', { name: /Zèbre/ })).toBeInTheDocument()
+
+      await user.type(box, 'pyth')
+      await user.pointer({ keys: '[MouseRight]', target: screen.getByRole('button', { name: /Géométrie/ }) })
+      await user.click(await screen.findByRole('menuitem', { name: /Nouvel exercice/ }))
+      await user.type(screen.getByLabelText('Titre du nouvel exercice'), 'Nouveau{Enter}')
+      expect(box).toHaveValue('')
+      expect(await screen.findByRole('button', { name: 'Nouveau' })).toBeInTheDocument()
+    })
+
+    it('« Tout déplier » du vide se base sur les chapitres réels, pas sur des noms périmés', async () => {
+      const { user } = await setup({ 'A/a.json': mk('ExoA') })
+      await user.click(await screen.findByRole('button', { name: /^A$/ }))
+      await act(async () => void (await useExerciseStore.getState().renameChapter('A', 'C')))
+      await screen.findByRole('button', { name: /^C$/ })
+      await user.pointer({ keys: '[MouseRight]', target: screen.getByTestId('arbre-vide') })
+      expect(await screen.findByRole('menuitem', { name: /Tout déplier/ })).toHaveAttribute('data-disabled')
+    })
+
     it('bibliothèque vide + recherche : pas de « Aucun chapitre », seulement « Aucun résultat »', async () => {
       const { user } = await setup()
       await user.type(screen.getByRole('textbox', { name: 'Rechercher un exercice' }), 'abc')
