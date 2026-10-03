@@ -1,6 +1,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
@@ -137,6 +138,8 @@ export function FileSidebar({ onOpenFile }: FileSidebarProps) {
    * the second time.
    */
   const [searchFocusRequest, setSearchFocusRequest] = useState(0)
+  /** « Mod + F » pressed while the bar was folded: focus once it is unfolded. */
+  const focusAfterUnfold = useRef(false)
   /**
    * Bumped when a publish or a pull rewrote a `.zmap`'s header: the type index
    * has to re-read then, or the filter would keep classing a map under the type
@@ -311,9 +314,20 @@ export function FileSidebar({ onOpenFile }: FileSidebarProps) {
   useCommand('view.findInTree', () => {
     // Unfold first: the field only exists in the unfolded bar, so focusing it
     // while the tree is folded away would do nothing at all.
-    setCollapsed(false)
-    setSearchFocusRequest(request => request + 1)
+    // The field only reacts to a bump that comes AFTER it mounted, so when the bar is folded the
+    // bump waits for the effect below, which runs once the unfolded bar is on screen.
+    if (collapsed) {
+      focusAfterUnfold.current = true
+      setCollapsed(false)
+    } else {
+      setSearchFocusRequest(request => request + 1)
+    }
   })
+  useEffect(() => {
+    if (collapsed || !focusAfterUnfold.current) return
+    focusAfterUnfold.current = false
+    setSearchFocusRequest(request => request + 1)
+  }, [collapsed])
   useCommand('file.addRootFolder', () => void handleAddFolder())
   useCommand('file.refresh', () => void handleRefreshAll())
   useCommand('view.collapseFolders', () => collapseAllFolders(), rootFolders.length > 0)

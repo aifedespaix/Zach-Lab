@@ -8,7 +8,10 @@ interface PanelSearchProps {
   placeholder?: string
   /** The field's accessible name, e.g. « Rechercher un exercice ». */
   ariaLabel: string
-  /** Bump it (> 0) to put the caret in the field and select its text — a shortcut's job. */
+  /**
+   * Bump it (> 0) to put the caret in the field and select its text — a shortcut's job. Only a change
+   * AFTER the field mounted counts: bump it once the field is on screen.
+   */
   focusRequest?: number
   /** A control sitting to the right of the field, e.g. a type filter. */
   trailing?: ReactNode
@@ -23,7 +26,12 @@ interface PanelSearchProps {
 export function PanelSearch({ value, onChange, placeholder = 'Rechercher…', ariaLabel, focusRequest = 0, trailing }: PanelSearchProps) {
   const inputRef = useRef<HTMLInputElement>(null)
 
+  // Only a REAL change after mount focuses: a field that remounts (its panel folded then unfolded)
+  // with an old, already-handled request must not steal the focus again.
+  const handled = useRef(focusRequest)
   useEffect(() => {
+    if (focusRequest === handled.current) return
+    handled.current = focusRequest
     if (focusRequest === 0) return
     inputRef.current?.focus()
     inputRef.current?.select()
@@ -49,7 +57,11 @@ export function PanelSearch({ value, onChange, placeholder = 'Rechercher…', ar
           style={{ paddingLeft: 24, paddingRight: value === '' ? 8 : 26 }}
         />
         {value !== '' && (
-          <Button variant="ghost" size="icon-sm" aria-label="Effacer la recherche" onClick={() => onChange('')} style={{ position: 'absolute', right: 2 }}>
+          <Button variant="ghost" size="icon-sm" aria-label="Effacer la recherche" onClick={() => {
+              onChange('')
+              inputRef.current?.focus()
+            }}
+            style={{ position: 'absolute', right: 2 }}>
             <X size={13} />
           </Button>
         )}

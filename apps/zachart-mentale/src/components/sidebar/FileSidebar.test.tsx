@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { FileSidebar } from './FileSidebar'
+import { useCommandRegistry } from '@suite/shared/commands'
 import {
   DEFAULT_SIDEBAR_WIDTH,
   MAX_SIDEBAR_WIDTH,
@@ -867,6 +868,23 @@ describe('FileSidebar — recherche', () => {
     vi.mocked(createMindMapFile).mockReset()
     vi.mocked(freeSiblingPath).mockReset()
     vi.mocked(scanFolder).mockReset().mockResolvedValue(CHAPTER)
+  })
+
+  it('le raccourci de recherche met le focus dans le champ, replié ou non, mais un simple dépli ne le fait pas', async () => {
+    render(<FileSidebar onOpenFile={() => {}} />)
+    await screen.findByText('cours')
+
+    act(() => void useCommandRegistry.getState().run('view.findInTree'))
+    expect(screen.getByRole('textbox', SEARCH_FIELD)).toHaveFocus()
+
+    act(() => void useCommandRegistry.getState().run('view.toggleSidebar'))
+    expect(screen.queryByRole('textbox', SEARCH_FIELD)).toBeNull()
+    act(() => void useCommandRegistry.getState().run('view.toggleSidebar'))
+    expect(screen.getByRole('textbox', SEARCH_FIELD)).not.toHaveFocus()
+
+    act(() => void useCommandRegistry.getState().run('view.toggleSidebar'))
+    act(() => void useCommandRegistry.getState().run('view.findInTree'))
+    expect(await screen.findByRole('textbox', SEARCH_FIELD)).toHaveFocus()
   })
 
   it('filtre les lignes par nom, sans tenir compte des accents ni de la casse', async () => {

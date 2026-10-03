@@ -38,4 +38,21 @@ describe('PanelSearch', () => {
     rerender(<Harness focusRequest={1} />)
     expect(screen.getByRole('textbox')).toHaveFocus()
   })
+
+  it('ne prend pas le focus à un montage avec une requête déjà traitée (panneau replié puis déplié)', () => {
+    const first = render(<Harness focusRequest={3} />)
+    expect(screen.getByRole('textbox')).not.toHaveFocus()
+    first.rerender(<Harness focusRequest={4} />)
+    expect(screen.getByRole('textbox')).toHaveFocus()
+    first.unmount()
+    render(<Harness focusRequest={4} />)
+    expect(screen.getByRole('textbox')).not.toHaveFocus()
+  })
+
+  it("rend le focus au champ après l'effacement par le bouton", async () => {
+    render(<Harness />)
+    await userEvent.type(screen.getByRole('textbox'), 'a')
+    await userEvent.click(screen.getByRole('button', { name: 'Effacer la recherche' }))
+    expect(screen.getByRole('textbox')).toHaveFocus()
+  })
 })
