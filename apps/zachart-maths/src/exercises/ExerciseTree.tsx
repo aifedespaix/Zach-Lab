@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { ChevronDown, ChevronRight, FilePlus, FileText, FileWarning, FolderPlus, PanelLeftClose } from 'lucide-react'
-import { CommandButton } from '@suite/shared/commands'
+import {
+  ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, CopyPlus, FilePlus, FileText, FileWarning, FolderPlus, PanelLeftClose,
+} from 'lucide-react'
+import { CommandButton, runCommand } from '@suite/shared/commands'
 import {
   Button, ConfirmDialog, ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuSub,
   ContextMenuSubContent, ContextMenuSubTrigger, ContextMenuTrigger,
@@ -103,7 +105,9 @@ export function ExerciseTree() {
         </div>
       )}
 
-      <div style={{ overflowY: 'auto', flex: 1, paddingBottom: 8 }}>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+      <div data-testid="arbre-vide" style={{ overflowY: 'auto', flex: 1, paddingBottom: 8 }}>
         {naming?.kind === 'new-chapter' && (
           <NameField label="Nom du nouveau chapitre" onSubmit={finishNaming} onCancel={() => setNaming(null)} />
         )}
@@ -118,7 +122,7 @@ export function ExerciseTree() {
           return (
             <div key={chapter.name}>
               <ContextMenu>
-                <ContextMenuTrigger asChild>
+                <ContextMenuTrigger asChild onContextMenu={e => e.stopPropagation()}>
                   <div
                     onDragOver={e => {
                       if (!e.dataTransfer.types.includes(DRAG_TYPE)) return
@@ -154,6 +158,8 @@ export function ExerciseTree() {
                   </div>
                 </ContextMenuTrigger>
                 <ContextMenuContent>
+                  <ContextMenuItem onSelect={() => toggle(chapter.name)}>{open ? 'Replier' : 'Déplier'}</ContextMenuItem>
+                  <ContextMenuSeparator />
                   <ContextMenuItem onSelect={() => { setFolded(p => { const n = new Set(p); n.delete(chapter.name); return n }); setNaming({ kind: 'new-exercise', chapter: chapter.name }) }}>
                     <FilePlus /> Nouvel exercice
                   </ContextMenuItem>
@@ -182,7 +188,7 @@ export function ExerciseTree() {
                         </div>
                       ) : (
                         <ContextMenu>
-                          <ContextMenuTrigger asChild>
+                          <ContextMenuTrigger asChild onContextMenu={e => e.stopPropagation()}>
                             <button
                               type="button"
                               draggable
@@ -206,6 +212,7 @@ export function ExerciseTree() {
                             <ContextMenuItem disabled={exo.corrompu} onSelect={() => setNaming({ kind: 'rename-exercise', path: exo.path })}>Renommer</ContextMenuItem>
                             <ContextMenuItem disabled={ei === 0} onSelect={() => void store.shiftExercise(exo.path, -1)}>Monter</ContextMenuItem>
                             <ContextMenuItem disabled={ei === chapter.exercises.length - 1} onSelect={() => void store.shiftExercise(exo.path, 1)}>Descendre</ContextMenuItem>
+                            <ContextMenuItem disabled={exo.corrompu} onSelect={() => void store.duplicateExercise(exo.path)}><CopyPlus /> Dupliquer</ContextMenuItem>
                             {tree.length > 1 && (
                               <ContextMenuSub>
                                 <ContextMenuSubTrigger>Déplacer vers</ContextMenuSubTrigger>
@@ -229,6 +236,17 @@ export function ExerciseTree() {
           )
         })}
       </div>
+        </ContextMenuTrigger>
+        <ContextMenuContent>
+          <ContextMenuItem onSelect={() => setNaming({ kind: 'new-chapter' })}><FolderPlus /> Nouveau chapitre</ContextMenuItem>
+          <ContextMenuItem disabled={tree.length === 0} onSelect={() => setFolded(new Set(tree.map(c => c.name)))}>
+            <ChevronsDownUp /> Tout replier
+          </ContextMenuItem>
+          <ContextMenuItem disabled={folded.size === 0} onSelect={() => setFolded(new Set())}><ChevronsUpDown /> Tout déplier</ContextMenuItem>
+          <ContextMenuSeparator />
+          <ContextMenuItem onSelect={() => void runCommand('view.toggleTree')}><PanelLeftClose /> Ranger le panneau</ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
 
       <ConfirmDialog
         open={deletion !== null}
