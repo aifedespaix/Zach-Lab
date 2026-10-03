@@ -56,6 +56,12 @@ ranking.
   throws, `trust: false`, with `\ce` / `\pu` (mhchem). It touches no Tauri, so the web admin may use it.
   It also holds the pure equation logic both apps share: `equationStepIsSolved`, `isBareVariable`,
   and the keyboard map `navigate` / `readingOrder` / `operationVisible` (steps are `{ left, right, operation? }`).
+- Shell panels fold (`@suite/shared/shell`): `usePanelCollapsed(key)` (remembered like the width),
+  `CollapsedRail` (the 32px strip with the unfold button) and `CollapsiblePanel` (`ResizablePanel` +
+  fold + the app's toggle command, registered BEFORE the folded early-return so the shortcut still
+  unfolds it). Maths uses it on both sides (`view.toggleTree` Mod+B, `view.toggleCourses`
+  Mod+Shift+B); Mentale only reuses `usePanelCollapsed` (left sidebar) and `CollapsedRail` (right
+  panel): their panel logic is too app-specific to migrate.
 
 A tauri app's `src-tauri/Cargo.toml` must declare **directly** every plugin its
 capability names (`fs`, `updater`…): `tauri-build` reads plugin permissions from
@@ -104,6 +110,10 @@ under `src/`, wired together in `App.tsx`:
   new file logic in `library.ts` against the port, never against `@tauri-apps/plugin-fs`.
   `useOpenExercise` loads the selected sheet whole, exposes the current exercise as
   `exercise`, and autosaves the sheet (600 ms, and on switching file).
+  `library.duplicateExercise` copies a file right after the original (« … (copie) », new ids);
+  `sheet.moveExercise` / `insertExerciseAt` reorder and insert inside a sheet (the tree and the
+  open-sheet outline have right-click menus; a row's menu stops propagation so the blank-area
+  menu never opens over it).
   An exercise has one work zone (`blocs`) or two independent ones: `blocsB` present, even empty,
   means split (`zones.ts`: `splitZones`, `mergeZones` appends B under A, `sendBlock`). Blocks
   always get an `id` when a file is read, so they can be moved between zones.
