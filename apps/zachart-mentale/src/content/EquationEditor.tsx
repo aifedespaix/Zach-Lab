@@ -1,10 +1,8 @@
 import { useEffect, useImperativeHandle, useRef, useState, type CSSProperties } from 'react'
 import { Plus } from 'lucide-react'
 import type { CardBlock, EquationStep } from '../types/cardBlock'
-import { equationStepIsSolved } from './blocks'
-import { renderMathToHtml } from '@suite/shared/math'
+import { equationStepIsSolved, navigate, operationVisible, readingOrder, renderMathToHtml, type EqColumn, type EqField, type EqPos } from '@suite/shared/math'
 import { MathFieldEditor, type MathFieldHandle } from './MathFieldEditor'
-import { navigate, operationVisible, readingOrder, type EqColumn, type EqField, type EqPos } from './equationNav'
 import { latchEdgeKey, rawFieldKeyDown, type BlockEdgeHandle, type BlockPlace, type ExitDirection, type ExitVia } from './fieldIntents'
 
 function isStepEmpty(step: EquationStep): boolean {

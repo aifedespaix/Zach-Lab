@@ -1,5 +1,4 @@
-import type { EquationStep } from '../types/cardBlock'
-import { equationStepIsSolved } from './blocks'
+import { equationStepIsSolved, type EquationStepLike } from './equationSteps'
 
 /**
  * La navigation clavier DANS un bloc équation, sans React : l'ordre de lecture
@@ -23,14 +22,14 @@ export type EqTarget = { pos: EqPos; at: 'start' | 'end' } | 'exit-before' | 'ex
  * étapes ; après la dernière, cachée seulement quand l'étape est résolue ET
  * que l'opération est vide — un contenu saisi n'est jamais masqué.
  */
-export function operationVisible(steps: EquationStep[], step: number): boolean {
+export function operationVisible(steps: readonly EquationStepLike[], step: number): boolean {
   const last = steps.length - 1
   if (step < last) return true
   if (step !== last) return false
   return !equationStepIsSolved(steps, step) || (steps[step].operation ?? '').trim() !== ''
 }
 
-export function readingOrder(steps: EquationStep[]): EqPos[] {
+export function readingOrder(steps: readonly EquationStepLike[]): EqPos[] {
   const order: EqPos[] = []
   steps.forEach((_, step) => {
     order.push({ step, field: 'left' }, { step, field: 'right' })
@@ -40,7 +39,7 @@ export function readingOrder(steps: EquationStep[]): EqPos[] {
 }
 
 /** Où mène `move` depuis `from`. Avancer/descendre pose le curseur au début, reculer/monter à la fin. */
-export function navigate(steps: EquationStep[], from: EqPos, move: EqMove, column: EqColumn): EqTarget {
+export function navigate(steps: readonly EquationStepLike[], from: EqPos, move: EqMove, column: EqColumn): EqTarget {
   if (move === 'left' || move === 'right') {
     const backward = move === 'left'
     const order = readingOrder(steps)

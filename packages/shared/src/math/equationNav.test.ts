@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { navigate, operationVisible, readingOrder, type EqPos } from './equationNav'
-import type { EquationStep } from '../types/cardBlock'
+import type { EquationStepLike as EquationStep } from './equationSteps'
 
 // Deux étapes non résolues : G0 D0 Op0 G1 D1 Op1.
 const open: EquationStep[] = [
