@@ -432,3 +432,32 @@
   border-color: var(--ring);
   box-shadow: 0 0 0 2px color-mix(in oklch, var(--ring), transparent 75%);
 }
+
+/* ---------------------------------------------------------------------------
+   Le « + » d'une frontière de tableau.
+
+   Nu au repos — ni bordure ni fond, juste le glyphe — et il ne prend l'apparence
+   d'un bouton qu'au survol ou au focus clavier. Les couleurs sont ICI et pas en
+   ligne sur le bouton : un style en ligne l'emporterait sur `:hover`, et le
+   bouton ne pourrait jamais apparaître (voir `BARE_HANDLE` dans `BlockEditor`).
+   --------------------------------------------------------------------------- */
+.table-handle {
+  border: 1px solid transparent;
+  background: transparent;
+  color: color-mix(in oklch, var(--foreground), transparent 45%);
+  transition:
+    background-color 120ms ease-in-out,
+    border-color 120ms ease-in-out,
+    color 120ms ease-in-out;
+}
+
+.table-handle:hover,
+.table-handle:focus-visible {
+  border-color: var(--border);
+  background: var(--background);
+  color: var(--foreground);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .table-handle { transition: none; }
+}
