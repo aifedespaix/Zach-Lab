@@ -22,7 +22,12 @@ const editableIn = (wrapper: HTMLElement) => wrapper.querySelector<HTMLElement>(
  * Version propre à Zach'Math (sans correcteur orthographique ni raccourcis affichés, contrairement à
  * celle de Mentale) : les unifier est le sujet du cycle suivant.
  */
-export function FieldContextMenu({ kind, children }: { kind: 'text' | 'math'; children: ReactNode }) {
+export function FieldContextMenu({ kind, extra, children }: {
+  kind: 'text' | 'math'
+  /** Des entrées propres au champ, ajoutées à la fin du menu après un séparateur. */
+  extra?: ReactNode
+  children: ReactNode
+}) {
   const wrapper = useRef<HTMLElement | null>(null)
   const insertSymbol = useContext(SymbolInsertContext)
 
@@ -80,6 +85,12 @@ export function FieldContextMenu({ kind, children }: { kind: 'text' | 'math'; ch
                 ))}
               </ContextMenuSubContent>
             </ContextMenuSub>
+          </>
+        )}
+        {extra !== undefined && (
+          <>
+            <ContextMenuSeparator />
+            {extra}
           </>
         )}
       </ContextMenuContent>

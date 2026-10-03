@@ -1,7 +1,10 @@
-import { useDeferredValue, useMemo } from 'react'
-import { EyeOff, NotebookPen, PanelRightClose, Search } from 'lucide-react'
-import { Button } from '@suite/shared/ui'
-import { CommandButton, useCommand } from '@suite/shared/commands'
+import { useDeferredValue, useMemo, type ReactNode } from 'react'
+import { Copy, ExternalLink, Eye, EyeOff, NotebookPen, PanelRightClose, Search } from 'lucide-react'
+import {
+  Button, ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger,
+} from '@suite/shared/ui'
+import { CommandButton, runCommand, useCommand } from '@suite/shared/commands'
+import { FieldContextMenu } from '../exercises/FieldContextMenu'
 import { useOpenExercise } from '../exercises/useOpenExercise'
 import { CourseSearchDialog } from './CourseSearchDialog'
 import { COURSES, type Course } from './courses'
@@ -12,6 +15,21 @@ import { suggestCourses } from './suggest'
 import { useCoursesStore } from './useCoursesStore'
 
 const RAISON = { chapitre: 'même chapitre', 'mots-cles': 'mots-clés' } as const
+
+const copyTitle = (titre: string) => void navigator.clipboard?.writeText(titre).catch(() => {})
+
+/** Le clic droit d'un cours : l'ouvrir, copier son titre. Il arrête l'évènement : le menu du vide ne s'ouvre pas. */
+function CourseMenu({ course, onOpen, children }: { course: Course; onOpen: () => void; children: ReactNode }) {
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild onContextMenu={e => e.stopPropagation()}>{children}</ContextMenuTrigger>
+      <ContextMenuContent>
+        <ContextMenuItem onSelect={onOpen}><ExternalLink size={14} />Ouvrir</ContextMenuItem>
+        <ContextMenuItem onSelect={() => copyTitle(course.titre)}><Copy size={14} />Copier le titre</ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
+  )
+}
 
 /** La partie haute de la sidebar droite : les cours, ceux qu'on suggère, et leur lecture. */
 function CoursesSection({ courses }: { courses: readonly Course[] }) {
@@ -47,14 +65,16 @@ function CoursesSection({ courses }: { courses: readonly Course[] }) {
           <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
             {suggestions.map(({ course, raison }) => (
               <li key={course.id}>
-                <button
-                  type="button"
-                  onClick={() => select(course.id)}
-                  aria-current={selectedId === course.id ? 'true' : undefined}
-                  className="w-full rounded px-1.5 py-1 text-left text-[13px] hover:bg-accent aria-[current=true]:bg-accent"
-                >
-                  {course.titre} <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>· {RAISON[raison]}</span>
-                </button>
+                <CourseMenu course={course} onOpen={() => select(course.id)}>
+                  <button
+                    type="button"
+                    onClick={() => select(course.id)}
+                    aria-current={selectedId === course.id ? 'true' : undefined}
+                    className="w-full rounded px-1.5 py-1 text-left text-[13px] hover:bg-accent aria-[current=true]:bg-accent"
+                  >
+                    {course.titre} <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>· {RAISON[raison]}</span>
+                  </button>
+                </CourseMenu>
               </li>
             ))}
           </ul>
@@ -67,9 +87,11 @@ function CoursesSection({ courses }: { courses: readonly Course[] }) {
             Choisis un cours suggéré, ou cherche-en un avec le bouton ci-dessus.
           </p>
         ) : (
-          <article aria-label={selected.titre}>
-            <Markdown source={selected.corps} />
-          </article>
+          <CourseMenu course={selected} onOpen={() => select(selected.id)}>
+            <article aria-label={selected.titre}>
+              <Markdown source={selected.corps} />
+            </article>
+          </CourseMenu>
         )}
       </div>
       <CourseSearchDialog courses={courses} suggested={suggestions.map(s => s.course)} />
@@ -88,14 +110,19 @@ function NotesSection() {
         <strong style={{ fontSize: 13, flex: 1 }}>Notes</strong>
         <Button variant="ghost" size="icon-sm" aria-label="Masquer les notes" onClick={() => setNotesVisible(false)}><EyeOff /></Button>
       </header>
-      <textarea
-        aria-label="Mes notes"
-        placeholder={exercise === null ? "Ouvre un exercice pour prendre des notes à côté." : 'Écris ce que tu veux retenir…'}
-        disabled={exercise === null}
-        value={exercise?.notes ?? ''}
-        onChange={e => edit({ notes: e.target.value })}
-        className="m-2 mt-0 flex-1 resize-none rounded border bg-background px-2 py-1 text-sm"
-      />
+      <FieldContextMenu
+        kind="text"
+        extra={<ContextMenuItem onSelect={() => setNotesVisible(false)}><EyeOff size={14} />Masquer les notes</ContextMenuItem>}
+      >
+        <textarea
+          aria-label="Mes notes"
+          placeholder={exercise === null ? "Ouvre un exercice pour prendre des notes à côté." : 'Écris ce que tu veux retenir…'}
+          disabled={exercise === null}
+          value={exercise?.notes ?? ''}
+          onChange={e => edit({ notes: e.target.value })}
+          className="m-2 mt-0 flex-1 resize-none rounded border bg-background px-2 py-1 text-sm"
+        />
+      </FieldContextMenu>
     </section>
   )
 }
@@ -105,10 +132,24 @@ export function CoursePanel({ courses = COURSES }: { courses?: readonly Course[]
   const notesVisible = useCoursesStore(s => s.notesVisible)
   useCommand('cours.search', () => useCoursesStore.getState().setSearchOpen(true))
   useCommand('notes.toggle', () => useCoursesStore.getState().setNotesVisible(!useCoursesStore.getState().notesVisible))
+  const { setSearchOpen, setNotesVisible } = useCoursesStore.getState()
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0 }}>
-      <CoursesSection courses={courses} />
-      {notesVisible && <NotesSection />}
-    </div>
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <div data-testid="cours-vide" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0 }}>
+          <CoursesSection courses={courses} />
+          {notesVisible && <NotesSection />}
+        </div>
+      </ContextMenuTrigger>
+      <ContextMenuContent>
+        <ContextMenuItem onSelect={() => setSearchOpen(true)}><Search size={14} />Chercher un cours</ContextMenuItem>
+        <ContextMenuItem onSelect={() => setNotesVisible(!notesVisible)}>
+          {notesVisible ? <EyeOff size={14} /> : <Eye size={14} />}
+          {notesVisible ? 'Masquer les notes' : 'Afficher les notes'}
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem onSelect={() => void runCommand('view.toggleCourses')}><PanelRightClose size={14} />Ranger le panneau</ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   )
 }
