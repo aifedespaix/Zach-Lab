@@ -412,3 +412,23 @@
 [data-equation-side] math-field::part(menu-toggle) {
   display: none;
 }
+
+/* The search field of a side panel (`PanelSearch`). */
+.panel-search {
+  width: 100%;
+  padding: 4px 8px;
+  border: 1px solid var(--input);
+  border-radius: 6px;
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+}
+.panel-search::placeholder {
+  color: var(--muted-foreground);
+}
+.panel-search:focus-visible {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--ring), transparent 75%);
+}
