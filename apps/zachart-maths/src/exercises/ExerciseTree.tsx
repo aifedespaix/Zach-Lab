@@ -102,7 +102,11 @@ export function ExerciseTree() {
 
   useCommand('tree.newChapter', () => setNaming({ kind: 'new-chapter' }))
   useCommand('tree.toggleAll', () =>
-    setFolded(prev => (prev.size >= tree.length ? new Set() : new Set(tree.map(c => c.name)))),
+    setFolded(prev => {
+      // Seuls les chapitres qui existent comptent : `folded` garde les noms d'anciens chapitres.
+      const allFolded = tree.length > 0 && tree.every(c => prev.has(c.name))
+      return allFolded ? new Set() : new Set(tree.map(c => c.name))
+    }),
   )
 
   if (!loaded) return <p style={{ padding: 12, fontSize: 13 }}>Chargement des exercices…</p>

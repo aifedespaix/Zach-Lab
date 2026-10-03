@@ -60,6 +60,14 @@ describe('App base', () => {
     expect(screen.getByRole('complementary', { name: 'Panneau gauche' })).toBeInTheDocument()
   })
 
+  it('le bouton « Nouveau chapitre » du pied ouvre le champ de nom', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await act(async () => {})
+    await user.click(await screen.findByRole('button', { name: 'Nouveau chapitre' }))
+    expect(screen.getByLabelText('Nom du nouveau chapitre')).toBeInTheDocument()
+  })
+
   it('Ctrl+B range le panneau gauche et le rouvre, même rangé', async () => {
     const user = userEvent.setup()
     render(<App />)

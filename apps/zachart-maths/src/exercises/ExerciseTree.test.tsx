@@ -96,4 +96,16 @@ describe('ExerciseTree', () => {
     await setup()
     expect(screen.getByRole('textbox', { name: 'Rechercher un exercice' })).toBeInTheDocument()
   })
+
+  it('« tree.toggleAll » ignore les noms périmés d’un chapitre renommé', async () => {
+    const mk = (t: string) => JSON.stringify({ version: 1, id: t, titre: t })
+    const { user } = await setup({ 'A/a.json': mk('ExoA'), 'B/b.json': mk('ExoB') })
+    await user.click(await screen.findByRole('button', { name: /^A$/ }))
+    await user.click(screen.getByRole('button', { name: /^B$/ }))
+    await act(async () => void (await useExerciseStore.getState().renameChapter('A', 'C')))
+    expect(await screen.findByText('ExoA')).toBeInTheDocument()
+    await act(async () => void runCommand('tree.toggleAll'))
+    expect(screen.queryByText('ExoA')).toBeNull()
+    expect(screen.queryByText('ExoB')).toBeNull()
+  })
 })
