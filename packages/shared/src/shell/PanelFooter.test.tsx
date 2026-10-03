@@ -11,7 +11,7 @@ describe('PanelFooter', () => {
         <button>Deux</button>
       </PanelFooter>,
     )
-    const bar = screen.getByRole('toolbar', { name: 'Actions de l’arborescence' })
+    const bar = screen.getByRole('group', { name: 'Actions de l’arborescence' })
     expect(bar).toContainElement(screen.getByRole('button', { name: 'Un' }))
     expect(bar).toContainElement(screen.getByRole('button', { name: 'Deux' }))
   })

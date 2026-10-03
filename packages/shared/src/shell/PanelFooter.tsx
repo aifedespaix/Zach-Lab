@@ -13,7 +13,7 @@ export function PanelFooterSeparator() {
 export function PanelFooter({ label = 'Actions du panneau', children }: { label?: string; children: ReactNode }) {
   return (
     <div
-      role="toolbar"
+      role="group"
       aria-label={label}
       style={{
         display: 'flex',

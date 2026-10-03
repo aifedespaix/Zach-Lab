@@ -38,7 +38,7 @@ describe('CollapsiblePanel', () => {
 
   it('déplié : le bouton de repli est dans le pied, après les actions de l’app', () => {
     render(<Panel footer={<button>Action</button>} />)
-    const bar = screen.getByRole('toolbar')
+    const bar = screen.getByRole('group')
     const buttons = within(bar).getAllByRole('button')
     expect(buttons.map(b => b.getAttribute('aria-label') ?? b.textContent)).toEqual(['Action', 'Replier le panneau test'])
   })
