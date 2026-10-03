@@ -108,4 +108,40 @@ describe('ExerciseTree', () => {
     expect(screen.queryByText('ExoA')).toBeNull()
     expect(screen.queryByText('ExoB')).toBeNull()
   })
+  describe('recherche', () => {
+    const mk = (t: string) => JSON.stringify({ version: 1, id: t, titre: t })
+    const files = { 'Fractions/a.json': mk('Additionner'), 'Géométrie/c.json': mk('Théorème de Pythagore') }
+
+    it('filtre l’arbre pendant la frappe et le rétablit en effaçant', async () => {
+      const { user } = await setup(files)
+      expect(await screen.findByText('Additionner')).toBeInTheDocument()
+      const box = screen.getByRole('textbox', { name: 'Rechercher un exercice' })
+      await user.type(box, 'pyth')
+      expect(screen.getByText('Théorème de Pythagore')).toBeInTheDocument()
+      expect(screen.queryByText('Additionner')).toBeNull()
+      expect(screen.queryByRole('button', { name: /Fractions/ })).toBeNull()
+      await user.clear(box)
+      expect(screen.getByText('Additionner')).toBeInTheDocument()
+      expect(screen.getByText('Théorème de Pythagore')).toBeInTheDocument()
+    })
+
+    it('ouvre le chapitre d’un résultat sans toucher à l’état replié réel', async () => {
+      const { user } = await setup(files)
+      await user.click(await screen.findByRole('button', { name: /^Géométrie$/ }))
+      expect(screen.queryByText('Théorème de Pythagore')).toBeNull()
+      const box = screen.getByRole('textbox', { name: 'Rechercher un exercice' })
+      await user.type(box, 'pyth')
+      expect(screen.getByText('Théorème de Pythagore')).toBeInTheDocument()
+      await user.clear(box)
+      expect(screen.queryByText('Théorème de Pythagore')).toBeNull()
+    })
+
+    it('sans résultat : message dédié, pas « Aucun chapitre »', async () => {
+      const { user } = await setup(files)
+      await screen.findByText('Additionner')
+      await user.type(screen.getByRole('textbox', { name: 'Rechercher un exercice' }), 'zzzzzz')
+      expect(screen.getByRole('status')).toHaveTextContent('Aucun résultat pour « zzzzzz ».')
+      expect(screen.queryByText(/Aucun chapitre/)).toBeNull()
+    })
+  })
 })

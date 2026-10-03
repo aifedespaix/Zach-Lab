@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import {
   ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, CopyPlus, FilePlus, FileText, FileWarning, FolderPlus, PanelLeftClose,
 } from 'lucide-react'
@@ -10,6 +10,7 @@ import {
   ContextMenuSubContent, ContextMenuSubTrigger, ContextMenuTrigger,
 } from '@suite/shared/ui'
 import { splitPath } from './names'
+import { filterChapters } from './treeSearch'
 import { useExerciseStore } from './useExerciseStore'
 
 /** Ce que l'élève est en train de nommer : un champ de saisie apparaît à l'endroit concerné. */
@@ -109,6 +110,8 @@ export function ExerciseTree() {
     }),
   )
 
+  const view = useMemo(() => filterChapters(tree, search), [tree, search])
+
   if (!loaded) return <p style={{ padding: 12, fontSize: 13 }}>Chargement des exercices…</p>
 
   return (
@@ -139,8 +142,14 @@ export function ExerciseTree() {
           </p>
         )}
 
-        {tree.map((chapter, ci) => {
-          const open = !folded.has(chapter.name)
+        {search.trim() !== '' && view.chapters.length === 0 && (
+          <p role="status" style={{ padding: '4px 12px', fontSize: 13, color: 'var(--muted-foreground)' }}>
+            Aucun résultat pour « {search.trim()} ».
+          </p>
+        )}
+
+        {view.chapters.map((chapter, ci) => {
+          const open = view.forcedOpen.has(chapter.name) || !folded.has(chapter.name)
           return (
             <div key={chapter.name} data-drop-folder={chapter.name}>
               <ContextMenu>
