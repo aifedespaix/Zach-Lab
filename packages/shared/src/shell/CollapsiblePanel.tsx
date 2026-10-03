@@ -1,6 +1,8 @@
+import { PanelLeftClose, PanelRightClose } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { useCommand } from '../commands'
+import { CommandButton, useCommand } from '../commands'
 import { CollapsedRail } from './CollapsedRail'
+import { PanelFooter, PanelFooterSeparator } from './PanelFooter'
 import type { PanelWidthStorage } from './panelWidth'
 import { ResizablePanel } from './ResizablePanel'
 import { usePanelCollapsed } from './usePanelCollapsed'
@@ -19,6 +21,8 @@ interface CollapsiblePanelProps {
   /** The contextual label while open / folded, e.g. « Replier l'arborescence » / « Déplier l'arborescence ». */
   foldLabel: string
   unfoldLabel: string
+  /** The app's own footer actions, shown before the fold button. */
+  footer?: ReactNode
   children?: ReactNode
 }
 
@@ -29,7 +33,7 @@ interface CollapsiblePanelProps {
  * the very shortcut that unfolds it. The panel's width needs no care here — `ResizablePanel`
  * saves it as it changes and reads it back when it mounts again.
  *
- * The app puts its own fold button in the panel's header with `toggleCommand`; the folded rail
+ * The fold button lives in the panel's footer (after the app's `footer` actions); the folded rail
  * carries the unfold one.
  */
 export function CollapsiblePanel({
@@ -41,6 +45,7 @@ export function CollapsiblePanel({
   toggleCommand,
   foldLabel,
   unfoldLabel,
+  footer,
   children,
 }: CollapsiblePanelProps) {
   const [collapsed, setCollapsed] = usePanelCollapsed(collapsedKey)
@@ -49,7 +54,21 @@ export function CollapsiblePanel({
   if (collapsed) return <CollapsedRail side={side} command={toggleCommand} label={unfoldLabel} />
   return (
     <ResizablePanel side={side} label={label} resizeLabel={resizeLabel} storage={storage}>
-      {children}
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>{children}</div>
+        <PanelFooter>
+          {footer}
+          {footer !== undefined && <PanelFooterSeparator />}
+          <span style={{ marginLeft: 'auto' }} aria-hidden />
+          <CommandButton
+            command={toggleCommand}
+            icon={side === 'left' ? PanelLeftClose : PanelRightClose}
+            label={foldLabel}
+            variant="ghost"
+            size="icon-sm"
+          />
+        </PanelFooter>
+      </div>
     </ResizablePanel>
   )
 }

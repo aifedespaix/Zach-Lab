@@ -1,4 +1,5 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
+import type { ReactNode } from 'react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { defineCommandCatalog, runCommand } from '../commands'
@@ -13,7 +14,7 @@ defineCommandCatalog({
 
 const storage = createPanelWidthStorage({ key: 'test:width', min: 100, max: 600, fallback: 240 })
 
-function Panel({ side = 'left' }: { side?: 'left' | 'right' }) {
+function Panel({ side = 'left', footer }: { side?: 'left' | 'right'; footer?: ReactNode }) {
   return (
     <TooltipProvider>
       <CollapsiblePanel
@@ -24,6 +25,7 @@ function Panel({ side = 'left' }: { side?: 'left' | 'right' }) {
         toggleCommand="test.toggle"
         foldLabel="Replier le panneau test"
         unfoldLabel="Déplier le panneau test"
+        footer={footer}
       >
         <p>Contenu du panneau</p>
       </CollapsiblePanel>
@@ -33,6 +35,13 @@ function Panel({ side = 'left' }: { side?: 'left' | 'right' }) {
 
 describe('CollapsiblePanel', () => {
   beforeEach(() => localStorage.clear())
+
+  it('déplié : le bouton de repli est dans le pied, après les actions de l’app', () => {
+    render(<Panel footer={<button>Action</button>} />)
+    const bar = screen.getByRole('toolbar')
+    const buttons = within(bar).getAllByRole('button')
+    expect(buttons.map(b => b.getAttribute('aria-label') ?? b.textContent)).toEqual(['Action', 'Replier le panneau test'])
+  })
 
   it('déplié : montre son contenu et sa poignée, pas la bande', () => {
     render(<Panel />)
