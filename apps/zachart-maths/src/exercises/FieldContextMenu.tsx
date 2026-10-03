@@ -5,7 +5,7 @@ import {
   ContextMenuSubContent, ContextMenuSubTrigger, ContextMenuTrigger,
 } from '@suite/shared/ui'
 import { insertAtCursor, isTextField } from './insertAtCursor'
-import { isMathField } from '../math/MathField'
+import { isMathField } from '../math/mathFieldElement'
 import { SymbolInsertContext } from './symbolInsert'
 import { SYMBOL_FAMILIES } from './toolbarCatalog'
 

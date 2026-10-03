@@ -1,44 +1,20 @@
-import { useRef } from 'react'
+import { LinesBlockField } from '@suite/shared/equation'
 import type { CalcBlock } from './blocks'
-import { FieldContextMenu } from './FieldContextMenu'
-import { BOX, LEFT_TONE, SOLVED_TONE } from './eqTones'
+import type { SubBlockContext } from './EquationEditor'
 
-/**
- * Le bloc Calcul : `expression = résultat`, deux cases colorées. Entrée passe de l'expression au
- * résultat, puis demande le bloc suivant (`onDone`).
- */
-export function CalcEditor({ block, onChange, onDone }: {
-  block: CalcBlock
-  onChange: (patch: Partial<CalcBlock>) => void
-  onDone: () => void
-}) {
-  const result = useRef<HTMLInputElement>(null)
+/** Le bloc Calcul : une liste de lignes (sous-blocs), chacune un champ de formule. */
+export function CalcEditor({ block, onChange, ctx }: { block: CalcBlock; onChange: (patch: Partial<CalcBlock>) => void; ctx: SubBlockContext }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <div style={{ display: 'flex', flex: 1, minWidth: 0 }}>
-        <FieldContextMenu kind="text">
-          <input
-            aria-label="Calcul"
-            value={block.expression}
-            onChange={e => onChange({ expression: e.target.value })}
-            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); result.current?.focus() } }}
-            className="flex-1 font-mono text-sm"
-            style={{ ...BOX, ...LEFT_TONE, minWidth: 0 }}
-          />
-        </FieldContextMenu>
-      </div>
-      <span aria-hidden>=</span>
-      <FieldContextMenu kind="text">
-        <input
-          ref={result}
-          aria-label="Résultat du calcul"
-          value={block.resultat}
-          onChange={e => onChange({ resultat: e.target.value })}
-          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); onDone() } }}
-          className="font-mono text-sm"
-          style={{ ...BOX, ...SOLVED_TONE, width: 130 }}
-        />
-      </FieldContextMenu>
-    </div>
+    <LinesBlockField
+      lines={block.lignes}
+      onChange={lignes => onChange({ lignes })}
+      ariaLabel="Calcul"
+      onEnterBlock={ctx.onEnterBlock}
+      onDeleteEmpty={ctx.onDeleteEmpty}
+      onDeleteForward={ctx.onDeleteForward}
+      onExitBlock={ctx.onExitBlock}
+      onFieldChange={ctx.onFieldChange}
+      ref={ctx.edge}
+    />
   )
 }

@@ -1,9 +1,12 @@
 import { useState } from 'react'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { BlockStack } from './BlockStack'
 import type { Block } from './blocks'
+
+// MathLive qui ne se charge pas : le champ LaTeX brut est l'éditeur complet.
+vi.mock('mathlive', () => { throw new Error('indisponible') })
 
 let current: unknown[] = []
 
@@ -50,13 +53,12 @@ describe('BlockStack', () => {
       { id: 'a', type: 'texte' }, { id: 'b', type: 'calcul' }, { id: 'c', type: 'tableau', cellules: [['', ''], ['', '']] },
     ]} />)
     await user.type(screen.getByLabelText('Texte'), 'Je pars de')
-    await user.type(screen.getByLabelText('Calcul'), '3+4')
-    await user.type(screen.getByLabelText('Résultat du calcul'), '7')
+    await user.type(screen.getByLabelText('Ligne 1 du calcul (LaTeX)'), '3+4')
     await user.type(screen.getByLabelText('Ligne 2, colonne 1'), 'x')
     await user.click(screen.getByRole('button', { name: 'Ajouter une colonne' }))
     expect(current).toEqual([
       { id: 'a', type: 'texte', contenu: 'Je pars de' },
-      { id: 'b', type: 'calcul', expression: '3+4', resultat: '7' },
+      { id: 'b', type: 'calcul', lignes: [{ id: expect.any(String), latex: '3+4' }] },
       { id: 'c', type: 'tableau', cellules: [['', '', ''], ['x', '', '']] },
     ])
   })
@@ -102,14 +104,15 @@ describe('BlockStack — carte, gouttière et ajout', () => {
 })
 
 describe('BlockStack — calcul', () => {
-  it('Entrée passe au résultat, puis crée un bloc Calcul juste en dessous', async () => {
+  it('Entrée ajoute une ligne et pas un bloc ; Ctrl+Entrée crée un bloc Calcul juste en dessous', async () => {
     const user = userEvent.setup()
-    render(<Harness initial={[{ id: 'a', type: 'calcul', expression: '', resultat: '' }]} />)
-    await user.type(screen.getByLabelText('Calcul'), '3x4{Enter}')
-    expect(screen.getByLabelText('Résultat du calcul')).toHaveFocus()
-    await user.keyboard('12{Enter}')
+    render(<Harness initial={[{ id: 'a', type: 'calcul', lignes: [{ id: 'l', latex: '' }] }]} />)
+    await user.type(screen.getByLabelText('Ligne 1 du calcul (LaTeX)'), '3x4{Enter}')
+    expect(names()).toEqual(['Bloc Calcul, 1 sur 1'])
+    expect(screen.getByLabelText('Ligne 2 du calcul (LaTeX)')).toHaveFocus()
+    await user.keyboard('12{Control>}{Enter}{/Control}')
     expect(names()).toEqual(['Bloc Calcul, 1 sur 2', 'Bloc Calcul, 2 sur 2'])
-    await waitFor(() => expect(screen.getAllByLabelText('Calcul')[1]).toHaveFocus())
+    await waitFor(() => expect(screen.getAllByLabelText('Ligne 1 du calcul (LaTeX)')[1]).toHaveFocus())
   })
 })
 

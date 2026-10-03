@@ -5,7 +5,9 @@
  * le fichier, déplaçable et supprimable, mais pas modifiable.
  */
 export interface TextBlock { id: string; type: 'texte'; contenu: string }
-export interface CalcBlock { id: string; type: 'calcul'; expression: string; resultat: string }
+export interface CalcLine { id: string; latex: string }
+/** Un calcul : une liste de lignes (sous-blocs), chacune une formule. */
+export interface CalcBlock { id: string; type: 'calcul'; lignes: CalcLine[] }
 export interface TableBlock { id: string; type: 'tableau'; cellules: string[][] }
 /**
  * Une résolution pas à pas, comme dans Zachar't Mentale : chaque étape a deux membres LaTeX
@@ -31,19 +33,38 @@ export const isKnown = (block: Block): block is KnownBlock => BLOCK_TYPES.some(t
 
 const MAX_TABLE = 12
 
+export const newCalcLine = (): CalcLine => ({ id: crypto.randomUUID(), latex: '' })
+
 export const newStep = (): EquationStep => ({ id: crypto.randomUUID(), left: '', right: '', operation: '' })
 
 export function newBlock(type: BlockType): KnownBlock {
   const id = crypto.randomUUID()
   switch (type) {
     case 'texte': return { id, type, contenu: '' }
-    case 'calcul': return { id, type, expression: '', resultat: '' }
+    case 'calcul': return { id, type, lignes: [newCalcLine()] }
     case 'tableau': return { id, type, cellules: [['', ''], ['', '']] }
     case 'equation': return { id, type, etapes: [newStep()] }
   }
 }
 
 const str = (value: unknown) => (typeof value === 'string' ? value : '')
+
+/**
+ * `lignes` quand il existe ; sinon un ancien `{ expression, resultat }` devient deux lignes (un
+ * résultat vide est ignoré). Jamais vide.
+ */
+function normalizeCalcLines(b: Record<string, unknown>): CalcLine[] {
+  if (Array.isArray(b.lignes)) {
+    const lines = b.lignes.map(l => {
+      const o = typeof l === 'object' && l !== null ? (l as Record<string, unknown>) : {}
+      return { id: typeof o.id === 'string' && o.id !== '' ? o.id : crypto.randomUUID(), latex: str(o.latex) }
+    })
+    return lines.length > 0 ? lines : [newCalcLine()]
+  }
+  return [str(b.expression), str(b.resultat)]
+    .filter((latex, i) => i === 0 || latex !== '')
+    .map(latex => ({ id: crypto.randomUUID(), latex }))
+}
 
 /** Rend un tableau rectangulaire d'au moins 1×1, borné, quoi que contienne le fichier. */
 function normalizeCells(raw: unknown): string[][] {
@@ -97,7 +118,7 @@ export function parseBlocks(raw: readonly unknown[]): Block[] {
     const id = typeof b.id === 'string' && b.id !== '' ? b.id : crypto.randomUUID()
     switch (b.type) {
       case 'texte': blocks.push({ id, type: 'texte', contenu: str(b.contenu) }); break
-      case 'calcul': blocks.push({ id, type: 'calcul', expression: str(b.expression), resultat: str(b.resultat) }); break
+      case 'calcul': blocks.push({ id, type: 'calcul', lignes: normalizeCalcLines(b) }); break
       case 'tableau': blocks.push({ id, type: 'tableau', cellules: normalizeCells(b.cellules) }); break
       case 'equation': blocks.push({ id, type: 'equation', etapes: normalizeSteps(b.etapes) }); break
       default: blocks.push({ ...b, id, type: b.type })
@@ -160,7 +181,7 @@ export const removeColumn = (cells: readonly string[][], c: number): string[][] 
 export function blockToPlain(block: KnownBlock): string {
   switch (block.type) {
     case 'texte': return block.contenu
-    case 'calcul': return block.resultat === '' ? block.expression : `${block.expression} = ${block.resultat}`
+    case 'calcul': return block.lignes.map(l => l.latex).join('\n')
     case 'tableau': return block.cellules.map(row => row.join('\t')).join('\n')
     case 'equation': return block.etapes.map(s => `${s.left} = ${s.right}`).join('\n')
   }
@@ -173,10 +194,7 @@ export function convertBlock(block: KnownBlock, to: BlockType): KnownBlock {
   const lines = plain.split('\n').filter(l => l.trim() !== '')
   switch (to) {
     case 'texte': return { id: block.id, type: 'texte', contenu: plain }
-    case 'calcul': {
-      const { left, right } = splitAtEquals(lines[0] ?? '')
-      return { id: block.id, type: 'calcul', expression: left, resultat: right }
-    }
+    case 'calcul': return { id: block.id, type: 'calcul', lignes: (lines.length > 0 ? lines : ['']).map(latex => ({ id: crypto.randomUUID(), latex })) }
     case 'equation': {
       const etapes = lines.map(l => ({ id: crypto.randomUUID(), ...splitAtEquals(l), operation: '' }))
       return { id: block.id, type: 'equation', etapes: etapes.length > 0 ? etapes : [newStep()] }

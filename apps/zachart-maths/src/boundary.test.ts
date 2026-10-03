@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 const sources = import.meta.glob('./**/*.{ts,tsx}', { query: '?raw', import: 'default', eager: true }) as Record<string, string>
 
 const IMPORT = /(?:from|import|vi\.mock|require)\s*\(?\s*['"]([^'"]+)['"]/g
-const PUBLIC_ENTRIES = new Set(['ui', 'theme', 'update', 'shell', 'commands', 'settings', 'search', 'math', 'tree'])
+const PUBLIC_ENTRIES = new Set(['ui', 'theme', 'update', 'shell', 'commands', 'settings', 'search', 'math', 'tree', 'equation'])
 
 /**
  * Ce qui ne doit pas se glisser dans cette app : du code d'une autre app (un module copié ou

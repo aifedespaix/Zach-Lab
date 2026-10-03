@@ -11,7 +11,7 @@ describe('parseBlocks', () => {
     const blocks = parseBlocks([{ id: 'a', type: 'texte' }, 'oups', null, { id: 'b' }, { type: 'calcul', expression: 4 }])
     expect(blocks).toHaveLength(2)
     expect(blocks[0]).toEqual({ id: 'a', type: 'texte', contenu: '' })
-    expect(blocks[1]).toMatchObject({ type: 'calcul', expression: '', resultat: '' })
+    expect(blocks[1]).toMatchObject({ type: 'calcul', lignes: [{ latex: '' }] })
     expect(blocks[1].id).not.toBe('')
   })
 
@@ -137,10 +137,10 @@ describe('duplicateBlock', () => {
 })
 
 describe('convertBlock', () => {
-  const calc: KnownBlock = { id: 'c', type: 'calcul', expression: '3×4', resultat: '12' }
+  const calc: KnownBlock = { id: 'c', type: 'calcul', lignes: [{ id: 'l1', latex: '3×4' }, { id: 'l2', latex: '12' }] }
   it("garde l'id et le contenu lisible d'un type à l'autre", () => {
-    expect(convertBlock(calc, 'texte')).toEqual({ id: 'c', type: 'texte', contenu: '3×4 = 12' })
-    expect(convertBlock({ id: 't', type: 'texte', contenu: '2x = 8' }, 'calcul')).toEqual({ id: 't', type: 'calcul', expression: '2x', resultat: '8' })
+    expect(convertBlock(calc, 'texte')).toEqual({ id: 'c', type: 'texte', contenu: '3×4\n12' })
+    expect(convertBlock({ id: 't', type: 'texte', contenu: '2x = 8' }, 'calcul')).toEqual({ id: 't', type: 'calcul', lignes: [{ id: expect.any(String), latex: '2x = 8' }] })
     const eq = convertBlock({ id: 't', type: 'texte', contenu: '2x+5=11\nx=3' }, 'equation') as EquationBlock
     expect(eq.etapes.map(s => [s.left, s.right])).toEqual([['2x+5', '11'], ['x', '3']])
   })
@@ -148,5 +148,28 @@ describe('convertBlock', () => {
     expect(convertBlock(calc, 'calcul')).toEqual(calc)
     expect((convertBlock({ id: 't', type: 'texte', contenu: '' }, 'equation') as EquationBlock).etapes).toHaveLength(1)
     expect((convertBlock({ id: 't', type: 'texte', contenu: '' }, 'tableau') as TableBlock).cellules.length).toBeGreaterThan(0)
+  })
+})
+
+describe('migration du Calcul', () => {
+  const lignes = (b: unknown) => (b as { lignes: { id: string; latex: string }[] }).lignes
+  it('relit un ancien { expression, resultat } comme deux lignes', () => {
+    const [b] = parseBlocks([{ id: 'c', type: 'calcul', expression: '3×4', resultat: '12' }])
+    expect(lignes(b).map(l => l.latex)).toEqual(['3×4', '12'])
+  })
+  it('ignore un resultat vide', () => {
+    expect(lignes(parseBlocks([{ id: 'c', type: 'calcul', expression: '3×4', resultat: '' }])[0])).toHaveLength(1)
+  })
+  it('garde toujours une ligne', () => {
+    expect(lignes(parseBlocks([{ id: 'c', type: 'calcul', lignes: [] }])[0])).toHaveLength(1)
+  })
+  it("relit des lignes, leur donne un id, ignore ce qui n'est pas une chaîne", () => {
+    const l = lignes(parseBlocks([{ type: 'calcul', lignes: [{ latex: 'a' }, { id: 'x', latex: 5 }, 'oups'] }])[0])
+    expect(l.map(x => x.latex)).toEqual(['a', '', ''])
+    expect(l.every(x => x.id !== '')).toBe(true)
+  })
+  it('conserve un bloc de type inconnu tel quel', () => {
+    const raw = { id: 'z', type: 'futur', x: 1 }
+    expect(parseBlocks([raw])[0]).toMatchObject(raw)
   })
 })

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { BlockEdgeHandle } from '@suite/shared/equation'
 import { Minus, Plus } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
 import { Button } from '@suite/shared/ui'
@@ -7,7 +8,7 @@ import { BLOCK_META } from './blockMeta'
 import { BlockContextMenu } from './BlockContextMenu'
 import { CalcEditor } from './CalcEditor'
 import { EmptyAreaContextMenu } from './EmptyAreaContextMenu'
-import { EquationEditor } from './EquationEditor'
+import { EquationEditor, type SubBlockContext } from './EquationEditor'
 import { FieldContextMenu } from './FieldContextMenu'
 import { borderOf, toneOf } from './toolbarCatalog'
 import {
@@ -69,12 +70,12 @@ function TableEditor({ block, onChange }: { block: TableBlock; onChange: (patch:
   )
 }
 
-function editorFor(block: KnownBlock, onChange: (patch: Partial<KnownBlock>) => void, onDone: () => void) {
+function editorFor(block: KnownBlock, onChange: (patch: Partial<KnownBlock>) => void, ctx: SubBlockContext) {
   switch (block.type) {
     case 'texte': return <TextEditor block={block} onChange={onChange} />
-    case 'calcul': return <CalcEditor block={block} onChange={onChange} onDone={onDone} />
+    case 'calcul': return <CalcEditor block={block} onChange={onChange} ctx={ctx} />
     case 'tableau': return <TableEditor block={block} onChange={onChange} />
-    case 'equation': return <EquationEditor block={block} onChange={onChange as (patch: Partial<EquationBlock>) => void} />
+    case 'equation': return <EquationEditor block={block} onChange={onChange as (patch: Partial<EquationBlock>) => void} ctx={ctx} />
   }
 }
 
@@ -130,6 +131,22 @@ export function BlockStack({ value, onChange, label = "Blocs de l'exercice", onS
     onChange(r.blocks)
   }
 
+  /** Ce que chaque bloc expose pour qu'on y ENTRE au clavier (équation, calcul). */
+  const edges = useRef(new Map<string, BlockEdgeHandle | null>())
+  /** Le curseur au bord d'un bloc : son handle s'il en a un, sinon son premier ou dernier champ. */
+  const enterBlock = (id: string, at: 'start' | 'end') => {
+    const edge = edges.current.get(id)
+    if (edge) return edge.focusEdge(at)
+    const fields = document.querySelectorAll<HTMLElement>(`[data-block-id="${id}"] textarea, [data-block-id="${id}"] input, [data-block-id="${id}"] math-field`)
+    fields[at === 'start' ? 0 : fields.length - 1]?.focus()
+  }
+  /** Un bloc vide qui demande à disparaître : le curseur passe à son voisin. */
+  const removeAndFocus = (index: number, side: 'before' | 'after') => {
+    const neighbour = blocks[side === 'before' ? index - 1 : index + 1]
+    onChange(removeBlock(blocks, blocks[index].id))
+    if (neighbour !== undefined) queueMicrotask(() => enterBlock(neighbour.id, side === 'before' ? 'end' : 'start'))
+  }
+
   return (
     <EmptyAreaContextMenu onAdd={add} split={split} onToggleSplit={onToggleSplit}>
     {/* `minHeight: 100%` : le clic droit sur le blanc sous les blocs, jusqu'au bas de la zone, ouvre le menu du vide. */}
@@ -172,7 +189,20 @@ export function BlockStack({ value, onChange, label = "Blocs de l'exercice", onS
                   onRemove={() => onChange(removeBlock(blocks, block.id))}
                 >
                   {isKnown(block)
-                    ? editorFor(block, patch => onChange(updateBlock(blocks, block.id, patch)), () => insertAfter(block.id, 'calcul'))
+                    ? editorFor(block, patch => onChange(updateBlock(blocks, block.id, patch)), {
+                        index: i,
+                        edge: handle => { edges.current.set(block.id, handle) },
+                        // Entrée crée un sous-bloc ; Ctrl/Cmd+Entrée un BLOC, du même type (c'est ce qu'on écrit ensuite).
+                        onEnterBlock: () => insertAfter(block.id, block.type),
+                        onExitBlock: side => {
+                          const target = blocks[side === 'before' ? i - 1 : i + 1]
+                          if (target !== undefined) enterBlock(target.id, side === 'before' ? 'end' : 'start')
+                        },
+                        onDeleteEmpty: () => removeAndFocus(i, 'before'),
+                        onDeleteForward: () => removeAndFocus(i, 'after'),
+                        // La barre de symboles suit le champ par `onFocus` de la zone de travail.
+                        onFieldChange: () => {},
+                      })
                     : <p style={{ fontSize: 13, color: 'var(--muted-foreground)', margin: 0 }}>Ce type de bloc n'est pas encore pris en charge ; il est conservé tel quel.</p>}
                 </BlockCard>
               </div>

@@ -11,7 +11,7 @@ export function contextOf(path: string, titre: string, exercise: Exercise): Exer
     if (!isKnown(block)) continue
     switch (block.type) {
       case 'texte': texts.push(block.contenu); break
-      case 'calcul': formules.push(`${block.expression} ${block.resultat}`); break
+      case 'calcul': formules.push(block.lignes.map(l => l.latex).join(' ')); break
       case 'tableau': texts.push(block.cellules.flat().join(' ')); break
       case 'equation':
         for (const step of block.etapes) {
