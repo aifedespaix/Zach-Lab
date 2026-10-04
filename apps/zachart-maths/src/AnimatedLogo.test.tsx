@@ -30,6 +30,12 @@ describe('AnimatedLogo', () => {
     expect(css).toContain('prefers-reduced-motion')
   })
 
+  it('le 3e point part du creux du M (64,78 → 92,36), pas de la gauche', () => {
+    // décalage = creux − point : (64−92, 78−36)
+    expect(css.match(/translate\(-28px, 42px\) scale\(0\.6\)/g)).toHaveLength(2)
+    expect(css).not.toContain('translate(-56px, 0)')
+  })
+
   it('le favicon est le même M que l\'animation : mêmes points, mêmes couleurs', () => {
     expect(favicon).toContain('points="36,92 36,36 64,78 92,36 92,92"')
     for (const color of ['#3B82F6', '#EF4444', '#F97316', '#EAB308']) expect(favicon).toContain(color)

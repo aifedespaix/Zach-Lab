@@ -37,7 +37,7 @@
   100% { opacity: 1; transform: translate(0, 0) scale(1); }
 }
 @keyframes animated-logo-slide-3 {
-  0%   { opacity: 0; transform: translate(-56px, 0) scale(0.6); }
+  0%   { opacity: 0; transform: translate(-28px, 42px) scale(0.6); }
   100% { opacity: 1; transform: translate(0, 0) scale(1); }
 }
 @keyframes animated-logo-slide-4 {
@@ -96,7 +96,7 @@
   72%, 100% { opacity: 0; transform: translate(0, 0) scale(1); }
 }
 @keyframes animated-logo-cycle-3 {
-  0%, 18%   { opacity: 0; transform: translate(-56px, 0) scale(0.6); }
+  0%, 18%   { opacity: 0; transform: translate(-28px, 42px) scale(0.6); }
   27.8%     { opacity: 1; transform: translate(0, 0) scale(1); }
   61%       { opacity: 1; transform: translate(0, 0) scale(1); }
   72%, 100% { opacity: 0; transform: translate(0, 0) scale(1); }
