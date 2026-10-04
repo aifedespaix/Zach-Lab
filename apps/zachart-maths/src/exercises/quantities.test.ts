@@ -107,4 +107,18 @@ describe('findQuantities', () => {
     expect(found('2 t')).toEqual([{ text: '2 t', unit: 't', kind: 'valeur' }])
     expect(found('2t + 3 = 7')).toEqual([])
   })
+
+  it('ne prend pas 4,9t² ni 2t² pour une unité (formules de chute libre, polynômes)', () => {
+    expect(found('d = 4,9t²')).toEqual([])
+    expect(found('f(t) = 2t² + 3t')).toEqual([])
+    expect(found('2t³')).toEqual([])
+    expect(found('1 000t')).toEqual([])
+  })
+
+  it('reconnaît 2 t² avec espace, et garde 5m, 5 m² et x km/h', () => {
+    expect(found('2 t²')).toEqual([{ text: '2 t²', unit: 't²', kind: 'valeur' }])
+    expect(found('5m')).toEqual([{ text: '5m', unit: 'm', kind: 'valeur' }])
+    expect(found('5 m²')).toEqual([{ text: '5 m²', unit: 'm²', kind: 'valeur' }])
+    expect(found('x km/h')).toEqual([{ text: 'x km/h', unit: 'km/h', kind: 'valeur' }])
+  })
 })

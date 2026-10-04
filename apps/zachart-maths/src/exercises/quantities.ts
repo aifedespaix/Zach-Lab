@@ -62,8 +62,10 @@ export function findQuantities(text: string): Quantity[] {
     const unit = canonical(match[1])
     // Une inconnue (« t ») devant une unité d'un caractère (« s ») n'est presque jamais une grandeur.
     if (!/\d/.test(match[0][0]) && unit.length < 2) continue
-    // La lettre « t » (tonne) n'est reconnue que avec un espace : « 2 t » est colorée, « 2t » ne l'est pas.
-    if (unit === 't' && !/[\s  ]/.test(match[0])) continue
+    // La lettre « t » (tonne), seule ou en puissance, n'est reconnue qu'avec une espace entre le nombre
+    // et l'unité : « 2 t » est colorée, « 2t », « 4,9t² » (chute libre) et « 2t² + 3t » (polynôme) non.
+    // On regarde le caractère juste avant l'unité, pas tout le match : « 1 000t » a une espace dans le nombre.
+    if (/^t[²³]?$/.test(unit) && !/[   ]/.test(match[0][match[0].length - match[1].length - 1])) continue
     found.push({ start: match.index, end: match.index + match[0].length, unit, kind: 'valeur' })
   }
   for (const match of text.matchAll(BARE)) {
