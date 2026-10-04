@@ -1,6 +1,7 @@
 import { useEffect, useImperativeHandle, useRef, useState, type CSSProperties } from 'react'
 import { Plus } from 'lucide-react'
 import { equationStepIsSolved, navigate, operationVisible, readingOrder, renderMathToHtml, type EqColumn, type EqField, type EqPos } from '../math'
+import { AddLineButton } from './AddLineButton'
 import { MathFieldEditor, type MathFieldHandle } from './MathFieldEditor'
 import { latchEdgeKey, rawFieldKeyDown, type BlockEdgeHandle, type BlockPlace, type ExitDirection, type ExitVia } from './fieldIntents'
 
@@ -525,6 +526,13 @@ export function EquationStepsField({
     pending.current = { pos: { step: stepIndex + 1, field: 'left' }, at: 'start' }
   }
 
+  /** Le bouton « + » : une étape neuve en fin de bloc — sauf si la dernière est déjà vide, où l'on va simplement s'y mettre. */
+  function addStep() {
+    const last = steps.length - 1
+    if (isStepEmpty(steps[last])) return focusField({ step: last, field: 'left' }, 'start')
+    enterStep(last)
+  }
+
   /** Une flèche ou Tab depuis `from` — voir `navigate`. Tab sans destination retombe sur le navigateur. */
   function go(from: EqPos, direction: ExitDirection, via: ExitVia): boolean {
     const target = navigate(steps, from, direction, column.current)
@@ -671,6 +679,7 @@ export function EquationStepsField({
           </div>
         )
       })}
+      <AddLineButton label="Ajouter une étape" onAdd={addStep} />
     </div>
   )
 }

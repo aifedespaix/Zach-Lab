@@ -132,8 +132,27 @@ describe('LinesBlockField', () => {
     expect(onEnterBlock).toHaveBeenCalledWith('outside')
   })
 
-  it("n'a aucun bouton : le clavier suffit", () => {
-    render(<Harness initial={[L('a', 'x')]} />)
-    expect(screen.queryAllByRole('button')).toHaveLength(0)
+  // Le clavier suffit toujours (Entrée) ; un seul bouton discret par BLOC — pas un par ligne — en est
+  // l'équivalent à la souris. Demandé par l'utilisateur, il remplace l'ancienne règle « aucun bouton ».
+  describe("bouton « Ajouter une ligne » (l'équivalent d'Entrée, un seul par bloc)", () => {
+    it('ajoute une ligne en fin de bloc et lui donne le curseur', async () => {
+      render(<Harness initial={[L('a', '1+1'), L('b', '3')]} />)
+      await userEvent.click(screen.getByRole('button', { name: 'Ajouter une ligne' }))
+      expect(screen.getAllByLabelText(/Ligne \d du calcul/)).toHaveLength(3)
+      expect(line(3)).toHaveValue('')
+      expect(line(3)).toHaveFocus()
+    })
+
+    it("comme Entrée sur la dernière ligne : si elle est déjà vide, il y va au lieu d'en empiler une autre", async () => {
+      render(<Harness initial={[L('a', '1+1'), L('b')]} />)
+      await userEvent.click(screen.getByRole('button', { name: 'Ajouter une ligne' }))
+      expect(screen.getAllByLabelText(/Ligne \d du calcul/)).toHaveLength(2)
+      expect(line(2)).toHaveFocus()
+    })
+
+    it("il n'y en a qu'un par bloc, pas un par ligne", () => {
+      render(<Harness initial={[L('a'), L('b'), L('c')]} />)
+      expect(screen.getAllByRole('button', { name: 'Ajouter une ligne' })).toHaveLength(1)
+    })
   })
 })

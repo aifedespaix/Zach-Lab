@@ -1,5 +1,6 @@
 import { useEffect, useImperativeHandle, useRef, type CSSProperties } from 'react'
 import { renderMathToHtml } from '../math'
+import { AddLineButton } from './AddLineButton'
 import { MathFieldEditor, type MathFieldHandle } from './MathFieldEditor'
 import { rawFieldKeyDown, type BlockEdgeHandle, type BlockPlace, type ExitDirection, type ExitVia } from './fieldIntents'
 import { insertLineAfter, isLineEmpty, removeLineAt, type SubLine } from './lines'
@@ -95,6 +96,13 @@ export function LinesBlockField({ lines, onChange, ariaLabel, onEnterBlock, onDe
     onChange(inserted)
   }
 
+  /** Le bouton « + » : une ligne neuve en fin de bloc — sauf si la dernière est déjà vide, où l'on va simplement s'y mettre. */
+  function addLine() {
+    const last = lines.length - 1
+    if (isLineEmpty(lines[last])) return focusLine(last, 'start')
+    enter(last)
+  }
+
   function remove(index: number, focus: number, at: 'start' | 'end') {
     pending.current = { id: lines[focus].id, at }
     onChange(removeLineAt(lines, index))
@@ -177,6 +185,7 @@ export function LinesBlockField({ lines, onChange, ariaLabel, onEnterBlock, onDe
           </div>
         )
       })}
+      <AddLineButton label="Ajouter une ligne" onAdd={addLine} />
     </div>
   )
 }

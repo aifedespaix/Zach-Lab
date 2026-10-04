@@ -84,4 +84,25 @@ describe('EquationStepsField (repli brut)', () => {
     expect(screen.getByLabelText("Membre droit de l'étape 1 du bloc 1 (LaTeX)")).toHaveValue('def')
     expect(left(1)).toHaveValue('abc')
   })
+
+  describe("bouton « Ajouter une étape » (l'équivalent d'Entrée, un seul par bloc)", () => {
+    it('ajoute une étape en fin de bloc et met le curseur sur son membre gauche', async () => {
+      render(<Harness initial={[{ left: '2x', right: '8' }]} />)
+      await userEvent.click(screen.getByRole('button', { name: 'Ajouter une étape' }))
+      expect(screen.getAllByLabelText(/Membre gauche/)).toHaveLength(2)
+      expect(left(2)).toHaveFocus()
+    })
+
+    it("si la dernière étape est déjà vide, il y va au lieu d'en empiler une autre", async () => {
+      render(<Harness initial={[{ left: 'a', right: 'b' }, { left: '', right: '' }]} />)
+      await userEvent.click(screen.getByRole('button', { name: 'Ajouter une étape' }))
+      expect(screen.getAllByLabelText(/Membre gauche/)).toHaveLength(2)
+      expect(left(2)).toHaveFocus()
+    })
+
+    it("il n'y en a qu'un par bloc", () => {
+      render(<Harness initial={[{ left: 'a', right: 'b' }, { left: 'c', right: 'd' }, { left: '', right: '' }]} />)
+      expect(screen.getAllByRole('button', { name: 'Ajouter une étape' })).toHaveLength(1)
+    })
+  })
 })
