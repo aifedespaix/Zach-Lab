@@ -5,6 +5,7 @@ import { RecentFilesList } from '@suite/shared/shell'
 import { AnimatedLogo } from '../AnimatedLogo'
 import { BlockStack } from './BlockStack'
 import { FieldContextMenu } from './FieldContextMenu'
+import { HighlightedTextarea, UnitHuesContext } from './HighlightedTextarea'
 import { insertAtCursor, isTextField, type TextField } from './insertAtCursor'
 import { isMathField, type MathfieldElement } from '../math/mathFieldElement'
 import { splitPath } from './names'
@@ -14,6 +15,7 @@ import type { SymbolEntry } from './toolbarCatalog'
 import { useExerciseStore } from './useExerciseStore'
 import { useOpenExercise } from './useOpenExercise'
 import { SymbolInsertContext } from './symbolInsert'
+import { assignHues, exerciseTexts } from './unitColors'
 import { isSplit, mergeZones, sendBlock, splitZones, type Zone } from './zones'
 
 const STATUS_TEXT = {
@@ -118,6 +120,8 @@ export function ExerciseWorkspace() {
   // Au bord, la flèche crée un exercice : pas par-dessus un exercice encore vierge.
   const blank = isBlank(exercise)
   const split = isSplit(exercise)
+  // Une teinte par unité pour tout l'exercice : un champ la consulte, il ne parcourt pas l'exercice.
+  const unitHues = assignHues(exerciseTexts(exercise))
 
   /** Avance d'un exercice ; si l'action en a créé un (au bord de la fiche), le curseur ira dans son énoncé. */
   const advance = (delta: -1 | 1) => {
@@ -138,6 +142,7 @@ export function ExerciseWorkspace() {
 
   return (
     <SymbolInsertContext value={insertSymbol}>
+    <UnitHuesContext value={unitHues}>
     <section aria-label="Exercice" onFocus={rememberField} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <header
         style={{
@@ -192,7 +197,7 @@ export function ExerciseWorkspace() {
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
           <FieldContextMenu kind="text">
-            <textarea
+            <HighlightedTextarea
               ref={enonce}
               aria-label="Énoncé de l'exercice"
               placeholder="Quelle est la question ?"
@@ -255,7 +260,7 @@ export function ExerciseWorkspace() {
           Réponse
         </label>
         <FieldContextMenu kind="text">
-          <textarea
+          <HighlightedTextarea
             id="reponse-finale"
             value={exercise.reponse}
             onChange={e => edit({ reponse: e.target.value })}
@@ -289,6 +294,7 @@ export function ExerciseWorkspace() {
         onConfirm={() => { setConfirming(false); removeCurrent() }}
       />
     </section>
+    </UnitHuesContext>
     </SymbolInsertContext>
   )
 }

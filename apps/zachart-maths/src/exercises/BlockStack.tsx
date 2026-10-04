@@ -9,6 +9,7 @@ import { CalcEditor } from './CalcEditor'
 import { EmptyAreaContextMenu } from './EmptyAreaContextMenu'
 import { EquationEditor, type SubBlockContext } from './EquationEditor'
 import { FieldContextMenu } from './FieldContextMenu'
+import { HighlightedTextarea } from './HighlightedTextarea'
 import { borderOf, toneOf } from './toolbarCatalog'
 import {
   BLOCK_TYPES, newBlock, addColumn, addRow, canGrow, convertBlock, duplicateBlock, insertBlockAfter, isKnown, moveBlock, parseBlocks,
@@ -20,7 +21,7 @@ const field = 'rounded border bg-background px-2 py-1 text-sm'
 function TextEditor({ block, onChange }: { block: TextBlock; onChange: (patch: Partial<TextBlock>) => void }) {
   return (
     <FieldContextMenu kind="text">
-      <textarea
+      <HighlightedTextarea
         aria-label="Texte"
         value={block.contenu}
         rows={Math.max(2, block.contenu.split('\n').length)}

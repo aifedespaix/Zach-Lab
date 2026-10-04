@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ExerciseWorkspace } from './ExerciseWorkspace'
 import { createMemoryFs } from './memoryFs'
 import { useExerciseStore } from './useExerciseStore'
+import { useUnitColors } from './useUnitColors'
 import { AUTOSAVE_DELAY_MS, useOpenExercise } from './useOpenExercise'
 
 const exo = (titre: string) => JSON.stringify({ version: 1, id: titre, titre, question: '', page: '', blocs: [], reponse: '' })
@@ -306,6 +307,35 @@ describe('ExerciseWorkspace', () => {
     await user.click(screen.getByRole('button', { name: 'Multiplié par' }))
     await act(async () => void (await useOpenExercise.getState().flush()))
     expect(stored(fs, 'A/a.json').exercices[0].blocs[0]).toMatchObject({ type: 'equation', etapes: [{ left: '\\frac{}{}\\times ' }] })
+  })
+
+  it('colore les grandeurs de l\'énoncé, des blocs texte et de la réponse, une teinte par unité', async () => {
+    useUnitColors.setState({ enabled: true })
+    await setup({
+      'A/a.json': sheetFile('Vitesse', [
+        ex('e1', {
+          enonce: 'Je vais à 3 km/h, je fais 16 km ?',
+          blocs: [{ id: 'b1', type: 'texte', contenu: 'Il reste 4 km.' }],
+          reponse: '16 km en 5 h',
+        }),
+      ]),
+    })
+    await open('A/a.json')
+    const km = [...document.querySelectorAll<HTMLElement>('mark[data-unit="km"]')]
+    const kmh = [...document.querySelectorAll<HTMLElement>('mark[data-unit="km/h"]')]
+    expect(km.map(m => m.textContent)).toEqual(['16 km', '4 km', '16 km'])
+    expect(new Set(km.map(m => m.style.background)).size).toBe(1)
+    expect(kmh.map(m => m.textContent)).toEqual(['3 km/h'])
+    expect(kmh[0].style.background).not.toBe(km[0].style.background)
+  })
+
+  it('ne colore rien quand le réglage est coupé', async () => {
+    useUnitColors.setState({ enabled: false })
+    await setup({ 'A/a.json': sheetFile('Vitesse', [ex('e1', { enonce: '16 km' })]) })
+    await open('A/a.json')
+    expect(document.querySelectorAll('mark')).toHaveLength(0)
+    expect(screen.getByLabelText("Énoncé de l'exercice")).toHaveValue('16 km')
+    useUnitColors.setState({ enabled: true })
   })
 
   describe('deux zones et zone de réponse', () => {
