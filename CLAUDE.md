@@ -181,8 +181,8 @@ under `src/`, wired together in `App.tsx`:
   membre aux `+`/`−` de premier niveau en segments `{ text, group }` (`group` = partie littérale `x`, `xy`, `x^2` ;
   `''` constante ; `null` non coloré — parenthèses, fractions, racines, `/`, commande inconnue ; les segments
   recollés redonnent l'entrée) ; `assignTermColors(groups, theme)` donne une couleur HEXADÉCIMALE par groupe
-  (`\colorbox` de KaTeX n'accepte pas `var(--…)`), attribuée sur TOUT le bloc ; `LikeTermsHelp` recompose les
-  étapes en lecture seule (`\colorbox`, `renderMathToHtml`) sous le bloc équation tant qu'il a le focus et que le
+  (`\colorbox` de KaTeX n'accepte pas `var(--…)`), attribuée sur TOUT le bloc, la constante étant un gris neutre ; `LikeTermsHelp` recompose les
+  étapes en lecture seule (`\colorbox`, `renderMathToHtml`), une case de 28 px par étape (vide si moins de deux termes colorés), sous le bloc équation tant qu'il a le focus et que le
   réglage est actif. Le champ MathLive n'est jamais modifié et l'aide n'appelle jamais `onChange`. Même bouton que
   les unités (`view.toggleUnitColors`, « Colorer unités et termes »).
 - **`math/`** — `isMathField` (the toolbar's target check); MathLive itself and `renderMathToHtml` come from `@suite/shared`.

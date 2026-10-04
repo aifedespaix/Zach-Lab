@@ -5,6 +5,7 @@ import { coloredLatex, LikeTermsHelp } from './LikeTermsHelp'
 import { assignTermColors } from './termColors'
 
 const lines = (container: HTMLElement) => container.querySelectorAll('[data-like-terms-line]')
+const slots = (container: HTMLElement) => container.querySelectorAll<HTMLElement>('[data-like-terms-slot]')
 
 describe('coloredLatex', () => {
   it('enveloppe chaque terme coloré dans une boîte, et laisse le reste tel quel', () => {
@@ -61,5 +62,17 @@ describe('LikeTermsHelp', () => {
     expect(() =>
       render(<LikeTermsHelp steps={[{ left: '\\frac{', right: '{{{x' }, { left: '3x+', right: '+-' }]} theme="dark" />),
     ).not.toThrow()
+  })
+
+  it('rend une case de hauteur fixe par étape, vide ou illisible comprise, la ligne colorée seulement quand il y a de quoi regrouper', () => {
+    const steps = [{ left: '3x+2', right: '7' }, { left: '3(x+2)', right: '15' }, { left: '', right: '' }]
+    const { container } = render(<LikeTermsHelp steps={steps} theme="light" />)
+    const all = slots(container)
+    expect(all).toHaveLength(3)
+    for (const slot of all) expect(slot.style.minHeight).toBe('28px')
+    expect(lines(container)).toHaveLength(1)
+    expect(all[0].querySelector('[data-like-terms-line]')).not.toBeNull()
+    expect(all[1].querySelector('[data-like-terms-line]')).toBeNull()
+    expect(all[2].querySelector('[data-like-terms-line]')).toBeNull()
   })
 })

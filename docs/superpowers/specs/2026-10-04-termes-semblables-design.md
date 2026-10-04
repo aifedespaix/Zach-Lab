@@ -45,8 +45,8 @@ l'élève retape. Le champ reste donc intact ; une copie colorée est rendue à 
 
 Une teinte par groupe, attribuée dans l'ordre d'apparition **sur tout le bloc** (étape par
 étape, membre gauche puis droit), donc `x` a la même couleur des deux côtés ET d'une étape à
-l'autre : l'élève voit les mêmes termes se regrouper. Les constantes ont une teinte
-fixe et sobre (gris-bleu) pour qu'elles se distinguent des lettres. Palette de 6 teintes, qui recommence au-delà.
+l'autre : l'élève voit les mêmes termes se regrouper. Les constantes sont un vrai gris
+neutre (saturation 0) pour qu'elles se distinguent de toutes les lettres (ΔE76 >= 22, mesuré dans les tests). Palette de 6 teintes, qui recommence au-delà.
 
 Chaque couleur est donnée en **hexadécimal**, calculé pour le thème clair ou sombre courant
 (`useResolvedTheme`) : `\colorbox` de KaTeX n'accepte pas `var(--…)`. Les fonds sont
@@ -69,8 +69,9 @@ inchangé : **rien dans `packages/shared`**, Mentale n'est pas touchée. L'adapt
   englobant, sans perdre le focus à la sortie vers un bouton interne) ;
 - sous le champ, **tant que le bloc a le focus et que le réglage est actif**, affiche une
   ligne par étape qui a au moins deux termes colorés, en lecture seule (`aria-hidden` :
-  l'aide est visuelle, une étiquette ne servirait à rien) ; le conteneur garde une hauteur
-  minimale tant qu'il est affiché, pour que les blocs suivants ne sautent pas à chaque frappe ;
+  l'aide est visuelle, une étiquette ne servirait à rien) ; chaque étape a une case de hauteur
+  fixe (28 px), toujours présente et vide quand l'étape n'a pas deux termes colorés : les blocs suivants
+  ne sautent pas à chaque frappe et les cases restent alignées une à une sur les étapes ;
 - n'affiche une ligne que s'il y a au moins **deux** termes colorés dans l'étape (sinon
   la ligne ne dit rien de plus que le champ).
 

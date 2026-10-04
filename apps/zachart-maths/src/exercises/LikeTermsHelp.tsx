@@ -24,23 +24,27 @@ export function coloredLatex(segments: readonly TermSegment[], colors: ReadonlyM
  * jamais touché : une copie colorée vit à côté, la valeur enregistrée reste celle de l'élève.
  *
  * Les couleurs sont attribuées sur tout le bloc, pas étape par étape, pour que `x` garde sa couleur
- * d'une étape à l'autre. Le conteneur garde une hauteur minimale tant qu'il est affiché : les blocs
- * suivants ne sautent pas quand une ligne apparaît ou disparaît en cours de frappe.
+ * d'une étape à l'autre. Chaque étape a sa case de hauteur fixe, toujours présente (vide quand l'étape
+ * n'a pas deux termes colorés) : les blocs suivants ne sautent pas quand une ligne apparaît ou
+ * disparaît en cours de frappe, et les cases restent alignées une à une sur les étapes.
  */
 export function LikeTermsHelp({ steps, theme }: { steps: readonly Pick<EquationStep, 'left' | 'right'>[]; theme: Theme }) {
   const parsed = steps.map(step => ({ left: colorTerms(step.left), right: colorTerms(step.right) }))
   const colors = assignTermColors(parsed.flatMap(p => [...p.left, ...p.right]).map(segment => segment.group), theme)
-  const worthShowing = parsed.filter(p => [...p.left, ...p.right].filter(segment => segment.group !== null).length >= 2)
+  const worthShowing = (p: (typeof parsed)[number]) => [...p.left, ...p.right].filter(segment => segment.group !== null).length >= 2
   return (
     <div data-like-terms-help aria-hidden style={{ marginTop: 6, minHeight: 28, fontSize: 14, pointerEvents: 'none' }}>
-      {worthShowing.map((p, index) => (
-        <div
-          key={index}
-          data-like-terms-line
-          style={{ padding: '2px 0' }}
-          // Sûr : KaTeX échappe ce qu'il émet et `renderMathToHtml` passe `trust: false` (même usage que `Formula`).
-          dangerouslySetInnerHTML={{ __html: renderMathToHtml(`${coloredLatex(p.left, colors)} = ${coloredLatex(p.right, colors)}`) }}
-        />
+      {parsed.map((p, index) => (
+        <div key={index} data-like-terms-slot style={{ minHeight: 28 }}>
+          {worthShowing(p) && (
+            <div
+              data-like-terms-line
+              style={{ padding: '2px 0' }}
+              // Sûr : KaTeX échappe ce qu'il émet et `renderMathToHtml` passe `trust: false` (même usage que `Formula`).
+              dangerouslySetInnerHTML={{ __html: renderMathToHtml(`${coloredLatex(p.left, colors)} = ${coloredLatex(p.right, colors)}`) }}
+            />
+          )}
+        </div>
       ))}
     </div>
   )
