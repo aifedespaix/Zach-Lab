@@ -31,10 +31,18 @@ describe('LikeTermsHelp', () => {
     expect((container.querySelector('[data-like-terms-help]') as HTMLElement).style.minHeight).toBe('28px')
   })
 
-  it('ne montre aucune ligne quand l\'étape a moins de deux termes colorés, mais garde son conteneur', () => {
-    const { container } = render(<LikeTermsHelp steps={[{ left: '3x', right: '(2+1)' }]} theme="light" />)
+  it('ne montre aucune ligne quand aucun groupe n\'a deux termes, mais garde son conteneur', () => {
+    const { container } = render(<LikeTermsHelp steps={[{ left: '5x', right: '10' }]} theme="light" />)
     expect(container.querySelector('[data-like-terms-help]')).not.toBeNull()
+    expect(slots(container)).toHaveLength(1)
     expect(lines(container)).toHaveLength(0)
+  })
+
+  it('montre la ligne quand un groupe a deux termes dans l\'étape', () => {
+    for (const [left, right] of [['3x', '2x+5'], ['2x+3', '5'], ['2x+3-2x', '7'], ['x^2-4', '0']]) {
+      const { container } = render(<LikeTermsHelp steps={[{ left, right }]} theme="light" />)
+      expect(lines(container), `${left} = ${right}`).toHaveLength(1)
+    }
   })
 
   it('ignore les étapes vides et celles qui n\'ont rien à regrouper', () => {
@@ -45,14 +53,14 @@ describe('LikeTermsHelp', () => {
   })
 
   it('garde la même couleur pour un même groupe d\'une étape à l\'autre', () => {
-    const steps = [{ left: '1+x', right: '7' }, { left: 'x', right: '6' }]
+    const steps = [{ left: '1+x', right: '7' }, { left: '2x', right: 'x+6' }]
     const { container } = render(<LikeTermsHelp steps={steps} theme="light" />)
     const xColor = assignTermColors(['', 'x'], 'light').get('x')!
     expect(container.innerHTML.split(xColor).length - 1).toBeGreaterThanOrEqual(2)
   })
 
   it('change de couleurs avec le thème', () => {
-    const steps = [{ left: '3x+2y', right: '5' }]
+    const steps = [{ left: '3x+2y+1', right: '5' }]
     const light = render(<LikeTermsHelp steps={steps} theme="light" />).container.innerHTML
     const dark = render(<LikeTermsHelp steps={steps} theme="dark" />).container.innerHTML
     expect(light).not.toBe(dark)

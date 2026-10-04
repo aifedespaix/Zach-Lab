@@ -68,9 +68,9 @@ inchangé : **rien dans `packages/shared`**, Mentale n'est pas touchée. L'adapt
 - suit si le focus est dans le bloc (`onFocusCapture` / `onBlurCapture` sur un `<div>`
   englobant, sans perdre le focus à la sortie vers un bouton interne) ;
 - sous le champ, **tant que le bloc a le focus et que le réglage est actif**, affiche une
-  ligne par étape qui a au moins deux termes colorés, en lecture seule (`aria-hidden` :
+  ligne par étape qui a au moins un groupe à deux termes ou plus dans l'étape, en lecture seule (`aria-hidden` :
   l'aide est visuelle, une étiquette ne servirait à rien) ; chaque étape a une case de hauteur
-  fixe (28 px), toujours présente et vide quand l'étape n'a pas deux termes colorés : les blocs suivants
+  fixe (28 px), toujours présente et vide quand aucun groupe n'a deux termes ou plus dans l'étape : les blocs suivants
   ne sautent pas à chaque frappe et les cases restent alignées une à une sur les étapes ;
 - n'affiche une ligne que s'il y a au moins **deux** termes colorés dans l'étape (sinon
   la ligne ne dit rien de plus que le champ).
@@ -99,7 +99,7 @@ Tout sous `apps/zachart-maths/src/exercises/`.
   LaTeX tronqué (`3x+`), la concaténation des segments redonne l'entrée.
 - `termColors.test.ts` : même teinte des deux côtés, constantes distinctes, ordre stable, retour au début au-delà de 6, hexadécimal valide en clair et en sombre.
 - `ColoredStep.test.tsx` : le LaTeX produit contient un `\colorbox` par terme coloré, rien pour un terme non coloré, aucune exception sur une entrée absurde.
-- `EquationEditor` : la ligne n'apparaît qu'avec le focus dans le bloc et le réglage actif, jamais avec moins de deux termes colorés ; le champ MathLive n'est pas modifié (sa valeur reste celle de l'élève).
+- `EquationEditor` : la ligne n'apparaît qu'avec le focus dans le bloc et le réglage actif, jamais sans un groupe à deux termes ou plus dans l'étape ; le champ MathLive n'est pas modifié (sa valeur reste celle de l'élève).
 - Contrôle visuel à la main (clair et sombre) : lisibilité du texte sur fond, espacement des signes, hauteur de la ligne.
 
 ## Risques
@@ -122,3 +122,4 @@ Tout sous `apps/zachart-maths/src/exercises/`.
 
 - Un groupe à un seul terme (un seul `y`) est coloré aussi : tout terme analysable est coloré.
 - La ligne d'aide montre toutes les étapes du bloc qui a le focus, pas seulement l'étape active.
+- La ligne d'aide n'apparaît que si un groupe a au moins deux termes dans l'étape (le 5x = 10 ne montre rien).

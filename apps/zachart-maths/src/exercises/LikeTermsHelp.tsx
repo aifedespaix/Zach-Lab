@@ -18,20 +18,28 @@ export function coloredLatex(segments: readonly TermSegment[], colors: ReadonlyM
     .join('')
 }
 
+/** Vrai quand un groupe a au moins deux termes dans l'étape (les deux membres comptés). */
+function hasRegroupableGroup(segments: readonly TermSegment[]): boolean {
+  const counts = new Map<string, number>()
+  for (const { group } of segments) if (group !== null) counts.set(group, (counts.get(group) ?? 0) + 1)
+  return [...counts.values()].some(count => count >= 2)
+}
+
 /**
  * L'aide du bloc équation : la même équation que l'élève écrit, recomposée en lecture seule, où les
  * termes semblables (`3x` et `5x`, les constantes) ont la même couleur. Le champ MathLive, lui, n'est
  * jamais touché : une copie colorée vit à côté, la valeur enregistrée reste celle de l'élève.
  *
  * Les couleurs sont attribuées sur tout le bloc, pas étape par étape, pour que `x` garde sa couleur
- * d'une étape à l'autre. Chaque étape a sa case de hauteur fixe, toujours présente (vide quand l'étape
- * n'a pas deux termes colorés) : les blocs suivants ne sautent pas quand une ligne apparaît ou
+ * d'une étape à l'autre. La ligne n'apparaît que si un groupe a au moins deux termes dans l'étape (les
+ * deux membres comptés) : `5x = 10` n'a rien à regrouper, la ligne n'y serait que du bruit. Chaque étape
+ * a sa case de hauteur fixe, toujours présente (vide quand rien n'est à regrouper) : les blocs suivants ne sautent pas quand une ligne apparaît ou
  * disparaît en cours de frappe, et les cases restent alignées une à une sur les étapes.
  */
 export function LikeTermsHelp({ steps, theme }: { steps: readonly Pick<EquationStep, 'left' | 'right'>[]; theme: Theme }) {
   const parsed = steps.map(step => ({ left: colorTerms(step.left), right: colorTerms(step.right) }))
   const colors = assignTermColors(parsed.flatMap(p => [...p.left, ...p.right]).map(segment => segment.group), theme)
-  const worthShowing = (p: (typeof parsed)[number]) => [...p.left, ...p.right].filter(segment => segment.group !== null).length >= 2
+  const worthShowing = (p: (typeof parsed)[number]) => hasRegroupableGroup([...p.left, ...p.right])
   return (
     <div data-like-terms-help aria-hidden style={{ marginTop: 6, minHeight: 28, fontSize: 14, pointerEvents: 'none' }}>
       {parsed.map((p, index) => (
