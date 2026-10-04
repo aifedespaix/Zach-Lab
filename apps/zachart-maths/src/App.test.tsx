@@ -135,15 +135,18 @@ describe('App base', () => {
     await waitFor(() => expect(document.documentElement).not.toHaveClass('dark'))
   })
 
-  it('les paramètres ont les raccourcis clavier et la barre d\'outils', async () => {
+  it('les paramètres ont les raccourcis, la barre d\'outils et les mises à jour', async () => {
     const user = userEvent.setup()
     render(<App />)
     await user.click(screen.getByRole('button', { name: /Paramètres/ }))
     const dialog = await screen.findByRole('dialog', { name: 'Paramètres' })
     const tabs = within(dialog).getAllByRole('tab')
-    expect(tabs).toHaveLength(2)
+    expect(tabs).toHaveLength(3)
     expect(tabs[0]).toHaveTextContent('Raccourcis')
     expect(tabs[1]).toHaveTextContent('Barre d\'outils')
+    expect(tabs[2]).toHaveTextContent('Mises à jour')
+    await user.click(tabs[2])
+    expect(await within(dialog).findByRole('button', { name: 'Rechercher les mises à jour' })).toBeInTheDocument()
   })
 
   it('Échap referme la palette', async () => {

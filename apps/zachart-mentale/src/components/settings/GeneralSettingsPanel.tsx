@@ -2,15 +2,8 @@ import { Sun, Moon, Monitor, type LucideIcon } from 'lucide-react'
 import type { ThemeMode } from '@suite/shared/theme'
 import type { AppearanceSettings } from '../../types/appearanceSettings'
 import { FONT_OPTIONS } from '../../types/appearanceSettings'
-import type { UpdateCheckHandle, UpdateCheckStatus } from '@suite/shared/update'
+import { UpdateSettingsSection, type UpdateCheckHandle, type UpdateCheckStatus } from '@suite/shared/update'
 import { SettingsSection } from '@suite/shared/settings'
-import { Button } from '@suite/shared/ui'
-
-const UPDATE_STATUS_LABEL: Partial<Record<UpdateCheckStatus, string>> = {
-  checking: 'Vérification en cours…',
-  'up-to-date': 'À jour',
-  error: 'Échec de la vérification',
-}
 
 const THEME_MODE_OPTIONS: { value: ThemeMode; label: string; icon: LucideIcon }[] = [
   { value: 'light', label: 'Clair', icon: Sun },
@@ -106,37 +99,7 @@ export function GeneralSettingsPanel({ settings, onChange, updateCheck }: Genera
         </p>
       </SettingsSection>
 
-      <SettingsSection title="Mises à jour" description="Vérifie manuellement si une nouvelle version est disponible.">
-        {updateCheck.updateReady ? (
-          <div role="status" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 12.5 }}>Mise à jour prête</span>
-            <Button
-              onClick={() => {
-                void updateCheck.applyUpdate?.()
-              }}
-            >
-              Redémarrer
-            </Button>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Button
-              variant="outline"
-              onClick={() => {
-                void updateCheck.checkNow()
-              }}
-              disabled={updateCheck.status === 'checking'}
-            >
-              Rechercher les mises à jour
-            </Button>
-            {UPDATE_STATUS_LABEL[updateCheck.status] && (
-              <span style={{ fontSize: 12.5, color: 'var(--muted-foreground)' }}>
-                {UPDATE_STATUS_LABEL[updateCheck.status]}
-              </span>
-            )}
-          </div>
-        )}
-      </SettingsSection>
+      <UpdateSettingsSection {...updateCheck} />
     </div>
   )
 }

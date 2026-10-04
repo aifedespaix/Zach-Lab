@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Keyboard, Moon, Search, Settings as SettingsIcon } from 'lucide-react'
+import { Download, Keyboard, Moon, Search, Settings as SettingsIcon } from 'lucide-react'
 import {
   CommandButton,
   CommandPalette,
@@ -11,7 +11,7 @@ import { SettingsDialog, ShortcutSettingsPanel } from '@suite/shared/settings'
 import { AppShell, ResizablePanel, createPanelWidthStorage } from '@suite/shared/shell'
 import { startCircularThemeTransition, useResolvedTheme, useThemeDomSync, useThemeStore } from '@suite/shared/theme'
 import { TooltipProvider } from '@suite/shared/ui'
-import { UpdateReadyBanner, useAppUpdater } from '@suite/shared/update'
+import { UpdateReadyBanner, UpdateSettingsSection, useAppUpdater } from '@suite/shared/update'
 import './commands'
 
 // Each app picks its own bounds and its own storage keys: two apps of the suite
@@ -32,7 +32,7 @@ export default function App() {
   useThemeDomSync()
   useGlobalShortcuts()
 
-  const { updateReady, dismissed, applyUpdate, dismissUpdate } = useAppUpdater()
+  const { updateReady, dismissed, applyUpdate, dismissUpdate, status: updateStatus, checkNow } = useAppUpdater()
   const resolvedTheme = useResolvedTheme()
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -90,6 +90,20 @@ export default function App() {
                   hint: 'Toutes les actions',
                   icon: Keyboard,
                   render: () => <ShortcutSettingsPanel />,
+                },
+                {
+                  id: 'updates',
+                  label: 'Mises à jour',
+                  hint: 'Nouvelle version',
+                  icon: Download,
+                  render: () => (
+                    <UpdateSettingsSection
+                      status={updateStatus}
+                      checkNow={checkNow}
+                      updateReady={updateReady}
+                      applyUpdate={applyUpdate}
+                    />
+                  ),
                 },
               ]}
               sources={[

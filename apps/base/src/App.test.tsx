@@ -81,8 +81,11 @@ describe('App base', () => {
     await user.click(screen.getByRole('button', { name: /Paramètres/ }))
     const dialog = await screen.findByRole('dialog', { name: 'Paramètres' })
     const tabs = within(dialog).getAllByRole('tab')
-    expect(tabs).toHaveLength(1)
+    expect(tabs).toHaveLength(2)
     expect(tabs[0]).toHaveTextContent('Raccourcis')
+    expect(tabs[1]).toHaveTextContent('Mises à jour')
+    await user.click(tabs[1])
+    expect(await within(dialog).findByRole('button', { name: 'Rechercher les mises à jour' })).toBeInTheDocument()
   })
 
   it('Échap referme la palette', async () => {

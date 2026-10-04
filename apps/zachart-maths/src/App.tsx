@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BookOpen, ChevronsDownUp, FolderPlus, Keyboard, Moon, NotebookPen, Search, Settings as SettingsIcon, Shapes } from 'lucide-react'
+import { BookOpen, Download, ChevronsDownUp, FolderPlus, Keyboard, Moon, NotebookPen, Search, Settings as SettingsIcon, Shapes } from 'lucide-react'
 import {
   CommandButton,
   CommandPalette,
@@ -11,7 +11,7 @@ import { SettingsDialog, ShortcutSettingsPanel } from '@suite/shared/settings'
 import { AppShell, BootScreen, CollapsiblePanel, createPanelWidthStorage } from '@suite/shared/shell'
 import { startCircularThemeTransition, useResolvedTheme, useThemeDomSync, useThemeStore } from '@suite/shared/theme'
 import { TooltipProvider } from '@suite/shared/ui'
-import { UpdateReadyBanner, useAppUpdater } from '@suite/shared/update'
+import { UpdateReadyBanner, UpdateSettingsSection, useAppUpdater } from '@suite/shared/update'
 import { AnimatedLogo } from './AnimatedLogo'
 import './commands'
 import { CoursePanel } from './cours/CoursePanel'
@@ -45,7 +45,7 @@ export default function App() {
   useThemeDomSync()
   useGlobalShortcuts()
 
-  const { updateReady, dismissed, applyUpdate, dismissUpdate } = useAppUpdater()
+  const { updateReady, dismissed, applyUpdate, dismissUpdate, status: updateStatus, checkNow } = useAppUpdater()
   const resolvedTheme = useResolvedTheme()
   const exercisesLoaded = useExerciseStore(state => state.loaded)
   // Le M a le temps de s'écrire une fois, même si le disque répond tout de suite.
@@ -149,6 +149,20 @@ export default function App() {
                   hint: 'Familles de signes',
                   icon: Shapes,
                   render: () => <ToolbarSettingsPanel />,
+                },
+                {
+                  id: 'updates',
+                  label: 'Mises à jour',
+                  hint: 'Nouvelle version',
+                  icon: Download,
+                  render: () => (
+                    <UpdateSettingsSection
+                      status={updateStatus}
+                      checkNow={checkNow}
+                      updateReady={updateReady}
+                      applyUpdate={applyUpdate}
+                    />
+                  ),
                 },
               ]}
               sources={[
