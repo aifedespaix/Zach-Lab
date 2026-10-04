@@ -18,6 +18,17 @@ describe('parseMarkdown', () => {
   it('lit un tableau', () => {
     expect(parseMarkdown('| A | B |\n|---|---|\n| 1 | 2 |')).toEqual([{ t: 'table', header: ['A', 'B'], rows: [['1', '2']] }])
   })
+  it('lit un encadré, son titre et son corps en Markdown', () => {
+    expect(parseMarkdown('> [!methode] Les étapes\n> 1. un\n> 2. deux\n>\n> Fin')).toEqual([
+      { t: 'callout', kind: 'methode', title: 'Les étapes', body: [{ t: 'ol', items: ['un', 'deux'] }, { t: 'p', text: 'Fin' }] },
+    ])
+  })
+  it('accepte l\'étiquette accentuée ou en majuscules, et garde la citation simple et l\'étiquette inconnue', () => {
+    expect(parseMarkdown('> [!Propriété]\n> Texte')[0]).toMatchObject({ t: 'callout', kind: 'propriete', title: '' })
+    expect(parseMarkdown('> simple')).toEqual([{ t: 'quote', text: 'simple' }])
+    expect(parseMarkdown('> [!inconnu]\n> x')[0]).toMatchObject({ t: 'quote' })
+    expect(parseMarkdown('> [!constructor]\n> x')[0]).toMatchObject({ t: 'quote' })
+  })
   it('ne boucle pas sur une entrée étrange', () => {
     expect(() => parseMarkdown('$$\nnon fermé\n\n- ?\n>\n|')).not.toThrow()
     expect(parseMarkdown('')).toEqual([])
@@ -31,6 +42,13 @@ describe('Markdown', () => {
     expect(container.querySelector('em')).toHaveTextContent('italique')
     expect(container.querySelectorAll('.katex').length).toBe(2)
     expect(container.querySelector('.katex-display')).not.toBeNull()
+  })
+  it('rend un encadré avec son libellé, son titre et ses formules', () => {
+    const { container } = render(<Markdown source={'> [!definition] Hypoténuse\n> Le côté **opposé** à $\\widehat{A}$.'} />)
+    const box = container.querySelector('[data-callout="definition"]')
+    expect(box).toHaveTextContent('Définition — Hypoténuse')
+    expect(box?.querySelector('strong')).toHaveTextContent('opposé')
+    expect(box?.querySelector('.katex')).not.toBeNull()
   })
   it('n\'injecte jamais de HTML venu du texte', () => {
     const { container } = render(<Markdown source={'<img src=x onerror=alert(1)> <script>alert(1)</script>'} />)

@@ -42,6 +42,10 @@ export function topicOfChapter(chapter: string): string {
     .join(' ')
 }
 
+/** Les mots d'au moins trois lettres, en minuscules et sans accents : de quoi comparer deux noms de chapitre. */
+const wordsOf = (text: string): string[] =>
+  text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().split(/[^a-z]+/).filter(w => w.length >= 3)
+
 /** Une correspondance trop faible à côté de la meilleure n'est pas une suggestion, c'est du bruit de la tolérance aux fautes. */
 const MIN_RELATIVE_SCORE = 0.5
 
@@ -81,7 +85,18 @@ export function suggestCourses(index: SearchIndex, courses: readonly Course[], c
     }
   }
 
-  add(topicOfChapter(context.chapter), 2, 'chapitre', ['titre', 'chapitre', 'motsCles'])
+  const topic = topicOfChapter(context.chapter)
+  add(topic, 2, 'chapitre', ['titre', 'chapitre', 'motsCles'])
+  // La tolérance aux fautes met « fractions » à deux lettres de « fonctions » : un chapitre qui porte
+  // exactement le nom du dossier de l'élève passe devant ces voisins approximatifs.
+  const topicWords = new Set(wordsOf(topic))
+  for (const course of courses) {
+    const chapterWords = wordsOf(course.chapitre)
+    if (chapterWords.length === 0 || !chapterWords.every(w => topicWords.has(w))) continue
+    const known = scores.get(course.id)
+    if (known === undefined) scores.set(course.id, { score: 2, raison: 'chapitre' })
+    else known.score += 2
+  }
   add(keywordsOf(context), 1, 'mots-cles')
 
   return [...scores.entries()]

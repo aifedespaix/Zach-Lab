@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { COURSES, loadCourses, parseCourse } from './courses'
+import { parseMarkdown } from './markdown'
 import { renderMathToHtml } from '@suite/shared/math'
 
 describe('parseCourse', () => {
@@ -36,6 +37,13 @@ describe('cours compilés avec le dépôt', () => {
       expect(c.chapitre, c.id).not.toBe('')
       expect(c.motsCles.length, c.id).toBeGreaterThan(0)
       expect(c.corps.length, c.id).toBeGreaterThan(50)
+    }
+  })
+  it('tous les encadrés ont une étiquette connue (sinon ils s\'afficheraient en citation)', () => {
+    for (const c of COURSES) {
+      expect(c.corps.match(/^>\s*\[!/gm)?.length ?? 0, c.id).toBe(
+        parseMarkdown(c.corps).filter(b => b.t === 'callout').length,
+      )
     }
   })
   it('toutes les formules se composent sans repli', () => {

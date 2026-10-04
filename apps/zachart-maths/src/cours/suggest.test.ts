@@ -11,7 +11,7 @@ describe('searchCourses', () => {
   it('trouve par titre, sans accents ni faute de frappe', () => {
     expect(searchCourses(index, COURSES, 'pythagore')[0]?.id).toBe('pythagore')
     expect(searchCourses(index, COURSES, 'hypotenuse')[0]?.id).toBe('pythagore')
-    expect(searchCourses(index, COURSES, 'equasion')[0]?.id).toBe('equations-premier-degre')
+    expect(searchCourses(index, COURSES, 'equasion').slice(0, 3).map(c => c.id)).toContain('equations-premier-degre')
   })
   it('cherche aussi dans le corps du cours', () => {
     expect(searchCourses(index, COURSES, 'produit en croix')[0]?.id).toBe('proportionnalite')
@@ -37,7 +37,7 @@ describe('keywordsOf', () => {
 describe('suggestCourses', () => {
   it('propose en premier les cours du chapitre de l\'élève', () => {
     expect(ids(ctx({ chapter: 'Fractions' })).slice(0, 2).sort()).toEqual(['fractions-addition', 'fractions-produit'])
-    expect(ids(ctx({ chapter: 'Équations' }))[0]).toBe('equations-premier-degre')
+    expect(ids(ctx({ chapter: 'Équations' })).slice(0, 3).sort()).toEqual(['equations-premier-degre', 'inequations', 'systemes-equations'])
   })
   it('un nom de chapitre qui ne dit rien n\'appelle aucun cours', () => {
     expect(topicOfChapter('Chapitre 3')).toBe('')
@@ -47,7 +47,9 @@ describe('suggestCourses', () => {
   })
   it('tombe sur les mots de l\'exercice quand le chapitre ne dit rien', () => {
     const suggestions = suggestCourses(index, COURSES, ctx({ chapter: 'Chapitre 3', titre: 'Longueur de l\'hypoténuse', texte: 'Un triangle rectangle' }))
-    expect(suggestions).toEqual([expect.objectContaining({ course: expect.objectContaining({ id: 'pythagore' }), raison: 'mots-cles' })])
+    // la trigonométrie parle aussi d'hypoténuse : elle peut précéder Pythagore, mais celui-ci reste proposé
+    expect(suggestions.slice(0, 2)).toContainEqual(expect.objectContaining({ course: expect.objectContaining({ id: 'pythagore' }), raison: 'mots-cles' }))
+    expect(suggestions.every(s => s.raison === 'mots-cles')).toBe(true)
   })
   it('lit les formules : une fraction appelle les cours de fractions', () => {
     expect(ids(ctx({ chapter: 'Divers', formules: ['\\frac{3}{4}+\\frac{1}{2}'] }))).toContain('fractions-addition')

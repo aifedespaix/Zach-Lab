@@ -5,7 +5,7 @@ const FIELDS = ['titre', 'chapitre', 'motsCles', 'texte']
 
 /** Le Markdown sans sa mise en forme : ce que l'élève lirait, pas ce qu'il faut pour l'écrire. */
 function plainText(markdown: string): string {
-  return markdown.replace(/\$\$?[^$]*\$\$?/g, ' ').replace(/[#*`>|_-]/g, ' ')
+  return markdown.replace(/\$\$?[^$]*\$\$?/g, ' ').replace(/\[![^\]\n]+\]/g, ' ').replace(/[#*`>|_-]/g, ' ')
 }
 
 export function indexCourses(courses: readonly Course[]): SearchIndex {

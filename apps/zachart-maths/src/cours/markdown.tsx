@@ -1,21 +1,41 @@
 import type { ReactNode } from 'react'
+import { BookOpen, Lightbulb, ListChecks, Pin, Ruler, TriangleAlert, type LucideIcon } from 'lucide-react'
 import { renderMathToHtml } from '@suite/shared/math'
+import { borderOf, toneOf } from '../exercises/toolbarCatalog'
 
 /**
  * Le Markdown des cours, réduit à ce que les cours utilisent : titres, paragraphes, listes,
  * citations, tableaux, gras, italique, code, et formules `$…$` / `$$…$$` composées par KaTeX.
+ * Une citation qui s'ouvre par `> [!definition]` (ou `propriete`, `methode`, `exemple`,
+ * `attention`, `retenir`, titre facultatif après l'étiquette) devient un encadré coloré dont le
+ * corps est lui-même du Markdown.
  *
  * Écrit ici plutôt que tiré d'une bibliothèque : les cours sont écrits par nous et compilés
  * avec l'app, et le rendu ne produit que des éléments React (jamais de HTML brut venu du
  * texte) — seule la sortie de KaTeX, qui échappe ce qu'il émet, passe par `innerHTML`.
  */
+export const CALLOUTS = {
+  definition: { label: 'Définition', icon: BookOpen, hue: 215 },
+  propriete: { label: 'Propriété', icon: Ruler, hue: 280 },
+  methode: { label: 'Méthode', icon: ListChecks, hue: 150 },
+  exemple: { label: 'Exemple', icon: Lightbulb, hue: 30 },
+  attention: { label: 'Attention', icon: TriangleAlert, hue: 0 },
+  retenir: { label: 'À retenir', icon: Pin, hue: 48 },
+} as const satisfies Record<string, { label: string; icon: LucideIcon; hue: number }>
+
+export type CalloutKind = keyof typeof CALLOUTS
+
 export type MdBlock =
   | { t: 'h'; level: 1 | 2 | 3; text: string }
   | { t: 'p'; text: string }
   | { t: 'ul' | 'ol'; items: string[] }
   | { t: 'quote'; text: string }
+  | { t: 'callout'; kind: CalloutKind; title: string; body: MdBlock[] }
   | { t: 'math'; latex: string }
   | { t: 'table'; header: string[]; rows: string[][] }
+
+const CALLOUT_OPEN = /^>\s*\[!([a-zé]+)\]\s*(.*)$/i
+const isCalloutKind = (k: string): k is CalloutKind => Object.prototype.hasOwnProperty.call(CALLOUTS, k)
 
 const splitRow = (line: string) => line.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim())
 const isTableSeparator = (line: string) => /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/.test(line)
@@ -70,8 +90,14 @@ export function parseMarkdown(source: string): MdBlock[] {
 
     if (line.startsWith('>')) {
       const quote: string[] = []
+      const open = CALLOUT_OPEN.exec(line)
+      const kind = open === null ? undefined : open[1].toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
       while (i < lines.length && lines[i].startsWith('>')) quote.push(lines[i++].replace(/^>\s?/, ''))
-      blocks.push({ t: 'quote', text: quote.join(' ') })
+      if (open !== null && kind !== undefined && isCalloutKind(kind)) {
+        blocks.push({ t: 'callout', kind, title: open[2].trim(), body: parseMarkdown(quote.slice(1).join('\n')) })
+      } else {
+        blocks.push({ t: 'quote', text: quote.join(' ') })
+      }
       continue
     }
 
@@ -107,14 +133,30 @@ function inline(text: string, keyPrefix = ''): ReactNode[] {
 
 const HEADING_SIZE = { 1: 18, 2: 15, 3: 14 } as const
 
-export function Markdown({ source }: { source: string }) {
-  return (
-    <div style={{ fontSize: 14, lineHeight: 1.55 }}>
-      {parseMarkdown(source).map((b, i) => {
+const HEADING_STYLE = {
+  1: { paddingBottom: 4, borderBottom: `2px solid ${borderOf(215)}` },
+  2: { paddingLeft: 8, borderLeft: `4px solid ${borderOf(215)}`, background: toneOf(215), borderRadius: '0 4px 4px 0' },
+  3: { color: `color-mix(in oklab, hsl(215 75% 50%) 70%, var(--foreground))` },
+} as const
+
+function renderBlocks(blocks: MdBlock[]): ReactNode[] {
+  return blocks.map((b, i) => {
         switch (b.t) {
           case 'h': {
             const Tag = `h${b.level + 1}` as 'h2' | 'h3' | 'h4'
-            return <Tag key={i} style={{ fontSize: HEADING_SIZE[b.level], fontWeight: 700, margin: '14px 0 6px' }}>{inline(b.text)}</Tag>
+            return <Tag key={i} style={{ fontSize: HEADING_SIZE[b.level], fontWeight: 700, margin: '14px 0 6px', ...HEADING_STYLE[b.level] }}>{inline(b.text)}</Tag>
+          }
+          case 'callout': {
+            const { label, icon: Icon, hue } = CALLOUTS[b.kind]
+            return (
+              <aside key={i} data-callout={b.kind} style={{ margin: '10px 0', borderRadius: 6, border: `1px solid ${borderOf(hue)}`, borderLeftWidth: 4, background: toneOf(hue), padding: '6px 12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, color: `color-mix(in oklab, hsl(${hue} 75% 50%) 75%, var(--foreground))` }}>
+                  <Icon size={15} aria-hidden />
+                  <span>{label}{b.title !== '' && <span style={{ fontWeight: 600 }}> — {inline(b.title)}</span>}</span>
+                </div>
+                {renderBlocks(b.body)}
+              </aside>
+            )
           }
           case 'p': return <p key={i} style={{ margin: '6px 0' }}>{inline(b.text)}</p>
           case 'ul':
@@ -130,12 +172,14 @@ export function Markdown({ source }: { source: string }) {
           case 'math': return <div key={i} style={{ margin: '8px 0', overflowX: 'auto' }}><Formula latex={b.latex} display /></div>
           case 'table': return (
             <table key={i} style={{ borderCollapse: 'collapse', margin: '8px 0' }}>
-              <thead><tr>{b.header.map((h, j) => <th key={j} style={{ border: '1px solid var(--border)', padding: '3px 8px' }}>{inline(h)}</th>)}</tr></thead>
+              <thead><tr>{b.header.map((h, j) => <th key={j} style={{ border: '1px solid var(--border)', padding: '3px 8px', background: toneOf(215) }}>{inline(h)}</th>)}</tr></thead>
               <tbody>{b.rows.map((r, j) => <tr key={j}>{r.map((c, k) => <td key={k} style={{ border: '1px solid var(--border)', padding: '3px 8px' }}>{inline(c)}</td>)}</tr>)}</tbody>
             </table>
           )
         }
-      })}
-    </div>
-  )
+  })
+}
+
+export function Markdown({ source }: { source: string }) {
+  return <div style={{ fontSize: 14, lineHeight: 1.55 }}>{renderBlocks(parseMarkdown(source))}</div>
 }
