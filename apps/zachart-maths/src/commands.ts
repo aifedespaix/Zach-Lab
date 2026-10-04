@@ -30,8 +30,8 @@ export const COMMANDS = [
   },
   {
     id: 'view.toggleUnitColors',
-    label: 'Colorer les unités',
-    description: 'Colore les grandeurs et leurs unités (16 km, 3 km/h) dans l’énoncé, les textes et la réponse.',
+    label: 'Colorer unités et termes',
+    description: 'Colore les grandeurs et leurs unités (16 km, 3 km/h) dans l’énoncé, les textes et la réponse, et les termes semblables d’une équation (3x et 5x) dans l’aide sous le bloc.',
     category: 'view',
     defaultBinding: null,
   },

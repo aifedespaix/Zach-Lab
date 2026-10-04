@@ -32,13 +32,13 @@ describe('App base', () => {
     useUnitColors.setState({ enabled: true })
   })
 
-  it('le bouton « Colorer les unités » bascule la coloration, et le choix est mémorisé', async () => {
+  it('le bouton « Colorer unités et termes » bascule la coloration, et le choix est mémorisé', async () => {
     const user = userEvent.setup()
     render(<App />)
-    await user.click(screen.getByRole('button', { name: /Colorer les unités/ }))
+    await user.click(screen.getByRole('button', { name: /Colorer unités et termes/ }))
     expect(useUnitColors.getState().enabled).toBe(false)
     expect(localStorage.getItem('zachart-maths:unit-colors')).toBe('off')
-    await user.click(screen.getByRole('button', { name: /Colorer les unités/ }))
+    await user.click(screen.getByRole('button', { name: /Colorer unités et termes/ }))
     expect(useUnitColors.getState().enabled).toBe(true)
     await act(async () => {})
   })

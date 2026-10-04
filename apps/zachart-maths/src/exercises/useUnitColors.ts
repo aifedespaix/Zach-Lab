@@ -17,7 +17,7 @@ interface UnitColorsStore {
 }
 
 /**
- * Le bouton « Colorer les unités » de la barre du haut. Un réglage immédiat : il ne passe pas par
+ * Le bouton « Colorer unités et termes » de la barre du haut. Un réglage immédiat : il ne passe pas par
  * « Enregistrer » de la fenêtre des Paramètres, comme le thème.
  */
 export const useUnitColors = create<UnitColorsStore>((set, get) => ({

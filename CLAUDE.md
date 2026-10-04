@@ -177,6 +177,14 @@ under `src/`, wired together in `App.tsx`:
   seul n'est jamais une unité (c'est aussi une inconnue) : `2t` n'est pas coloré, seul `2 t` (avec espace) =
   tonnes. Les formules MathLive, les tableaux et les cours ne sont pas colorés. Réglage : bouton
   `view.toggleUnitColors` de la barre du haut, clé `localStorage` `zachart-maths:unit-colors`, activé par défaut.
+- **Termes semblables** (`likeTerms.ts`, `termColors.ts`, `LikeTermsHelp.tsx`) : `colorTerms(latex)` découpe un
+  membre aux `+`/`−` de premier niveau en segments `{ text, group }` (`group` = partie littérale `x`, `xy`, `x^2` ;
+  `''` constante ; `null` non coloré — parenthèses, fractions, racines, `/`, commande inconnue ; les segments
+  recollés redonnent l'entrée) ; `assignTermColors(groups, theme)` donne une couleur HEXADÉCIMALE par groupe
+  (`\colorbox` de KaTeX n'accepte pas `var(--…)`), attribuée sur TOUT le bloc ; `LikeTermsHelp` recompose les
+  étapes en lecture seule (`\colorbox`, `renderMathToHtml`) sous le bloc équation tant qu'il a le focus et que le
+  réglage est actif. Le champ MathLive n'est jamais modifié et l'aide n'appelle jamais `onChange`. Même bouton que
+  les unités (`view.toggleUnitColors`, « Colorer unités et termes »).
 - **`math/`** — `isMathField` (the toolbar's target check); MathLive itself and `renderMathToHtml` come from `@suite/shared`.
 - **`cours/`** — courses are Markdown files in `cours/contenu/` (front matter `titre`,
   `chapitre`, `mots-cles`), compiled in with `import.meta.glob`; adding a course is adding a
