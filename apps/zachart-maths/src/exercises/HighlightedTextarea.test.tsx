@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { HighlightedTextarea, UnitHuesContext } from './HighlightedTextarea'
 import { assignHues } from './unitColors'
 import { useUnitColors } from './useUnitColors'
@@ -55,7 +55,7 @@ describe('HighlightedTextarea', () => {
   it('garde la hauteur de la dernière ligne quand le texte finit par un saut de ligne', () => {
     const text = '16 km\n'
     const { container } = render(<Field text={text} hues={assignHues([text])} />)
-    expect(container.querySelector('[data-unit-mirror]')!.textContent).toBe('16 km\n​')
+    expect(container.querySelector('[data-unit-mirror]')!.textContent).toBe('16 km\n\u200b')
   })
 
   it('ne marque rien sans teinte connue pour l\'unité', () => {
@@ -70,6 +70,30 @@ describe('HighlightedTextarea', () => {
     expect(container.querySelector('[data-unit-mirror]')).toBeNull()
     expect(marks(container)).toHaveLength(0)
     expect(screen.getByLabelText('champ')).toHaveValue(text)
+  })
+
+  it('recopie le défilement du champ sur le miroir, et garde le onScroll reçu', () => {
+    const onScroll = vi.fn()
+    const { container } = render(
+      <UnitHuesContext value={new Map()}>
+        <HighlightedTextarea aria-label="champ" value="a" onChange={() => {}} onScroll={onScroll} />
+      </UnitHuesContext>,
+    )
+    const field = screen.getByLabelText('champ')
+    const mirror = container.querySelector<HTMLElement>('[data-unit-mirror]')!
+    Object.defineProperty(field, 'scrollTop', { value: 42, configurable: true })
+    Object.defineProperty(field, 'scrollLeft', { value: 7, configurable: true })
+    fireEvent.scroll(field)
+    expect(mirror.scrollTop).toBe(42)
+    expect(mirror.scrollLeft).toBe(7)
+    expect(onScroll).toHaveBeenCalledTimes(1)
+  })
+
+  it('le champ ne défile que verticalement et ne se redimensionne pas', () => {
+    render(<Field text="abc" hues={new Map()} />)
+    // `field-sizing` n'est pas asserté : jsdom l'ignore.
+    expect(screen.getByLabelText('champ').style.overflowY).toBe('auto')
+    expect(screen.getByLabelText('champ').style.resize).toBe('none')
   })
 
   it('transmet ses props au champ (libellé, valeur)', () => {

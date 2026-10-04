@@ -1,4 +1,4 @@
-import { createContext, useContext, type ComponentProps, type ReactNode } from 'react'
+import { createContext, useContext, useRef, type ComponentProps, type ReactNode, type UIEvent } from 'react'
 import { findQuantities } from './quantities'
 import { toneOf } from './toolbarCatalog'
 import { useUnitColors } from './useUnitColors'
@@ -34,7 +34,7 @@ function marked(text: string, hues: ReadonlyMap<string, number>): ReactNode[] {
   nodes.push(text.slice(cursor))
   // Un saut de ligne final n'a pas de hauteur dans un bloc : sans ce caractère de largeur nulle,
   // le miroir serait plus court d'une ligne que le champ.
-  if (text.endsWith('\n')) nodes.push('​')
+  if (text.endsWith('\n')) nodes.push('\u200b')
   return nodes
 }
 
@@ -43,20 +43,26 @@ function marked(text: string, hues: ReadonlyMap<string, number>): ReactNode[] {
  *
  * Un `<textarea>` ne colore pas une partie de son texte. Le texte est donc reproduit derrière lui,
  * dans un calque aux métriques identiques (même `className`, même `white-space`), où seuls les
- * fonds des `<mark>` se voient ; le champ, transparent, est posé par-dessus. Les champs de l'app
- * s'agrandissent déjà à leur contenu (`rows`), donc il n'y a pas de défilement à synchroniser.
+ * fonds des `<mark>` se voient ; le champ, transparent, est posé par-dessus. Le champ grandit avec
+ * son texte grâce à `field-sizing: content` (supporté par la webview de l'app), donc il ne défile
+ * pas ; en repli, si la propriété manque, `onScroll` recopie le défilement sur le calque.
+ *
+ * Composant contrôlé uniquement (`value` chaîne ; `defaultValue` n'est pas supporté) ; `style`
+ * s'applique au seul `<textarea>`.
  *
  * L'arbre ne dépend que du réglage, jamais de la présence de teintes : si la forme changeait au
  * moment où la première unité est tapée, React remonterait le champ et le curseur sauterait.
  */
-export function HighlightedTextarea({ className, style, ref, ...props }: ComponentProps<'textarea'>) {
+export function HighlightedTextarea({ className, style, ref, onScroll, ...props }: ComponentProps<'textarea'>) {
+  const mirror = useRef<HTMLDivElement>(null)
   const enabled = useUnitColors(state => state.enabled)
   const hues = useContext(UnitHuesContext)
-  if (!enabled) return <textarea ref={ref} className={className} style={style} {...props} />
+  if (!enabled) return <textarea ref={ref} className={className} style={style} onScroll={onScroll} {...props} />
   const text = typeof props.value === 'string' ? props.value : ''
   return (
     <div style={{ position: 'relative', width: '100%', minWidth: 0, background: 'var(--background)', borderRadius: 4 }}>
       <div
+        ref={mirror}
         aria-hidden
         data-unit-mirror
         className={className}
@@ -77,7 +83,23 @@ export function HighlightedTextarea({ className, style, ref, ...props }: Compone
       <textarea
         ref={ref}
         className={className}
-        style={{ ...style, position: 'relative', display: 'block', background: 'transparent' }}
+        style={{
+          ...style,
+          position: 'relative',
+          display: 'block',
+          background: 'transparent',
+          // `fieldSizing` manque encore à `CSSProperties` : cast minimal.
+          ...({ fieldSizing: 'content' } as object),
+          overflowY: 'auto',
+          resize: 'none',
+        }}
+        onScroll={(event: UIEvent<HTMLTextAreaElement>) => {
+          if (mirror.current) {
+            mirror.current.scrollTop = event.currentTarget.scrollTop
+            mirror.current.scrollLeft = event.currentTarget.scrollLeft
+          }
+          onScroll?.(event)
+        }}
         {...props}
       />
     </div>
