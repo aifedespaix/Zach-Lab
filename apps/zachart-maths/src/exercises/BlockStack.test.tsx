@@ -166,4 +166,54 @@ describe('BlockStack — halo', () => {
     expect(document.querySelector('[data-block-id="z"]')!.classList.contains('block-halo')).toBe(true)
     expect(screen.getByLabelText('Texte')).toHaveFocus()
   })
+
+  describe('clic droit sur une case du tableau', () => {
+    const cells = (): string[][] => (current as { cellules: string[][] }[])[0].cellules
+    const rightClick = (user: ReturnType<typeof userEvent.setup>, label: string) =>
+      user.pointer({ keys: '[MouseRight]', target: screen.getByLabelText(label) })
+
+    it('insère une ligne au-dessus ou en dessous de la case', async () => {
+      const user = userEvent.setup()
+      render(<Harness initial={[{ id: 'c', type: 'tableau', cellules: [['a', 'b'], ['c', 'd']] }]} />)
+      await rightClick(user, 'Ligne 2, colonne 1')
+      await user.click(await screen.findByRole('menuitem', { name: 'Insérer une ligne au-dessus' }))
+      expect(cells()).toEqual([['a', 'b'], ['', ''], ['c', 'd']])
+      await rightClick(user, 'Ligne 1, colonne 2')
+      await user.click(await screen.findByRole('menuitem', { name: 'Insérer une ligne en dessous' }))
+      expect(cells()).toEqual([['a', 'b'], ['', ''], ['', ''], ['c', 'd']])
+    })
+
+    it('insère une colonne à gauche ou à droite de la case', async () => {
+      const user = userEvent.setup()
+      render(<Harness initial={[{ id: 'c', type: 'tableau', cellules: [['a', 'b'], ['c', 'd']] }]} />)
+      await rightClick(user, 'Ligne 1, colonne 1')
+      await user.click(await screen.findByRole('menuitem', { name: 'Insérer une colonne à gauche' }))
+      expect(cells()).toEqual([['', 'a', 'b'], ['', 'c', 'd']])
+      await rightClick(user, 'Ligne 2, colonne 3')
+      await user.click(await screen.findByRole('menuitem', { name: 'Insérer une colonne à droite' }))
+      expect(cells()).toEqual([['', 'a', 'b', ''], ['', 'c', 'd', '']])
+    })
+
+    it('supprime la ligne ou la colonne de la case, jamais la dernière', async () => {
+      const user = userEvent.setup()
+      render(<Harness initial={[{ id: 'c', type: 'tableau', cellules: [['a', 'b'], ['c', 'd']] }]} />)
+      await rightClick(user, 'Ligne 1, colonne 2')
+      await user.click(await screen.findByRole('menuitem', { name: 'Supprimer la colonne' }))
+      expect(cells()).toEqual([['a'], ['c']])
+      await rightClick(user, 'Ligne 2, colonne 1')
+      await user.click(await screen.findByRole('menuitem', { name: 'Supprimer la ligne' }))
+      expect(cells()).toEqual([['a']])
+      await rightClick(user, 'Ligne 1, colonne 1')
+      expect(await screen.findByRole('menuitem', { name: 'Supprimer la ligne' })).toHaveAttribute('aria-disabled', 'true')
+      expect(screen.getByRole('menuitem', { name: 'Supprimer la colonne' })).toHaveAttribute('aria-disabled', 'true')
+    })
+
+    it('garde les gestes de champ (copier, coller) dans le même menu', async () => {
+      const user = userEvent.setup()
+      render(<Harness initial={[{ id: 'c', type: 'tableau', cellules: [['a']] }]} />)
+      await rightClick(user, 'Ligne 1, colonne 1')
+      expect(await screen.findByRole('menuitem', { name: /Copier/ })).toBeInTheDocument()
+      expect(screen.getByRole('menuitem', { name: 'Insérer une ligne au-dessus' })).toBeInTheDocument()
+    })
+  })
 })

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { TableGrid, type BlockEdgeHandle } from '@suite/shared/equation'
+import { TableCellMenuItems, TableGrid, type BlockEdgeHandle } from '@suite/shared/equation'
 import { motion, useReducedMotion } from 'motion/react'
 import { Button } from '@suite/shared/ui'
 import { BlockCard } from './BlockCard'
@@ -34,6 +34,10 @@ function TextEditor({ block, onChange }: { block: TextBlock; onChange: (patch: P
 function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: (patch: Partial<TableBlock>) => void; index: number }) {
   const cells = block.cellules
   const set = (next: string[][]) => onChange({ cellules: next })
+  const addRowAfter = (after: number) => set(addRow(cells, after))
+  const addColumnAfter = (after: number) => set(addColumn(cells, after))
+  const removeRowAt = (row: number) => set(removeRow(cells, row))
+  const removeColumnAt = (column: number) => set(removeColumn(cells, column))
   return (
     // `overflow-x: auto` forces `overflow-y: auto`, which would clip the « + »
     // after the last column / row: they straddle the grid's right and bottom
@@ -44,7 +48,23 @@ function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: 
         rowCount={cells.length}
         columnCount={cells[0].length}
         renderCell={(r, c) => (
-          <FieldContextMenu kind="text">
+          <FieldContextMenu
+            kind="text"
+            extra={
+              <TableCellMenuItems
+                row={r}
+                column={c}
+                rowCount={cells.length}
+                columnCount={cells[0].length}
+                canAddRow={canGrow(cells, 'row')}
+                canAddColumn={canGrow(cells, 'col')}
+                onAddRow={addRowAfter}
+                onAddColumn={addColumnAfter}
+                onRemoveRow={removeRowAt}
+                onRemoveColumn={removeColumnAt}
+              />
+            }
+          >
             <input
               aria-label={`Ligne ${r + 1}, colonne ${c + 1}`}
               value={cells[r][c]}
@@ -54,10 +74,10 @@ function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: 
             />
           </FieldContextMenu>
         )}
-        onAddRow={after => set(addRow(cells, after))}
-        onAddColumn={after => set(addColumn(cells, after))}
-        onRemoveRow={row => set(removeRow(cells, row))}
-        onRemoveColumn={column => set(removeColumn(cells, column))}
+        onAddRow={addRowAfter}
+        onAddColumn={addColumnAfter}
+        onRemoveRow={removeRowAt}
+        onRemoveColumn={removeColumnAt}
         canAddRow={canGrow(cells, 'row')}
         canAddColumn={canGrow(cells, 'col')}
         addDisabledReason={{ row: '12 lignes au maximum', column: '12 colonnes au maximum' }}
