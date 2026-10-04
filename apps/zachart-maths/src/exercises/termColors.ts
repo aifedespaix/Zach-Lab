@@ -1,8 +1,7 @@
 export type Theme = 'light' | 'dark'
 
-/** Les teintes (HSL) des groupes de lettres, dans l'ordre. La constante a la sienne, grise. */
+/** Les teintes (HSL) des groupes de lettres, dans l'ordre. La constante est un vrai gris, sans teinte. */
 export const TERM_HUES = [215, 340, 150, 30, 280, 175] as const
-const CONSTANT_HUE = 215
 
 /**
  * Un HSL (teinte en degrés, saturation et clarté entre 0 et 1) en `#rrggbb`. Hexadécimal et non
@@ -20,15 +19,15 @@ function hslToHex(hue: number, saturation: number, lightness: number): string {
 
 /** Le fond d'un terme : pâle en thème clair, profond en thème sombre, le texte de la page restant lisible dessus. */
 function background(hue: number, theme: Theme, muted: boolean): string {
-  if (theme === 'light') return hslToHex(hue, muted ? 0.15 : 0.75, 0.86)
-  return hslToHex(hue, muted ? 0.1 : 0.45, muted ? 0.32 : 0.3)
+  if (theme === 'light') return hslToHex(hue, muted ? 0 : 0.9, muted ? 0.68 : 0.86)
+  return hslToHex(hue, muted ? 0 : 0.45, muted ? 0.32 : 0.3)
 }
 
 /**
  * Une couleur par groupe de termes, attribuée à la première apparition en parcourant `groups` dans
  * l'ordre : `3x` et `5x` ont la même couleur partout, des deux côtés du « = » et d'une étape à
- * l'autre. La constante (`''`) a sa teinte grise et ne consomme aucune teinte de la palette ; au-delà
- * de six groupes de lettres la palette recommence.
+ * l'autre. La constante (`''`) est un gris neutre (saturation 0) : une teinte, même pâle, la ferait
+ * ressembler à celle de x. Elle ne consomme aucune teinte ; au-delà de six groupes de lettres la palette recommence.
  */
 export function assignTermColors(groups: readonly (string | null)[], theme: Theme): Map<string, string> {
   const colors = new Map<string, string>()
@@ -36,7 +35,7 @@ export function assignTermColors(groups: readonly (string | null)[], theme: Them
   for (const group of groups) {
     if (group === null || colors.has(group)) continue
     if (group === '') {
-      colors.set(group, background(CONSTANT_HUE, theme, true))
+      colors.set(group, background(0, theme, true))
     } else {
       colors.set(group, background(TERM_HUES[letters % TERM_HUES.length], theme, false))
       letters++
