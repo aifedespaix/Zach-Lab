@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BookOpen, Download, ChevronsDownUp, FolderPlus, Keyboard, Moon, NotebookPen, Search, Settings as SettingsIcon, Shapes } from 'lucide-react'
+import { BookOpen, Download, ChevronsDownUp, FolderPlus, Highlighter, Keyboard, Moon, NotebookPen, Search, Settings as SettingsIcon, Shapes } from 'lucide-react'
 import {
   CommandButton,
   CommandPalette,
@@ -19,6 +19,7 @@ import { ExerciseTree } from './exercises/ExerciseTree'
 import { ExerciseWorkspace } from './exercises/ExerciseWorkspace'
 import { SheetOutline } from './exercises/SheetOutline'
 import { ToolbarSettingsPanel } from './exercises/ToolbarSettingsPanel'
+import { useUnitColors } from './exercises/useUnitColors'
 import { useToolbarFamilies } from './exercises/useToolbarFamilies'
 import './exercises/useOpenExercise'
 import { createTauriFs, defaultExercisesRoot } from './exercises/tauriFs'
@@ -67,8 +68,10 @@ export default function App() {
       .catch(e => useExerciseStore.setState({ loaded: true, error: e instanceof Error ? e.message : String(e) }))
   }, [])
 
+  const unitColors = useUnitColors(state => state.enabled)
   useCommand('app.palette', () => setPaletteOpen(true))
   useCommand('app.settings', () => setSettingsOpen(true))
+  useCommand('view.toggleUnitColors', () => useUnitColors.getState().toggle())
   useCommand('app.toggleTheme', () => {
     startCircularThemeTransition({
       x: window.innerWidth / 2,
@@ -120,6 +123,7 @@ export default function App() {
             <CommandButton command="app.palette" icon={Search} variant="ghost" size="icon-sm" />
             <CommandButton command="cours.search" icon={BookOpen} variant="ghost" size="icon-sm" />
             <CommandButton command="notes.toggle" icon={NotebookPen} variant="ghost" size="icon-sm" />
+            <CommandButton command="view.toggleUnitColors" icon={Highlighter} variant={unitColors ? 'secondary' : 'ghost'} size="icon-sm" />
             <CommandButton command="app.toggleTheme" icon={Moon} variant="ghost" size="icon-sm" />
             <CommandButton command="app.settings" icon={SettingsIcon} variant="ghost" size="icon-sm" />
           </>

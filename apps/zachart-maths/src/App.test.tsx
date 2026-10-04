@@ -2,6 +2,7 @@ import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import css from './index.css?raw'
+import { useUnitColors } from './exercises/useUnitColors'
 
 // No Tauri runtime under jsdom: the first launch of a real install finds nothing
 // on disk, so that is what the plugins answer.
@@ -27,6 +28,19 @@ describe('App base', () => {
   beforeEach(() => {
     localStorage.clear()
     document.documentElement.classList.remove('dark')
+    // Le store survit d'un test à l'autre : on le remet à « activé » (le défaut).
+    useUnitColors.setState({ enabled: true })
+  })
+
+  it('le bouton « Colorer les unités » bascule la coloration, et le choix est mémorisé', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.click(screen.getByRole('button', { name: /Colorer les unités/ }))
+    expect(useUnitColors.getState().enabled).toBe(false)
+    expect(localStorage.getItem('zachart-maths:unit-colors')).toBe('off')
+    await user.click(screen.getByRole('button', { name: /Colorer les unités/ }))
+    expect(useUnitColors.getState().enabled).toBe(true)
+    await act(async () => {})
   })
 
   it('la zone centrale peut rétrécir sous son contenu, pour que ce soit la pile de blocs qui défile', async () => {

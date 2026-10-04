@@ -29,6 +29,13 @@ export const COMMANDS = [
     defaultBinding: null,
   },
   {
+    id: 'view.toggleUnitColors',
+    label: 'Colorer les unités',
+    description: 'Colore les grandeurs et leurs unités (16 km, 3 km/h) dans l’énoncé, les textes et la réponse.',
+    category: 'view',
+    defaultBinding: null,
+  },
+  {
     id: 'cours.search',
     label: 'Chercher un cours',
     description: 'Ouvre la recherche de cours.',
