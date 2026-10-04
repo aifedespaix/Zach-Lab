@@ -139,7 +139,12 @@ export function ExerciseWorkspace() {
   return (
     <SymbolInsertContext value={insertSymbol}>
     <section aria-label="Exercice" onFocus={rememberField} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-      <header style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 12, borderBottom: '1px solid var(--border)' }}>
+      <header
+        style={{
+          display: 'flex', flexDirection: 'column', gap: 8, padding: 12,
+          background: 'color-mix(in oklab, #3b82f6 18%, var(--background))', borderBottom: '2px solid #3b82f6',
+        }}
+      >
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           <input
             aria-label="Titre de l'exercice"
