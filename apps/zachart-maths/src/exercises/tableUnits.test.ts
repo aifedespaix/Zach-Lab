@@ -60,11 +60,14 @@ describe('tableLayout', () => {
     expect(tableLayout(cells)).toEqual({ axis: 'columns', units: [null, 'km'] })
   })
 
-  it('ignore le coin : une unité seule en (0, 0) n\'est pas un en-tête', () => {
+  it('ignore le coin : une unité seule en (0, 0) ne décide pas de l\'axe', () => {
+    // Coin seul, sans unité ailleurs : pas d'en-tête.
     expect(tableLayout([['km', 'x'], ['y', 'z']])).toBeNull()
     expect(tableLayout([['km', 'Distance'], ['x', '2']])).toBeNull()
-    // Le coin est ignoré, mais un `h` plus bas dans la première colonne est bien un en-tête de ligne.
-    expect(tableLayout([['km', 'Distance'], ['h', '2']])).toEqual({ axis: 'rows', units: [null, 'h'] })
+    // Le coin ne décide pas de l'axe, mais une fois l'axe retenu, le coin en fait partie.
+    // Ici : première ligne (hors coin) sans unité, première colonne (hors coin) a 'h' → axe rows
+    // → units[0] = headerUnit(coin) = 'km', units[1] = 'h'.
+    expect(tableLayout([['km', 'Distance'], ['h', '2']])).toEqual({ axis: 'rows', units: ['km', 'h'] })
   })
 
   it('ne trouve rien sans unité, dans un tableau vide, 1×1, ou de cellules vides', () => {
@@ -79,5 +82,15 @@ describe('tableLayout', () => {
   it('supporte des lignes de longueurs inégales', () => {
     expect(tableLayout([['', 'Distance (km)'], ['A']])).toEqual({ axis: 'columns', units: [null, 'km'] })
     expect(tableLayout([['', 'a'], ['Temps (h)']])).toEqual({ axis: 'rows', units: [null, 'h'] })
+  })
+
+  it('colore un tableau de proportionnalité (lignes)', () => {
+    const cells = [['Distance (km)', '10', '20'], ['Temps (h)', '1', '2']]
+    expect(tableLayout(cells)).toEqual({ axis: 'rows', units: ['km', 'h'] })
+  })
+
+  it('colore un tableau de proportionnalité (colonnes)', () => {
+    const cells = [['Distance (km)', 'Temps (h)'], ['10', '1']]
+    expect(tableLayout(cells)).toEqual({ axis: 'columns', units: ['km', 'h'] })
   })
 })

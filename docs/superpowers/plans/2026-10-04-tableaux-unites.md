@@ -13,7 +13,7 @@
 ## Contraintes globales
 
 - Rien dans `packages/shared` (`TableGrid` ne reçoit aucune nouvelle propriété), rien dans `apps/zachart-mentale`.
-- Première ligne d'abord ; à défaut, première colonne ; quand les deux ont des unités, **la première ligne l'emporte**. La cellule du coin (ligne 0, colonne 0) n'est jamais un en-tête.
+- Première ligne d'abord ; à défaut, première colonne ; quand les deux ont des unités, **la première ligne l'emporte**. La cellule du coin (ligne 0, colonne 0) ne décide pas de l'axe, mais en fait partie une fois l'axe retenu : `units[0]` = unité du coin le cas échéant (sinon `null`).
 - Une cellule d'en-tête est une unité si, nettoyée, c'est **tout entière** une unité reconnue, ou si elle **finit** par une unité entre parenthèses ou crochets (`Distance (km)`, `Prix [€]`), ou par « en » suivi d'une unité (`Vitesse en km/h`). Une donnée comme `16 km` n'est pas un en-tête.
 - Dans un en-tête, une unité d'une lettre (`h`, `s`, `m`, `g`) est acceptée ; la lettre `t` seule (ou `t²`, `t³`) est refusée : `t (s)` donne `s`.
 - Seules les colonnes (ou lignes) dont l'en-tête est une unité sont colorées. Les unités écrites dans les cellules de données ne colorent rien.
@@ -26,7 +26,7 @@
 ## Points de vigilance (Review Focus)
 
 1. **Faux en-têtes** : une première ligne de nombres (`3 | 5`), une donnée avec unité (`16 km`), un mot qui commence comme une unité (`mètres`, `minutes`, `Entrée`), une cellule vide, un tableau 1×1 ou vide ne donnent jamais d'en-tête. Tests en tâches 1 et 2.
-2. **Première ligne contre première colonne** : les deux ont des unités → la ligne l'emporte, la colonne n'est pas colorée ; le coin ignoré dans les deux sens. Tests en tâche 2 et 4.
+2. **Première ligne contre première colonne** : les deux ont des unités → la ligne l'emporte, la colonne n'est pas colorée. Le coin ne décide pas de l'axe, mais participe une fois l'axe retenu avec son unité. Tests en tâche 2 et 4.
 3. **Unité d'une lettre uniquement dans un en-tête** (`h`) : elle reçoit une teinte (`findQuantities` ne la trouve pas dans un texte). Test en tâche 3.
 4. **Tableau mal formé** dans un fichier (cellules qui ne sont pas des chaînes, lignes inégales, `cellules` absent) : aucune exception dans l'attribution des teintes. Test en tâche 3.
 5. **Réglage coupé** : aucun fond. Test en tâche 4.
@@ -206,11 +206,14 @@ describe('tableLayout', () => {
     expect(tableLayout(cells)).toEqual({ axis: 'columns', units: [null, 'km'] })
   })
 
-  it('ignore le coin : une unité seule en (0, 0) n\'est pas un en-tête', () => {
+  it('ignore le coin : une unité seule en (0, 0) ne décide pas de l\'axe', () => {
+    // Coin seul, sans unité ailleurs : pas d'en-tête.
     expect(tableLayout([['km', 'x'], ['y', 'z']])).toBeNull()
     expect(tableLayout([['km', 'Distance'], ['x', '2']])).toBeNull()
-    // Le coin est ignoré, mais un `h` plus bas dans la première colonne est bien un en-tête de ligne.
-    expect(tableLayout([['km', 'Distance'], ['h', '2']])).toEqual({ axis: 'rows', units: [null, 'h'] })
+    // Le coin ne décide pas de l'axe, mais une fois l'axe retenu, le coin en fait partie.
+    // Ici : première ligne (hors coin) sans unité, première colonne (hors coin) a 'h' → axe rows
+    // → units[0] = headerUnit(coin) = 'km', units[1] = 'h'.
+    expect(tableLayout([['km', 'Distance'], ['h', '2']])).toEqual({ axis: 'rows', units: ['km', 'h'] })
   })
 
   it('ne trouve rien sans unité, dans un tableau vide, 1×1, ou de cellules vides', () => {
@@ -225,6 +228,16 @@ describe('tableLayout', () => {
   it('supporte des lignes de longueurs inégales', () => {
     expect(tableLayout([['', 'Distance (km)'], ['A']])).toEqual({ axis: 'columns', units: [null, 'km'] })
     expect(tableLayout([['', 'a'], ['Temps (h)']])).toEqual({ axis: 'rows', units: [null, 'h'] })
+  })
+
+  it('colore un tableau de proportionnalité (lignes)', () => {
+    const cells = [['Distance (km)', '10', '20'], ['Temps (h)', '1', '2']]
+    expect(tableLayout(cells)).toEqual({ axis: 'rows', units: ['km', 'h'] })
+  })
+
+  it('colore un tableau de proportionnalité (colonnes)', () => {
+    const cells = [['Distance (km)', 'Temps (h)'], ['10', '1']]
+    expect(tableLayout(cells)).toEqual({ axis: 'columns', units: ['km', 'h'] })
   })
 })
 ```
@@ -268,7 +281,8 @@ export function headerUnit(cell: string): string | null {
 /**
  * Ce que les en-têtes d'un tableau disent de ses unités : `columns` (les unités sont sur la première
  * ligne, `units[c]` est celle de la colonne `c`) ou `rows` (sur la première colonne, `units[r]` est
- * celle de la ligne `r`). `units[0]` est toujours `null` : le coin est souvent le titre du tableau.
+ * celle de la ligne `r`). Le coin ne décide pas de l'axe, mais une fois l'axe retenu, il en fait partie :
+ * `units[0]` = unité du coin si elle existe, sinon `null` (titre sans unité).
  */
 export interface TableLayout {
   axis: 'columns' | 'rows'
@@ -277,13 +291,15 @@ export interface TableLayout {
 
 /**
  * La première ligne d'abord ; à défaut, la première colonne ; quand les deux ont des unités, la première
- * ligne l'emporte. `null` quand aucun en-tête n'est une unité (tableau vide, 1×1, nombres, mots).
+ * ligne l'emporte. Le coin ne vote pas : c'est l'axe retenu (hors coin) qui décide. `null` quand aucun
+ * en-tête en dehors du coin n'est une unité (tableau vide, 1×1, nombres, mots, coin seul).
  */
 export function tableLayout(cells: readonly (readonly string[])[]): TableLayout | null {
+  const corner = cells[0]?.[0] ?? ''
   const columns = (cells[0] ?? []).map((cell, c) => (c === 0 ? null : headerUnit(cell)))
-  if (columns.some(unit => unit !== null)) return { axis: 'columns', units: columns }
+  if (columns.some(unit => unit !== null)) return { axis: 'columns', units: [headerUnit(corner), ...columns.slice(1)] }
   const rows = cells.map((row, r) => (r === 0 ? null : headerUnit(row[0] ?? '')))
-  if (rows.some(unit => unit !== null)) return { axis: 'rows', units: rows }
+  if (rows.some(unit => unit !== null)) return { axis: 'rows', units: [headerUnit(corner), ...rows.slice(1)] }
   return null
 }
 ```

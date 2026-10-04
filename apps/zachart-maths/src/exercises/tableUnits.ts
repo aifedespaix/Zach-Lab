@@ -28,7 +28,8 @@ export function headerUnit(cell: string): string | null {
 /**
  * Ce que les en-têtes d'un tableau disent de ses unités : `columns` (les unités sont sur la première
  * ligne, `units[c]` est celle de la colonne `c`) ou `rows` (sur la première colonne, `units[r]` est
- * celle de la ligne `r`). `units[0]` est toujours `null` : le coin est souvent le titre du tableau.
+ * celle de la ligne `r`). Le coin ne décide pas de l'axe, mais une fois l'axe retenu, il en fait partie :
+ * `units[0]` = unité du coin si elle existe, sinon `null` (titre sans unité).
  */
 export interface TableLayout {
   axis: 'columns' | 'rows'
@@ -37,12 +38,14 @@ export interface TableLayout {
 
 /**
  * La première ligne d'abord ; à défaut, la première colonne ; quand les deux ont des unités, la première
- * ligne l'emporte. `null` quand aucun en-tête n'est une unité (tableau vide, 1×1, nombres, mots).
+ * ligne l'emporte. Le coin ne vote pas : c'est l'axe retenu (hors coin) qui décide. `null` quand aucun
+ * en-tête en dehors du coin n'est une unité (tableau vide, 1×1, nombres, mots, coin seul).
  */
 export function tableLayout(cells: readonly (readonly string[])[]): TableLayout | null {
+  const corner = cells[0]?.[0] ?? ''
   const columns = (cells[0] ?? []).map((cell, c) => (c === 0 ? null : headerUnit(cell)))
-  if (columns.some(unit => unit !== null)) return { axis: 'columns', units: columns }
+  if (columns.some(unit => unit !== null)) return { axis: 'columns', units: [headerUnit(corner), ...columns.slice(1)] }
   const rows = cells.map((row, r) => (r === 0 ? null : headerUnit(row[0] ?? '')))
-  if (rows.some(unit => unit !== null)) return { axis: 'rows', units: rows }
+  if (rows.some(unit => unit !== null)) return { axis: 'rows', units: [headerUnit(corner), ...rows.slice(1)] }
   return null
 }

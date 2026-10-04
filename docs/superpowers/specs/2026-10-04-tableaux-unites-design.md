@@ -20,8 +20,11 @@ la colonne (ou toute la ligne) de la couleur de cette unité. Un tableau de prop
 
 ## Ce qui est supposé, à corriger à la relecture
 
-1. La cellule du **coin** (ligne 0, colonne 0) n'est jamais un en-tête d'unité : c'est souvent le
-   titre du tableau (« Grandeur », « Quantité »).
+1. La cellule du **coin** (ligne 0, colonne 0) ne décide pas de l'axe : un coin qui est une unité
+   seule ne fait pas choisir colonnes ou lignes. Mais une fois l'axe retenu, le coin en fait partie et
+   reçoit son unité s'il en a une (sinon `null`). C'est souvent un titre sans unité (« Grandeur »,
+   « Quantité »), mais peut aussi être « Distance (km) » ou « Temps (h) » dans un tableau de
+   proportionnalité.
 2. Une cellule d'en-tête est une unité si, une fois nettoyée, c'est **exactement** une unité reconnue
    (`km`, `h`, `km/h`, `m²`, `€`), ou si elle **finit** par une unité entre parenthèses ou crochets
    (`Distance (km)`, `Prix [€]`), ou par « en » suivi d'une unité (`Vitesse en km/h`). Une cellule de
@@ -43,9 +46,10 @@ la colonne (ou toute la ligne) de la couleur de cette unité. Un tableau de prop
   pour reconnaître un texte qui est tout entier une unité.
 - `tableLayout(cells: readonly (readonly string[])[]): TableLayout | null` avec
   `TableLayout = { axis: 'columns' | 'rows'; units: (string | null)[] }` : cherche d'abord dans la
-  ligne 0 (coin exclu) ; s'il y a au moins une unité, `axis: 'columns'` et `units[c]` est l'unité de la
-  colonne `c` (ou `null`) ; sinon dans la colonne 0 (coin exclu), `axis: 'rows'` et `units[r]` celle
-  de la ligne `r` ; sinon `null`. Un tableau 1×1 ou vide donne `null`.
+  ligne 0 (coin exclu) ; s'il y a au moins une unité, `axis: 'columns'` ; sinon dans la colonne 0
+  (coin exclu), s'il y a au moins une unité, `axis: 'rows'` ; sinon `null`. Une fois l'axe retenu,
+  `units[0]` = unité du coin (ou `null`), et les autres positions ont celles du reste de la ligne
+  ou colonne. Un tableau 1×1, vide, ou sans unité hors du coin donne `null`.
 
 ### 2. Teintes : unités d'en-tête dans l'attribution de l'exercice
 
@@ -86,7 +90,9 @@ Tout sous `apps/zachart-maths/src/exercises/`.
 - `tableUnits.test.ts` : `headerUnit` sur `km`, `Distance (km)`, `Prix [€]`, `Vitesse en km/h`,
   `Temps (h)`, `t (s)` → `s`, `16 km` → `null`, `Distance` → `null`, `''` → `null` ; `tableLayout` :
   première ligne avec unités (colonnes), première colonne seule (lignes), les deux (la ligne gagne),
-  coin ignoré, aucune unité, tableau 1×1, cellules vides ; une colonne sans unité reste `null`.
+  coin seul ne décide pas (mais participe une fois l'axe retenu), tableaux de proportionnalité
+  (Distance/Temps en lignes ou colonnes), aucune unité, tableau 1×1, cellules vides ; une colonne
+  sans unité reste `null`.
 - `unitColors.test.ts` : une unité d'une lettre présente seulement dans un en-tête reçoit une teinte ;
   la même unité dans l'énoncé et dans un tableau a la même teinte ; l'ordre de lecture est respecté.
 - `BlockStack.test.tsx` : avec `Distance (km)` / `Temps (h)` en première ligne, les cellules des deux
