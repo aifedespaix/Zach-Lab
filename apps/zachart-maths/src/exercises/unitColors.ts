@@ -1,4 +1,5 @@
 import { findQuantities } from './quantities'
+import { tableLayout } from './tableUnits'
 import type { Exercise } from './types'
 
 /**
@@ -6,6 +7,10 @@ import type { Exercise } from './types'
  * n'est pas en tête : la première unité d'un exercice ne doit pas se fondre dans leur cadre.
  */
 export const UNIT_HUES = [150, 30, 280, 340, 175, 60, 215, 100] as const
+
+function addUnit(hues: Map<string, number>, unit: string): void {
+  if (!hues.has(unit)) hues.set(unit, UNIT_HUES[hues.size % UNIT_HUES.length])
+}
 
 /**
  * Une teinte par unité, attribuée à sa première apparition en parcourant `texts` dans l'ordre :
@@ -15,9 +20,7 @@ export const UNIT_HUES = [150, 30, 280, 340, 175, 60, 215, 100] as const
 export function assignHues(texts: readonly string[]): Map<string, number> {
   const hues = new Map<string, number>()
   for (const text of texts) {
-    for (const quantity of findQuantities(text)) {
-      if (!hues.has(quantity.unit)) hues.set(quantity.unit, UNIT_HUES[hues.size % UNIT_HUES.length])
-    }
+    for (const quantity of findQuantities(text)) addUnit(hues, quantity.unit)
   }
   return hues
 }
@@ -28,16 +31,36 @@ const isTextBlock = (block: unknown): block is { type: 'texte'; contenu: string 
   (block as { type?: unknown }).type === 'texte' &&
   typeof (block as { contenu?: unknown }).contenu === 'string'
 
+/** Un bloc tableau dont les cellules sont bien des chaînes ; un fichier mal formé n'est pas lu du tout. */
+const isTableBlock = (block: unknown): block is { type: 'tableau'; cellules: string[][] } =>
+  typeof block === 'object' &&
+  block !== null &&
+  (block as { type?: unknown }).type === 'tableau' &&
+  Array.isArray((block as { cellules?: unknown }).cellules) &&
+  ((block as { cellules: unknown[] }).cellules).every(row => Array.isArray(row) && row.every(cell => typeof cell === 'string'))
+
 /**
- * Les textes d'un exercice que la coloration couvre, dans l'ordre de lecture : l'énoncé, les blocs
- * texte de la zone A puis de la zone B, la réponse. Les blocs de formule, de tableau et ceux d'un
- * type inconnu n'y sont pas : leur contenu n'est pas du texte libre.
+ * Une teinte par unité de TOUT l'exercice, dans l'ordre de lecture : l'énoncé, les blocs de la zone A,
+ * ceux de la zone B, la réponse. Un bloc texte apporte les grandeurs qu'il contient (`16 km`), un
+ * bloc tableau les unités de ses en-têtes (`Distance (km)`, `h`) : une unité d'une lettre, que
+ * `findQuantities` refuse dans un texte libre, a ainsi sa teinte quand elle n'est que dans un en-tête,
+ * et la même unité a la même couleur dans l'énoncé et dans le tableau. Les formules, les tableaux mal
+ * formés et les blocs d'un type inconnu n'apportent rien.
  */
-export function exerciseTexts(exercise: Pick<Exercise, 'enonce' | 'blocs' | 'blocsB' | 'reponse'>): string[] {
-  return [
-    exercise.enonce,
-    ...exercise.blocs.filter(isTextBlock).map(block => block.contenu),
-    ...(exercise.blocsB ?? []).filter(isTextBlock).map(block => block.contenu),
-    exercise.reponse,
-  ]
+export function assignExerciseHues(exercise: Pick<Exercise, 'enonce' | 'blocs' | 'blocsB' | 'reponse'>): Map<string, number> {
+  const hues = new Map<string, number>()
+  const fromText = (text: string) => {
+    for (const quantity of findQuantities(text)) addUnit(hues, quantity.unit)
+  }
+  const fromBlock = (block: unknown) => {
+    if (isTextBlock(block)) fromText(block.contenu)
+    else if (isTableBlock(block)) {
+      for (const unit of tableLayout(block.cellules)?.units ?? []) if (unit !== null) addUnit(hues, unit)
+    }
+  }
+  fromText(exercise.enonce)
+  exercise.blocs.forEach(fromBlock)
+  ;(exercise.blocsB ?? []).forEach(fromBlock)
+  fromText(exercise.reponse)
+  return hues
 }

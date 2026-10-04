@@ -15,7 +15,7 @@ import type { SymbolEntry } from './toolbarCatalog'
 import { useExerciseStore } from './useExerciseStore'
 import { useOpenExercise } from './useOpenExercise'
 import { SymbolInsertContext } from './symbolInsert'
-import { assignHues, exerciseTexts } from './unitColors'
+import { assignExerciseHues } from './unitColors'
 import { isSplit, mergeZones, sendBlock, splitZones, type Zone } from './zones'
 
 const STATUS_TEXT = {
@@ -121,7 +121,7 @@ export function ExerciseWorkspace() {
   const blank = isBlank(exercise)
   const split = isSplit(exercise)
   // Une teinte par unité pour tout l'exercice : un champ la consulte, il ne parcourt pas l'exercice.
-  const unitHues = assignHues(exerciseTexts(exercise))
+  const unitHues = assignExerciseHues(exercise)
 
   /** Avance d'un exercice ; si l'action en a créé un (au bord de la fiche), le curseur ira dans son énoncé. */
   const advance = (delta: -1 | 1) => {

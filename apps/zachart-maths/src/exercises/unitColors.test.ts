@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assignHues, exerciseTexts, UNIT_HUES } from './unitColors'
+import { assignExerciseHues, assignHues, UNIT_HUES } from './unitColors'
 
 describe('assignHues', () => {
   it('donne une teinte à chaque unité, dans l\'ordre où elles apparaissent', () => {
@@ -26,23 +26,75 @@ describe('assignHues', () => {
   })
 })
 
-describe('exerciseTexts', () => {
-  const base = { enonce: 'Énoncé', reponse: 'Réponse' }
+describe('assignExerciseHues', () => {
+  const base = { enonce: '', reponse: '' }
+  const table = (...rows: string[][]) => ({ id: 't', type: 'tableau', cellules: rows })
+  const text = (contenu: string) => ({ id: 'x', type: 'texte', contenu })
 
-  it('range les textes : énoncé, zone A, zone B, réponse', () => {
-    const texts = exerciseTexts({
-      ...base,
-      blocs: [{ id: 'a', type: 'texte', contenu: 'A1' }, { id: 'b', type: 'calcul', lignes: [] }, { id: 'c', type: 'texte', contenu: 'A2' }],
-      blocsB: [{ id: 'd', type: 'texte', contenu: 'B1' }],
+  it("range les unités dans l'ordre de lecture : énoncé, zone A, zone B, réponse", () => {
+    const hues = assignExerciseHues({
+      enonce: '3 km',
+      blocs: [text('2 kg')],
+      blocsB: [text('5 L')],
+      reponse: '1 g',
     })
-    expect(texts).toEqual(['Énoncé', 'A1', 'A2', 'B1', 'Réponse'])
+    expect([...hues.keys()]).toEqual(['km', 'kg', 'L', 'g'])
+    expect(hues.get('km')).toBe(UNIT_HUES[0])
+    expect(hues.get('g')).toBe(UNIT_HUES[3])
+  })
+
+  it("compte les unités d'en-tête d'un tableau, à la place du bloc", () => {
+    const hues = assignExerciseHues({
+      enonce: '3 km',
+      blocs: [text('2 kg'), table(['', 'Temps (h)'], ['a', '1'])],
+      reponse: '1 m',
+    })
+    expect([...hues.keys()]).toEqual(['km', 'kg', 'h', 'm'])
+  })
+
+  it("donne une teinte à une unité d'une lettre qui n'est que dans un en-tête", () => {
+    const hues = assignExerciseHues({ ...base, blocs: [table(['', 'h'], ['a', '1'])] })
+    expect(hues.get('h')).toBe(UNIT_HUES[0])
+  })
+
+  it("donne la même teinte à une unité de l'énoncé et du tableau", () => {
+    const hues = assignExerciseHues({
+      ...base,
+      enonce: 'Je fais 16 km',
+      blocs: [table(['', 'Distance (km)'], ['a', '16'])],
+    })
+    expect(hues.size).toBe(1)
+    expect(hues.get('km')).toBe(UNIT_HUES[0])
+  })
+
+  it("lit les unités des lignes d'en-tête d'un tableau à première colonne", () => {
+    const hues = assignExerciseHues({
+      ...base,
+      blocs: [table(['', 'a'], ['Distance (km)', '1'], ['Temps (h)', '2'])],
+    })
+    expect([...hues.keys()]).toEqual(['km', 'h'])
+  })
+
+  it("ne donne rien à un tableau sans en-tête d'unité, ni aux cellules de données", () => {
+    const hues = assignExerciseHues({ ...base, blocs: [table(['a', 'b'], ['16 km', '3 h'])] })
+    expect(hues.size).toBe(0)
   })
 
   it('supporte une zone B absente, un bloc inconnu et des valeurs inattendues', () => {
-    const texts = exerciseTexts({
+    const hues = assignExerciseHues({
       ...base,
-      blocs: [null, 42, { id: 'x', type: 'inconnu' }, { id: 'y', type: 'texte' }, { id: 'z', type: 'texte', contenu: 12 }],
+      blocs: [
+        null,
+        42,
+        { id: 'x', type: 'inconnu' },
+        { id: 'y', type: 'texte' },
+        { id: 'z', type: 'texte', contenu: 12 },
+        { id: 'a', type: 'tableau' },
+        { id: 'b', type: 'tableau', cellules: 'oups' },
+        { id: 'c', type: 'tableau', cellules: [[1, null], 'x', ['', 'h']] },
+        { id: 'd', type: 'tableau', cellules: [['', 'Distance (km)'], ['a', 2]] },
+      ],
     })
-    expect(texts).toEqual(['Énoncé', 'Réponse'])
+    expect(hues.size).toBe(0)
   })
 })
