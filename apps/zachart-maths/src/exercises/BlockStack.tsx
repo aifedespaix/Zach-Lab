@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { TableCellMenuItems, TableGrid, type BlockEdgeHandle } from '@suite/shared/equation'
 import { motion, useReducedMotion } from 'motion/react'
 import { Button } from '@suite/shared/ui'
@@ -9,8 +9,10 @@ import { CalcEditor } from './CalcEditor'
 import { EmptyAreaContextMenu } from './EmptyAreaContextMenu'
 import { EquationEditor, type SubBlockContext } from './EquationEditor'
 import { FieldContextMenu } from './FieldContextMenu'
-import { HighlightedTextarea } from './HighlightedTextarea'
-import { borderOf, toneOf } from './toolbarCatalog'
+import { HighlightedTextarea, UnitHuesContext } from './HighlightedTextarea'
+import { borderOf, headerToneOf, toneOf } from './toolbarCatalog'
+import { tableLayout } from './tableUnits'
+import { useUnitColors } from './useUnitColors'
 import {
   BLOCK_TYPES, newBlock, addColumn, addRow, canGrow, convertBlock, duplicateBlock, insertBlockAfter, isKnown, moveBlock, parseBlocks,
   removeBlock, removeColumn, removeRow, setCell, updateBlock, type Block, type BlockType, type EquationBlock, type KnownBlock, type TableBlock, type TextBlock,
@@ -34,6 +36,23 @@ function TextEditor({ block, onChange }: { block: TextBlock; onChange: (patch: P
 
 function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: (patch: Partial<TableBlock>) => void; index: number }) {
   const cells = block.cellules
+  const colorEnabled = useUnitColors(state => state.enabled)
+  const hues = useContext(UnitHuesContext)
+  // Réglage coupé : pas d'analyse du tout, le tableau est celui d'avant.
+  const layout = colorEnabled ? tableLayout(cells) : null
+  /**
+   * Le fond d'une cellule : la teinte de l'unité de sa colonne (ou de sa ligne), un cran plus soutenu
+   * sur la cellule d'en-tête. Rien quand l'en-tête n'est pas une unité, que l'exercice n'a pas de
+   * teinte pour elle, ou que l'entrée de la colonne (ligne) est `null` (ex. un coin-titre).
+   */
+  const fillOf = (row: number, column: number): string | undefined => {
+    if (layout === null) return undefined
+    const unit = layout.axis === 'columns' ? layout.units[column] : layout.units[row]
+    const hue = unit === null || unit === undefined ? undefined : hues.get(unit)
+    if (hue === undefined) return undefined
+    const isHeader = layout.axis === 'columns' ? row === 0 : column === 0
+    return isHeader ? headerToneOf(hue) : toneOf(hue)
+  }
   const set = (next: string[][]) => onChange({ cellules: next })
   const addRowAfter = (after: number) => set(addRow(cells, after))
   const addColumnAfter = (after: number) => set(addColumn(cells, after))
@@ -71,7 +90,7 @@ function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: 
               value={cells[r][c]}
               onChange={e => set(setCell(cells, r, c, e.target.value))}
               className="w-full bg-background px-2 py-1 text-sm"
-              style={{ border: '1px solid var(--border)' }}
+              style={{ border: '1px solid var(--border)', background: fillOf(r, c) }}
             />
           </FieldContextMenu>
         )}

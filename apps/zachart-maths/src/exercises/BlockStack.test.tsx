@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TooltipProvider } from '@suite/shared/ui'
 import { BlockStack } from './BlockStack'
+import { UnitHuesContext } from './HighlightedTextarea'
+import { useUnitColors } from './useUnitColors'
 import type { Block } from './blocks'
 
 // MathLive qui ne se charge pas : le champ LaTeX brut est l'éditeur complet.
@@ -215,5 +217,98 @@ describe('BlockStack — halo', () => {
       expect(await screen.findByRole('menuitem', { name: /Copier/ })).toBeInTheDocument()
       expect(screen.getByRole('menuitem', { name: 'Insérer une ligne au-dessus' })).toBeInTheDocument()
     })
+  })
+})
+
+describe('BlockStack : tableau coloré par unité d\'en-tête', () => {
+  // km → teinte 150, h → teinte 30 : ce que `assignExerciseHues` donnerait à cet exercice.
+  const hues = new Map([['km', 150], ['h', 30]])
+
+  function TableHarness({ cells }: { cells: string[][] }) {
+    const [value, setValue] = useState<unknown[]>([{ id: 't', type: 'tableau', cellules: cells }])
+    return (
+      <TooltipProvider>
+        <UnitHuesContext value={hues}>
+          <BlockStack value={value} onChange={(b: Block[]) => setValue(b)} />
+        </UnitHuesContext>
+      </TooltipProvider>
+    )
+  }
+  const cell = (row: number, column: number) => screen.getByLabelText(`Ligne ${row}, colonne ${column}`) as HTMLInputElement
+  const fill = (row: number, column: number) => cell(row, column).style.background
+
+  beforeEach(() => useUnitColors.setState({ enabled: true }))
+
+  it('colore chaque colonne dont l\'en-tête est une unité, l\'en-tête un cran plus soutenu', () => {
+    render(<TableHarness cells={[['Grandeur', 'Distance (km)', 'Temps (h)'], ['A', '10', '2'], ['B', '20', '4']]} />)
+    expect(fill(2, 2)).not.toBe('')
+    expect(fill(2, 2)).toBe(fill(3, 2))
+    expect(fill(2, 3)).toBe(fill(3, 3))
+    expect(fill(2, 2)).not.toBe(fill(2, 3))
+    expect(fill(1, 2)).not.toBe('')
+    expect(fill(1, 2)).not.toBe(fill(2, 2))
+    expect(fill(1, 3)).not.toBe(fill(2, 3))
+  })
+
+  it('ne colore ni le coin ni la colonne sans unité', () => {
+    render(<TableHarness cells={[['Grandeur', 'Distance (km)', 'Remarque'], ['A', '10', 'ok']]} />)
+    expect(fill(1, 1)).toBe('')
+    expect(fill(2, 1)).toBe('')
+    expect(fill(1, 3)).toBe('')
+    expect(fill(2, 3)).toBe('')
+    expect(fill(2, 2)).not.toBe('')
+  })
+
+  it('colore les lignes quand les unités sont dans la première colonne', () => {
+    render(<TableHarness cells={[['', 'a', 'b'], ['Distance (km)', '10', '20'], ['Temps (h)', '2', '4']]} />)
+    expect(fill(2, 2)).not.toBe('')
+    expect(fill(2, 2)).toBe(fill(2, 3))
+    expect(fill(3, 2)).toBe(fill(3, 3))
+    expect(fill(2, 2)).not.toBe(fill(3, 2))
+    expect(fill(2, 1)).not.toBe(fill(2, 2))
+    expect(fill(1, 2)).toBe('')
+  })
+
+  it('colore chaque ligne d\'un tableau de proportionnalité, coin compris', () => {
+    render(<TableHarness cells={[['Distance (km)', '10', '20'], ['Temps (h)', '1', '2']]} />)
+    expect(fill(1, 2)).not.toBe('')
+    expect(fill(1, 2)).toBe(fill(1, 3))
+    expect(fill(2, 2)).toBe(fill(2, 3))
+    expect(fill(1, 2)).not.toBe(fill(2, 2))
+    // Le coin est l'en-tête de sa ligne : plus soutenu que le corps, et plus que le corps de l'autre ligne.
+    expect(fill(1, 1)).not.toBe('')
+    expect(fill(1, 1)).not.toBe(fill(1, 2))
+    expect(fill(2, 1)).not.toBe(fill(2, 2))
+    expect(fill(1, 1)).not.toBe(fill(2, 1))
+  })
+
+  it('quand les deux ont des unités, la première ligne l\'emporte', () => {
+    render(<TableHarness cells={[['', 'Distance (km)'], ['Temps (h)', '2']]} />)
+    expect(fill(1, 2)).not.toBe('')
+    expect(fill(2, 2)).not.toBe('')
+    expect(fill(2, 1)).toBe('')
+  })
+
+  it('ne colore rien sans en-tête d\'unité', () => {
+    render(<TableHarness cells={[['a', 'b'], ['16 km', '3 h']]} />)
+    for (const [row, column] of [[1, 1], [1, 2], [2, 1], [2, 2]]) expect(fill(row, column)).toBe('')
+  })
+
+  it('ne colore rien quand le réglage est coupé', () => {
+    useUnitColors.setState({ enabled: false })
+    render(<TableHarness cells={[['', 'Distance (km)'], ['a', '10']]} />)
+    for (const [row, column] of [[1, 1], [1, 2], [2, 1], [2, 2]]) expect(fill(row, column)).toBe('')
+  })
+
+  it('ne colore pas une unité que l\'exercice n\'a pas (pas de teinte connue)', () => {
+    render(<TableHarness cells={[['', 'Poids (g)'], ['a', '10']]} />)
+    expect(fill(1, 2)).toBe('')
+    expect(fill(2, 2)).toBe('')
+  })
+
+  it('garde la valeur des cellules : colorer ne change aucun texte', () => {
+    render(<TableHarness cells={[['', 'Distance (km)'], ['a', '10']]} />)
+    expect(cell(1, 2)).toHaveValue('Distance (km)')
+    expect(cell(2, 2)).toHaveValue('10')
   })
 })

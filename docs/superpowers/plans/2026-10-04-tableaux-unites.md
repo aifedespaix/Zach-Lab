@@ -138,7 +138,7 @@ git commit -m "feat(zachart-maths): reconnaît un texte qui est tout entier une 
 
 **Interfaces :**
 - Consomme : `parseUnit(text): string | null` (tâche 1).
-- Produit : `headerUnit(cell: string): string | null` ; `interface TableLayout { axis: 'columns' | 'rows'; units: (string | null)[] }` ; `tableLayout(cells: readonly (readonly string[])[]): TableLayout | null`. `units[c]` est l'unité de la colonne `c` quand `axis` vaut `'columns'`, celle de la ligne `r` quand il vaut `'rows'` ; `null` pour une colonne (ligne) sans unité et toujours pour la position 0 (le coin).
+- Produit : `headerUnit(cell: string): string | null` ; `interface TableLayout { axis: 'columns' | 'rows'; units: (string | null)[] }` ; `tableLayout(cells: readonly (readonly string[])[]): TableLayout | null`. `units[c]` est l'unité de la colonne `c` quand `axis` vaut `'columns'`, celle de la ligne `r` quand il vaut `'rows'` ; `null` pour une colonne (ligne) sans unité ; `units[0]` est l'unité du coin quand il en a une, `null` sinon.
 
 - [ ] **Étape 1 : écrire le test qui échoue**
 
@@ -632,7 +632,7 @@ Dans `TableEditor`, après `const cells = block.cellules`, ajouter :
   /**
    * Le fond d'une cellule : la teinte de l'unité de sa colonne (ou de sa ligne), un cran plus soutenue
    * sur la cellule d'en-tête. Rien quand l'en-tête n'est pas une unité, que l'exercice n'a pas de
-   * teinte pour elle, ou pour le coin.
+   * teinte pour elle, ou que l'entrée de la colonne (ligne) est `null` (ex. un coin-titre).
    */
   const fillOf = (row: number, column: number): string | undefined => {
     if (layout === null) return undefined

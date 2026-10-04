@@ -101,3 +101,6 @@ export const SYMBOL_FAMILIES: readonly SymbolFamily[] = [
 
 export const toneOf = (hue: number) => `color-mix(in oklab, hsl(${hue} 75% 50%) 24%, var(--background))`
 export const borderOf = (hue: number) => `color-mix(in oklab, hsl(${hue} 75% 50%) 55%, var(--background))`
+
+/** Le fond d'une cellule d'en-tête de tableau : un cran plus soutenu que `toneOf`, pour qu'on voie d'où la colonne tient sa couleur. */
+export const headerToneOf = (hue: number) => `color-mix(in oklab, hsl(${hue} 75% 50%) 42%, var(--background))`
