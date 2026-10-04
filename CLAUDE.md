@@ -167,8 +167,8 @@ under `src/`, wired together in `App.tsx`:
   user-event both track `value`).
 - **Coloration des unités** (`quantities.ts`, `unitColors.ts`, `HighlightedTextarea.tsx`,
   `useUnitColors.ts`) : `findQuantities(text)` trouve les grandeurs (`16 km`, `3 km/h`, `x km/h`, `km/h`
-  seul) ; `assignHues(exerciseTexts(exercise))` donne une teinte par unité canonique pour TOUT l'exercice
-  (énoncé → zone A → zone B → réponse) ; `HighlightedTextarea` remplace les `<textarea>` de l'énoncé, des blocs
+  seul) ; `assignExerciseHues(exercise)` donne une teinte par unité canonique pour TOUT l'exercice
+  (énoncé → zone A → zone B → réponse, blocs dans l'ordre de lecture : textes ET en-têtes de tableau) ; `HighlightedTextarea` remplace les `<textarea>` de l'énoncé, des blocs
   texte et de la réponse : un calque miroir coloré derrière un champ transparent, dont l'arbre ne dépend QUE du
   réglage (jamais des teintes, sinon la première unité tapée remonte le champ et fait sauter le curseur). Il est
   contrôlé uniquement (`value` chaîne ; `style` ne vaut que pour le `<textarea>`) ; le champ prend
@@ -185,6 +185,15 @@ under `src/`, wired together in `App.tsx`:
   étapes en lecture seule (`\colorbox`, `renderMathToHtml`), une case de 28 px par étape (vide sauf si un groupe a au moins deux termes dans l'étape), sous le bloc équation tant qu'il a le focus et que le
   réglage est actif. Le champ MathLive n'est jamais modifié et l'aide n'appelle jamais `onChange`. Même bouton que
   les unités (`view.toggleUnitColors`, « Colorer unités et termes »).
+- **Tableaux** (`tableUnits.ts`, `parseUnit` de `quantities.ts`, `TableEditor` dans `BlockStack.tsx`) : `headerUnit(cell)`
+  lit l'unité d'une cellule d'en-tête (toute la cellule est une unité, ou finit par `(km)` / `[€]`, ou par « en km/h » ;
+  `16 km` n'en est pas un ; `t` seul refusé, `t (s)` donne `s`) ; `tableLayout(cells)` cherche d'abord sur la première
+  ligne (coin exclu), à défaut sur la première colonne, la première ligne l'emporte. Le coin ne décide pas de l'axe,
+  mais une fois l'axe retenu il en fait partie et porte son unité s'il en a une (`units[0] = headerUnit(coin)` ; un
+  titre comme `Grandeur` reste `null`). `TableEditor` pose un fond inline (`toneOf`, `headerToneOf` pour l'en-tête) sur
+  les `<input>` de la colonne ou ligne concernée, avec la teinte de `UnitHuesContext` ; `assignExerciseHues` donne une
+  teinte aux unités d'en-tête (même d'une lettre). Même bouton que les unités et les termes ; rien dans
+  `packages/shared`, `TableGrid` ne change.
 - **`math/`** — `isMathField` (the toolbar's target check); MathLive itself and `renderMathToHtml` come from `@suite/shared`.
 - **`cours/`** — courses are Markdown files in `cours/contenu/` (front matter `titre`,
   `chapitre`, `mots-cles`), compiled in with `import.meta.glob`; adding a course is adding a

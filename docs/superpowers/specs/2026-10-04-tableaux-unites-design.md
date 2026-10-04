@@ -53,9 +53,10 @@ la colonne (ou toute la ligne) de la couleur de cette unité. Un tableau de prop
 
 ### 2. Teintes : unités d'en-tête dans l'attribution de l'exercice
 
-`assignHues` reçoit aujourd'hui les textes de l'exercice. Une unité qui ne figure que dans un en-tête
-(`h` tout seul n'est pas trouvée par `findQuantities`) n'aurait aucune teinte. L'attribution
-parcourt donc les blocs dans l'ordre de lecture (énoncé → zone A → zone B → réponse) et, pour un bloc
+`assignHues(exerciseTexts(…))` ne recevait que les textes de l'exercice. Une unité qui ne figure que dans
+un en-tête (`h` tout seul n'est pas trouvée par `findQuantities`) n'aurait aucune teinte.
+`assignExerciseHues(exercise)` le remplace pour l'exercice entier : il
+parcourt les blocs dans l'ordre de lecture (énoncé → zone A → zone B → réponse) et, pour un bloc
 Tableau, ajoute les unités de son `tableLayout` à leur place. Une unité garde ainsi la même teinte
 partout, et celles de l'énoncé gardent leur numéro d'ordre (l'ordre ne change que si un tableau
 apporte une unité nouvelle avant une autre).
