@@ -13,10 +13,10 @@ describe('Toolbar', () => {
     }
   })
 
-  it('réserve la gouttière de sa barre de défilement, sans défilement horizontal', () => {
+  it('ne réserve pas de gouttière pour sa barre de défilement, sans défilement horizontal', () => {
     render(<Toolbar target="none" onSymbol={() => {}} />)
     const bar = screen.getByRole('toolbar', { name: 'Outils' })
-    expect(bar.style.scrollbarGutter).toBe('stable')
+    expect(bar.style.scrollbarGutter).toBe('auto')
     expect(bar.style.overflowX).toBe('hidden')
   })
 })
