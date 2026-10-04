@@ -165,6 +165,18 @@ under `src/`, wired together in `App.tsx`:
   `glyph` (plain fields), a `latex` (MathLive; `#0`/`#?` placeholders) and an optional `plain`.
   Text fields are filled with `insertAtCursor` (`setRangeText`, not `value =`: React and
   user-event both track `value`).
+- **Coloration des unités** (`quantities.ts`, `unitColors.ts`, `HighlightedTextarea.tsx`,
+  `useUnitColors.ts`) : `findQuantities(text)` trouve les grandeurs (`16 km`, `3 km/h`, `x km/h`, `km/h`
+  seul) ; `assignHues(exerciseTexts(exercise))` donne une teinte par unité canonique pour TOUT l'exercice
+  (énoncé → zone A → zone B → réponse) ; `HighlightedTextarea` remplace les `<textarea>` de l'énoncé, des blocs
+  texte et de la réponse : un calque miroir coloré derrière un champ transparent, dont l'arbre ne dépend QUE du
+  réglage (jamais des teintes, sinon la première unité tapée remonte le champ et fait sauter le curseur). Il est
+  contrôlé uniquement (`value` chaîne ; `style` ne vaut que pour le `<textarea>`) ; le champ prend
+  `field-sizing: content`, `overflow-y: auto`, `resize: none` (il grandit au lieu de défiler) et son défilement
+  est recopié sur le miroir en repli. Les `<mark>` n'ajoutent aucune métrique et ont `color: transparent`. Un `t`
+  seul n'est jamais une unité (c'est aussi une inconnue) : `2t` n'est pas coloré, seul `2 t` (avec espace) =
+  tonnes. Les formules MathLive, les tableaux et les cours ne sont pas colorés. Réglage : bouton
+  `view.toggleUnitColors` de la barre du haut, clé `localStorage` `zachart-maths:unit-colors`, activé par défaut.
 - **`math/`** — `isMathField` (the toolbar's target check); MathLive itself and `renderMathToHtml` come from `@suite/shared`.
 - **`cours/`** — courses are Markdown files in `cours/contenu/` (front matter `titre`,
   `chapitre`, `mots-cles`), compiled in with `import.meta.glob`; adding a course is adding a
