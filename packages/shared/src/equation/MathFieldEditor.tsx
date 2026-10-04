@@ -99,6 +99,8 @@ export interface MathFieldEditorProps {
   onExit?: (direction: ExitDirection, via: ExitVia) => boolean | void
   /** Un `move-out` issu de Tab passe par `onExit` (équation). Sans lui, Tab reste entièrement à MathLive. */
   tabExits?: boolean
+  /** « = » tapé (sans Ctrl/Cmd/Alt) : la touche est avalée, le parent décide (équation : membre gauche → membre droit). */
+  onEquals?: () => void
   ref?: React.Ref<MathFieldHandle>
 }
 
@@ -278,6 +280,7 @@ export function MathFieldEditor({
   onDeleteAtEnd,
   onExit,
   tabExits,
+  onEquals,
   ref,
 }: MathFieldEditorProps) {
   // Which editor this block shows. It starts on the caller's field whenever
@@ -306,6 +309,8 @@ export function MathFieldEditor({
   onExitRef.current = onExit
   const tabExitsRef = useRef(tabExits)
   tabExitsRef.current = tabExits
+  const onEqualsRef = useRef(onEquals)
+  onEqualsRef.current = onEquals
   // Same reason as `onChangeRef`: the handle below is built once, so it must
   // not close over the formula as it was at mount.
   const latexRef = useRef(latex)
@@ -485,6 +490,17 @@ export function MathFieldEditor({
           if (event.repeat) return
           latchEdgeKey('Delete')
           onDeleteAtEndRef.current(field.value)
+          return
+        }
+        // MathLive tape « * » en \cdot ; ici c'est la multiplication, \times.
+        if (event.key === '*' && !event.ctrlKey && !event.metaKey && !event.altKey && field.insert !== undefined) {
+          event.preventDefault()
+          field.insert('\\times ')
+          return
+        }
+        if (event.key === '=' && !event.ctrlKey && !event.metaKey && !event.altKey && onEqualsRef.current !== undefined) {
+          event.preventDefault()
+          onEqualsRef.current()
           return
         }
         if (event.key !== 'Enter') return

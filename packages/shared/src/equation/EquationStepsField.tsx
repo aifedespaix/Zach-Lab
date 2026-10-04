@@ -122,6 +122,7 @@ function EquationTermField({
   onBackspaceAtStart,
   onDeleteAtEnd,
   onExit,
+  onEquals,
   side,
   style,
 }: {
@@ -137,6 +138,8 @@ function EquationTermField({
   onDeleteAtEnd: (rest: string) => void
   /** Une flèche (ou Tab) au bord : le champ voisin selon `equationNav`. `false` = nulle part où aller. */
   onExit: (direction: ExitDirection, via: ExitVia) => boolean | void
+  /** « = » tapé dans le membre gauche : il n'écrit rien, le curseur passe au membre droit. Absent à droite. */
+  onEquals?: () => void
   /** Lequel des deux membres — pilote (via `index.css`) l'alignement du texte vers le « = » et le nettoyage du chrome MathLive (fond, menu ≡), voir `[data-equation-side]`. */
   side: 'left' | 'right'
   style?: CSSProperties
@@ -153,6 +156,7 @@ function EquationTermField({
         onBackspaceAtStart={onBackspaceAtStart}
         onDeleteAtEnd={onDeleteAtEnd}
         onExit={onExit}
+        onEquals={onEquals}
         tabExits
         fallback={
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -168,6 +172,7 @@ function EquationTermField({
                 onBackspaceAtStart,
                 onDeleteAtEnd,
                 onExit,
+                onEquals,
                 tabExits: true,
               })}
               style={RAW_FIELD_STYLE}
@@ -597,6 +602,7 @@ export function EquationStepsField({
                 ariaLabel={`Membre gauche de l'étape ${stepIndex + 1} du bloc ${index + 1}`}
                 registerHandle={handle => handles.current.set(fieldKey(stepIndex, 'left'), handle)}
                 {...intentsFor({ step: stepIndex, field: 'left' })}
+                onEquals={() => focusField({ step: stepIndex, field: 'right' }, 'start')}
                 onFocusHandle={() => {
                   column.current = 'left'
                   focused.current = { step: stepIndex, field: 'left' }

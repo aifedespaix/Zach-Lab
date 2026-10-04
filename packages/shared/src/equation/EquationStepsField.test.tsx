@@ -46,6 +46,22 @@ describe('EquationStepsField (repli brut)', () => {
     expect(left(2)).toHaveFocus()
   })
 
+  it("« = » dans le membre gauche n'écrit rien et passe au membre droit", async () => {
+    render(<Harness initial={[{ left: '2x', right: '' }]} />)
+    await userEvent.click(left(1))
+    await userEvent.keyboard('=')
+    expect(left(1)).toHaveValue('2x')
+    expect(screen.getByLabelText("Membre droit de l'étape 1 du bloc 1 (LaTeX)")).toHaveFocus()
+  })
+
+  it('« = » reste un caractère normal dans le membre droit', async () => {
+    render(<Harness initial={[{ left: 'a', right: 'b' }]} />)
+    const right = screen.getByLabelText("Membre droit de l'étape 1 du bloc 1 (LaTeX)")
+    await userEvent.click(right)
+    await userEvent.keyboard('=')
+    expect(right).toHaveValue('b=')
+  })
+
   it('Ctrl+Entrée demande un bloc après (outside), Ctrl+Maj+Entrée dedans (inside)', async () => {
     const onEnterBlock = vi.fn()
     render(<Harness initial={[{ left: 'a', right: 'b' }]} onEnterBlock={onEnterBlock} />)

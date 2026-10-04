@@ -34,6 +34,8 @@ export interface RawFieldIntents {
   tabExits?: boolean
   /** Tab / Maj+Tab : le type du bloc. */
   onSwitchKind?: (direction: 1 | -1) => void
+  /** « = » (sans Ctrl/Cmd/Alt) : avalé, le parent décide. */
+  onEquals?: () => void
 }
 
 /** Les deux touches dont l'intention au bord peut déplacer le curseur dans un AUTRE champ. */
@@ -151,6 +153,11 @@ export function rawFieldKeyDown(intents: RawFieldIntents) {
         return
       case 'ArrowDown':
         if (plain) exit('down', 'arrow')
+        return
+      case '=':
+        if (intents.onEquals === undefined || event.ctrlKey || event.metaKey || event.altKey) return
+        event.preventDefault()
+        intents.onEquals()
         return
       case 'Tab':
         if (mod || event.altKey) return
