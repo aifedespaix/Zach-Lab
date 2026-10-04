@@ -53,10 +53,18 @@ describe('LikeTermsHelp', () => {
   })
 
   it('garde la même couleur pour un même groupe d\'une étape à l\'autre', () => {
-    const steps = [{ left: '1+x', right: '7' }, { left: '2x', right: 'x+6' }]
+    // y apparaît en premier dans le bloc (teinte 0), x en second (teinte 1) : par étape, x aurait la teinte 0.
+    const steps = [{ left: '3y+y', right: '1' }, { left: '2x+x', right: 'y' }]
     const { container } = render(<LikeTermsHelp steps={steps} theme="light" />)
-    const xColor = assignTermColors(['', 'x'], 'light').get('x')!
-    expect(container.innerHTML.split(xColor).length - 1).toBeGreaterThanOrEqual(2)
+    const colors = assignTermColors(['y', 'x'], 'light')
+    const count = (html: string, color: string) => html.split(color).length - 1
+    const [first, second] = Array.from(lines(container)).map(line => line.innerHTML)
+    expect(lines(container)).toHaveLength(2)
+    expect(colors.get('x')).not.toBe(colors.get('y'))
+    // KaTeX émet la couleur 3 fois par terme coloré (boîte, fond, bordure).
+    expect(count(first, colors.get('y')!)).toBe(6)
+    expect(count(second, colors.get('x')!)).toBe(6)
+    expect(count(second, colors.get('y')!)).toBe(3)
   })
 
   it('change de couleurs avec le thème', () => {
