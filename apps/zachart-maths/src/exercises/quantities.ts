@@ -76,3 +76,18 @@ export function findQuantities(text: string): Quantity[] {
   }
   return found.sort((a, b) => a.start - b.start)
 }
+
+const WHOLE_UNIT = new RegExp(`^(${UNIT})$`, 'u')
+
+/**
+ * L'unité canonique d'un texte qui est TOUT ENTIER une unité (`km`, `h`, `km/h`, `m²`), ou `null`.
+ * Sert aux en-têtes de tableau, où le contexte lève l'ambiguïté des unités d'une lettre (`h`, `s`) que
+ * `findQuantities` refuse dans un texte libre. La lettre `t` seule reste refusée, comme dans un texte :
+ * tonne ou temps ? (`t (s)` donne `s` par ailleurs.)
+ */
+export function parseUnit(text: string): string | null {
+  const match = WHOLE_UNIT.exec(text.trim())
+  if (match === null) return null
+  const unit = canonical(match[1])
+  return /^t[²³]?$/.test(unit) ? null : unit
+}

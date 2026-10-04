@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { findQuantities } from './quantities'
+import { findQuantities, parseUnit } from './quantities'
 
 /** Ce que `findQuantities` trouve, vu comme le texte coupé : plus lisible que des indices. */
 const found = (text: string) => findQuantities(text).map(q => ({ text: text.slice(q.start, q.end), unit: q.unit, kind: q.kind }))
@@ -120,5 +120,44 @@ describe('findQuantities', () => {
     expect(found('5m')).toEqual([{ text: '5m', unit: 'm', kind: 'valeur' }])
     expect(found('5 m²')).toEqual([{ text: '5 m²', unit: 'm²', kind: 'valeur' }])
     expect(found('x km/h')).toEqual([{ text: 'x km/h', unit: 'km/h', kind: 'valeur' }])
+  })
+})
+
+describe('parseUnit', () => {
+  it('reconnaît un texte qui est tout entier une unité, sous sa forme canonique', () => {
+    expect(parseUnit('km')).toBe('km')
+    expect(parseUnit('h')).toBe('h')
+    expect(parseUnit('s')).toBe('s')
+    expect(parseUnit('km/h')).toBe('km/h')
+    expect(parseUnit('m²')).toBe('m²')
+    expect(parseUnit('m^2')).toBe('m²')
+    expect(parseUnit('€')).toBe('€')
+    expect(parseUnit('kg/m³')).toBe('kg/m³')
+    expect(parseUnit('l')).toBe('L')
+    expect(parseUnit('cl')).toBe('cL')
+  })
+
+  it('ignore les espaces aux extrémités', () => {
+    expect(parseUnit('  km ')).toBe('km')
+    expect(parseUnit(' h ')).toBe('h')
+  })
+
+  it('refuse ce qui n\'est pas une unité seule', () => {
+    expect(parseUnit('')).toBeNull()
+    expect(parseUnit('   ')).toBeNull()
+    expect(parseUnit('16 km')).toBeNull()
+    expect(parseUnit('kilos')).toBeNull()
+    expect(parseUnit('minutes')).toBeNull()
+    expect(parseUnit('Distance')).toBeNull()
+    expect(parseUnit('km h')).toBeNull()
+    expect(parseUnit('x')).toBeNull()
+    expect(parseUnit('(km)')).toBeNull()
+  })
+
+  it('refuse la lettre t seule, avec ou sans puissance : tonne ou temps ?', () => {
+    expect(parseUnit('t')).toBeNull()
+    expect(parseUnit('t²')).toBeNull()
+    expect(parseUnit('t^3')).toBeNull()
+    expect(parseUnit('t/h')).toBe('t/h')
   })
 })
