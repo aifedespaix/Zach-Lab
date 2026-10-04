@@ -96,4 +96,15 @@ describe('findQuantities', () => {
     expect(found('Résous x + 3 = 5')).toEqual([])
     expect(found('')).toEqual([])
   })
+
+  it('ne colore jamais la lettre t seule, avec ou sans puissance', () => {
+    expect(found('t² - 4')).toEqual([])
+    expect(found('t^2')).toEqual([])
+    expect(found('t + 5')).toEqual([])
+  })
+
+  it('reconnaît 2 t avec espace (tonnes), mais pas 2t (produit algébrique)', () => {
+    expect(found('2 t')).toEqual([{ text: '2 t', unit: 't', kind: 'valeur' }])
+    expect(found('2t + 3 = 7')).toEqual([])
+  })
 })

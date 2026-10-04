@@ -17,6 +17,8 @@ const BASE_CANON: Record<string, string> = { l: 'L', dl: 'dL', cl: 'cL', ml: 'mL
 // Les unités à plusieurs lettres passent avant celles d'une lettre : `min` avant `m`, `km` avant `m`.
 const LONG_BASES = 'km|dm|cm|mm|kg|mg|min|ms|dL|dl|cL|cl|mL|ml'
 const SHORT_BASES = 'm|g|t|h|s|L|l|€|°|%'
+// Pour BARE, exclure « t » de la correspondance sans puissance (jamais seule, avec ou sans puissance).
+const SHORT_BASES_NO_T = 'm|g|h|s|L|l|€|°|%'
 const BASE = `(?:${LONG_BASES}|${SHORT_BASES})`
 const POWER = '(?:²|³|\\^2|\\^3)'
 const OPT_POWER = `${POWER}?`
@@ -34,9 +36,9 @@ const END = '(?![\\p{L}])'
 const VALUE = new RegExp(`${START}(?:${NUMBER}|${VARIABLE})${SPACE}?(${UNIT})${END}`, 'gu')
 
 // Une unité seule n'est colorée que si rien ne la confond avec une lettre ou un mot : composée,
-// longue, ou portant une puissance. `m`, `h` ou `s` tout seuls ne le sont jamais.
+// longue, ou portant une puissance. La lettre « t » n'est jamais colorée seule : exclue du match final.
 const BARE = new RegExp(
-  `${START}(?:${BASE}${OPT_POWER}/${BASE}${OPT_POWER}|(?:${LONG_BASES})${OPT_POWER}|${BASE}${POWER})${END}`,
+  `${START}(?:${BASE}${OPT_POWER}/${BASE}${OPT_POWER}|(?:${LONG_BASES})${OPT_POWER}|(?:${SHORT_BASES_NO_T})${POWER})${END}`,
   'gu',
 )
 
@@ -60,6 +62,8 @@ export function findQuantities(text: string): Quantity[] {
     const unit = canonical(match[1])
     // Une inconnue (« t ») devant une unité d'un caractère (« s ») n'est presque jamais une grandeur.
     if (!/\d/.test(match[0][0]) && unit.length < 2) continue
+    // La lettre « t » (tonne) n'est reconnue que avec un espace : « 2 t » est colorée, « 2t » ne l'est pas.
+    if (unit === 't' && !/[\s  ]/.test(match[0])) continue
     found.push({ start: match.index, end: match.index + match[0].length, unit, kind: 'valeur' })
   }
   for (const match of text.matchAll(BARE)) {
