@@ -7,16 +7,36 @@ mots-cles: fraction, produit, quotient, inverse, multiplier, diviser, simplifier
 
 ## Multiplier
 
-On multiplie les numérateurs entre eux, et les dénominateurs entre eux :
+> [!propriete] Produit
+> On multiplie les numérateurs entre eux, et les dénominateurs entre eux :
+>
+> $$\frac{a}{b} \times \frac{c}{d} = \frac{a \times c}{b \times d}$$
 
-$$\frac{2}{3} \times \frac{5}{7} = \frac{2 \times 5}{3 \times 7} = \frac{10}{21}$$
+> [!methode] Simplifier avant de calculer
+> On simplifie **avant** de multiplier quand un numérateur et un dénominateur ont un diviseur commun : les nombres restent petits.
 
-Astuce : on peut **simplifier avant** de multiplier.
+> [!exemple]
+> $$\frac{3}{4} \times \frac{8}{9} = \frac{3 \times 8}{4 \times 9} = \frac{24}{36} = \frac{2}{3}$$
 
 ## Diviser
 
-Diviser par une fraction, c'est multiplier par son **inverse** :
+> [!definition] Inverse
+> L'**inverse** de $\frac{c}{d}$ est $\frac{d}{c}$ (avec $c \neq 0$). Un nombre multiplié par son inverse donne $1$.
 
-$$\frac{2}{3} \div \frac{5}{7} = \frac{2}{3} \times \frac{7}{5} = \frac{14}{15}$$
+> [!propriete] Quotient
+> Diviser par une fraction, c'est **multiplier par son inverse** :
+>
+> $$\frac{a}{b} \div \frac{c}{d} = \frac{a}{b} \times \frac{d}{c}$$
 
-L'inverse de $\frac{a}{b}$ est $\frac{b}{a}$ (avec $a \neq 0$ et $b \neq 0$).
+> [!exemple]
+> $$\frac{2}{5} \div \frac{4}{3} = \frac{2}{5} \times \frac{3}{4} = \frac{6}{20} = \frac{3}{10}$$
+
+## À retenir
+
+> [!attention]
+> Pour multiplier, **pas** besoin de dénominateur commun (c'est seulement pour additionner).
+
+> [!retenir]
+> - Produit : « haut × haut, bas × bas ».
+> - Quotient : on retourne la deuxième fraction.
+> - On simplifie toujours le résultat.
