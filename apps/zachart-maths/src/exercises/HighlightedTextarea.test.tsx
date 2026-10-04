@@ -96,6 +96,28 @@ describe('HighlightedTextarea', () => {
     expect(screen.getByLabelText('champ').style.resize).toBe('none')
   })
 
+  it('garde la hauteur minimale de `rows` malgré field-sizing, et la laisse surcharger', () => {
+    const { rerender } = render(
+      <UnitHuesContext value={new Map()}>
+        <HighlightedTextarea aria-label="champ" value="" onChange={() => {}} rows={3} />
+      </UnitHuesContext>,
+    )
+    // `field-sizing: content` annule `rows` : le minimum est reposé en `lh`.
+    expect(screen.getByLabelText('champ').style.minHeight).toContain('3lh')
+    rerender(
+      <UnitHuesContext value={new Map()}>
+        <HighlightedTextarea aria-label="champ" value="" onChange={() => {}} rows={3} style={{ minHeight: '10px' }} />
+      </UnitHuesContext>,
+    )
+    expect(screen.getByLabelText('champ').style.minHeight).toBe('10px')
+  })
+
+  it('réglage coupé : pas de hauteur minimale posée, le champ garde `rows`', () => {
+    useUnitColors.setState({ enabled: false })
+    render(<Field text="" hues={new Map()} />)
+    expect(screen.getByLabelText('champ').style.minHeight).toBe('')
+  })
+
   it('transmet ses props au champ (libellé, valeur)', () => {
     render(<Field text="abc" hues={new Map()} />)
     expect(screen.getByLabelText('champ')).toHaveValue('abc')

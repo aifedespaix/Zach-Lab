@@ -84,6 +84,9 @@ export function HighlightedTextarea({ className, style, ref, onScroll, ...props 
         ref={ref}
         className={className}
         style={{
+          // `field-sizing: content` annule `rows` : on repose le minimum (padding `py-1` = 0.5rem, bordure 2px).
+          // Avant `...style`, pour qu'un appelant puisse le surcharger.
+          minHeight: `calc(${props.rows ?? 2}lh + 0.5rem + 2px)`,
           ...style,
           position: 'relative',
           display: 'block',
