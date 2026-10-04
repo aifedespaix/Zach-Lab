@@ -1,6 +1,6 @@
 [package]
 name = "zachart-mentale"
-version = "3.0.0"
+version = "3.0.1"
 description = "A Tauri App"
 authors = ["aifedespaix"]
 edition = "2021"
