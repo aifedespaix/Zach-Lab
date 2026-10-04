@@ -20,7 +20,7 @@ export function Toolbar({ target, onSymbol }: ToolbarProps) {
       role="toolbar"
       aria-label="Outils"
       aria-orientation="vertical"
-      style={{ display: 'flex', flexDirection: 'column', gap: 4, width: 82, flexShrink: 0, overflowY: 'auto', overflowX: 'hidden', scrollbarGutter: 'stable', padding: 6, borderRight: '1px solid var(--border)' }}
+      style={{ display: 'flex', flexDirection: 'column', gap: 4, width: 82, flexShrink: 0, overflowY: 'auto', overflowX: 'hidden', scrollbarGutter: 'auto', padding: 6, borderRight: '1px solid var(--border)' }}
     >
       {SYMBOL_FAMILIES.map(family => (
         <div key={family.name} role="group" aria-label={family.name} style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', justifyItems: 'center', gap: 2, padding: 3, borderRadius: 6, background: toneOf(family.hue) }}>
