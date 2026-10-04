@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BookOpen, ChevronsDownUp, FolderPlus, Keyboard, Moon, NotebookPen, Search, Settings as SettingsIcon } from 'lucide-react'
+import { BookOpen, ChevronsDownUp, FolderPlus, Keyboard, Moon, NotebookPen, Search, Settings as SettingsIcon, Shapes } from 'lucide-react'
 import {
   CommandButton,
   CommandPalette,
@@ -18,6 +18,8 @@ import { CoursePanel } from './cours/CoursePanel'
 import { ExerciseTree } from './exercises/ExerciseTree'
 import { ExerciseWorkspace } from './exercises/ExerciseWorkspace'
 import { SheetOutline } from './exercises/SheetOutline'
+import { ToolbarSettingsPanel } from './exercises/ToolbarSettingsPanel'
+import { useToolbarFamilies } from './exercises/useToolbarFamilies'
 import './exercises/useOpenExercise'
 import { createTauriFs, defaultExercisesRoot } from './exercises/tauriFs'
 import { useExerciseStore } from './exercises/useExerciseStore'
@@ -141,8 +143,26 @@ export default function App() {
                   icon: Keyboard,
                   render: () => <ShortcutSettingsPanel />,
                 },
+                {
+                  id: 'toolbar',
+                  label: 'Barre d\'outils',
+                  hint: 'Familles de signes',
+                  icon: Shapes,
+                  render: () => <ToolbarSettingsPanel />,
+                },
               ]}
               sources={[
+                {
+                  snapshot: () => useToolbarFamilies.getState().snapshot(),
+                  restore: snapshot => useToolbarFamilies.getState().restore(snapshot),
+                  commit: () => useToolbarFamilies.getState().commit(),
+                  changedSince: {
+                    subscribe: listener => useToolbarFamilies.subscribe(() => listener()),
+                    isChanged: snapshot =>
+                      JSON.stringify([...useToolbarFamilies.getState().hidden].sort()) !==
+                      JSON.stringify([...snapshot].sort()),
+                  },
+                },
                 {
                   snapshot: () => useShortcutSettingsStore.getState().snapshot(),
                   restore: snapshot => useShortcutSettingsStore.getState().applyDraft(snapshot),
