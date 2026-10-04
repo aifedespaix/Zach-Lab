@@ -35,6 +35,7 @@ describe('ExerciseWorkspace', () => {
   beforeEach(() => {
     useExerciseStore.setState({ fs: null, tree: [], loaded: false, selected: null, recent: [], error: null })
     useOpenExercise.setState({ path: null, sheet: null, currentId: null, exercise: null, status: 'empty' })
+    useUnitColors.setState({ enabled: true })
   })
   afterEach(() => vi.useRealTimers())
 
@@ -310,7 +311,6 @@ describe('ExerciseWorkspace', () => {
   })
 
   it('colore les grandeurs de l\'énoncé, des blocs texte et de la réponse, une teinte par unité', async () => {
-    useUnitColors.setState({ enabled: true })
     await setup({
       'A/a.json': sheetFile('Vitesse', [
         ex('e1', {
@@ -335,7 +335,6 @@ describe('ExerciseWorkspace', () => {
     await open('A/a.json')
     expect(document.querySelectorAll('mark')).toHaveLength(0)
     expect(screen.getByLabelText("Énoncé de l'exercice")).toHaveValue('16 km')
-    useUnitColors.setState({ enabled: true })
   })
 
   describe('deux zones et zone de réponse', () => {
