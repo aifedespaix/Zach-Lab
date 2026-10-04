@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { ArrowDown, ArrowUp, HelpCircle, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, HelpCircle, Trash2 } from 'lucide-react'
 import { Button } from '@suite/shared/ui'
 import { isKnown, type Block } from './blocks'
 import { BLOCK_META } from './blockMeta'
@@ -11,6 +11,9 @@ interface BlockCardProps {
   count: number
   onMove: (delta: -1 | 1) => void
   onRemove: () => void
+  /** Présent quand l'exercice est scindé : envoie le bloc dans l'autre zone, `sendTo` dit de quel côté elle est. */
+  onSend?: () => void
+  sendTo?: 'left' | 'right'
   /** Vrai juste après un déplacement : le halo aide à retrouver le bloc du regard. */
   halo?: boolean
   onHaloEnd?: () => void
@@ -21,7 +24,7 @@ interface BlockCardProps {
  * Une carte de bloc : la gouttière à gauche (icône du type, monter, descendre, supprimer) puis
  * le contenu. La gouttière est discrète tant qu'on ne survole ni ne focalise la carte.
  */
-export function BlockCard({ block, index, count, onMove, onRemove, halo, onHaloEnd, children }: BlockCardProps) {
+export function BlockCard({ block, index, count, onMove, onRemove, onSend, sendTo = 'right', halo, onHaloEnd, children }: BlockCardProps) {
   const meta = isKnown(block) ? BLOCK_META[block.type] : null
   const label = meta?.label ?? 'Bloc inconnu'
   const Icon = meta?.icon ?? HelpCircle
@@ -43,6 +46,14 @@ export function BlockCard({ block, index, count, onMove, onRemove, halo, onHaloE
         <span role="img" aria-label={`Type : ${label}`} title={label} style={{ display: 'flex', padding: 4 }}><Icon size={16} /></span>
         <Button variant="ghost" size="icon-sm" aria-label="Monter le bloc" disabled={index === 0} onClick={() => onMove(-1)}><ArrowUp /></Button>
         <Button variant="ghost" size="icon-sm" aria-label="Descendre le bloc" disabled={index === count - 1} onClick={() => onMove(1)}><ArrowDown /></Button>
+        {onSend !== undefined && (
+          <Button
+            variant="ghost" size="icon-sm"
+            aria-label={sendTo === 'right' ? 'Envoyer le bloc dans la zone de droite' : 'Envoyer le bloc dans la zone de gauche'}
+            title={sendTo === 'right' ? 'Envoyer dans la zone de droite' : 'Envoyer dans la zone de gauche'}
+            onClick={onSend}
+          >{sendTo === 'right' ? <ArrowRight /> : <ArrowLeft />}</Button>
+        )}
         <Button variant="ghost" size="icon-sm" aria-label="Supprimer le bloc" onClick={onRemove}><Trash2 /></Button>
       </div>
       <div style={{ flex: 1, minWidth: 0, padding: 8 }}>{children}</div>

@@ -231,6 +231,7 @@ export function ExerciseWorkspace() {
               value={exercise.blocs}
               onChange={blocs => edit({ blocs })}
               onSend={split ? id => send('a', id) : undefined}
+              sendTo="right"
               split={split}
               onToggleSplit={toggleSplit}
               arrivedId={arrived?.zone === 'a' ? arrived.id : null}
@@ -243,6 +244,7 @@ export function ExerciseWorkspace() {
                 value={exercise.blocsB ?? []}
                 onChange={blocsB => edit({ blocsB })}
                 onSend={id => send('b', id)}
+                sendTo="left"
                 split={split}
                 onToggleSplit={toggleSplit}
                 arrivedId={arrived?.zone === 'b' ? arrived.id : null}

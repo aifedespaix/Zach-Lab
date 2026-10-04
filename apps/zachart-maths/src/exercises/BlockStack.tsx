@@ -116,12 +116,14 @@ function editorFor(block: KnownBlock, onChange: (patch: Partial<KnownBlock>) => 
 }
 
 /** La pile de blocs de la zone de travail : chaque bloc se déplace d'un cran et se supprime, et les boutons d'ajout sont au bout. */
-export function BlockStack({ value, onChange, label = "Blocs de l'exercice", onSend, split = false, onToggleSplit, arrivedId = null }: {
+export function BlockStack({ value, onChange, label = "Blocs de l'exercice", onSend, sendTo, split = false, onToggleSplit, arrivedId = null }: {
   value: readonly unknown[]
   onChange: (blocs: Block[]) => void
   label?: string
   /** Présent quand l'exercice est scindé : envoie un bloc dans l'autre zone (câblé au clic droit). */
   onSend?: (id: string) => void
+  /** De quel côté est l'autre zone : sens de la flèche du bouton d'envoi de chaque bloc. */
+  sendTo?: 'left' | 'right'
   /** L'exercice est-il scindé ? Dit au clic droit sur le vide s'il faut proposer de scinder ou de réunir. */
   split?: boolean
   /** Scinder ou réunir les zones ; absent, le clic droit sur le vide ne le propose pas. */
@@ -223,6 +225,8 @@ export function BlockStack({ value, onChange, label = "Blocs de l'exercice", onS
                   onHaloEnd={() => setHalo(null)}
                   onMove={delta => move(block.id, delta)}
                   onRemove={() => onChange(removeBlock(blocks, block.id))}
+                  onSend={onSend === undefined ? undefined : () => onSend(block.id)}
+                  sendTo={sendTo}
                 >
                   {isKnown(block)
                     ? editorFor(block, patch => onChange(updateBlock(blocks, block.id, patch)), {
