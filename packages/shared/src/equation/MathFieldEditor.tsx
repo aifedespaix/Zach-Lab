@@ -122,6 +122,8 @@ export type MathfieldElement = HTMLElement & {
   selectionIsCollapsed?: boolean
   /** MathLive's `getValue(start, end)` — the LaTeX between two offsets, for splitting a line at the caret. */
   getValue?: (start?: number, end?: number) => string
+  /** MathLive's `hasFocus()`: true right after `focus()`, before the DOM focus follows (~60 ms later). */
+  hasFocus?: () => boolean
 }
 
 /** `move-out` parle en sens de lecture ; la description, en côtés. */
@@ -516,9 +518,9 @@ export function MathFieldEditor({
     fieldRef.current = field
     hideVirtualKeyboardToggle(field)
 
-    // Restores the caret this field is inheriting from the raw fallback it
-    // just replaced — see `upgradeToMathField`. Consumed once: a later remount
-    // (e.g. `ariaLabel` changing) has nothing pending.
+    // Restores the caret this field is inheriting — from the raw fallback it
+    // just replaced (see `upgradeToMathField`), or from the previous element of
+    // this same field, destroyed by the cleanup below. Consumed once.
     const caret = pendingCaretRef.current
     pendingCaretRef.current = null
     if (caret !== null) {
@@ -530,6 +532,16 @@ export function MathFieldEditor({
     }
 
     return () => {
+      // Replacing the element must not cost the user the caret. It happens in production when the
+      // label changes (lines renumbered after an insert or a delete), and in development on EVERY
+      // new field: `React.StrictMode` unmounts and remounts the effects of what just mounted, which
+      // destroyed the field `focusStart()` had just focused — « Entrée ne met pas le focus ».
+      // `document.activeElement` is the host itself for a focus inside its shadow root — but right
+      // after a programmatic `focus()` MathLive only MARKS the field focused (`hasFocus()`) and moves
+      // the DOM focus ~60 ms later, which is exactly when a new block's field is destroyed.
+      if (document.activeElement === field || field.hasFocus?.() === true) {
+        pendingCaretRef.current = typeof field.position === 'number' ? field.position : 0
+      }
       host.replaceChildren()
       fieldRef.current = null
     }

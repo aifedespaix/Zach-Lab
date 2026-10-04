@@ -1,7 +1,8 @@
 import { act, render } from '@testing-library/react'
-import { useState } from 'react'
+import { StrictMode, useEffect, useRef, useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { LinesBlockField } from './LinesBlockField'
+import { MathFieldEditor } from './MathFieldEditor'
 import type { SubLine } from './lines'
 
 // Un `math-field` qui se comporte comme le vrai MathLive (0.110) pour le focus
@@ -19,8 +20,14 @@ vi.mock('mathlive', () => {
         connectedCallback() {
           this.tabIndex = 0
         }
+        focused = false
         focus() {
+          this.focused = true
           setTimeout(() => HTMLElement.prototype.focus.call(this), 60)
+        }
+        // Comme MathLive : vrai dès `focus()`, avant que le focus DOM ne suive.
+        hasFocus() {
+          return this.focused || document.activeElement === this
         }
         executeCommand() {
           return true
@@ -86,5 +93,74 @@ describe('LinesBlockField avec un vrai champ de formule (focus différé de Math
     await pressEnter(fields()[0])
     expect(fields()).toHaveLength(2)
     expect(document.activeElement).toBe(fields()[1])
+  })
+})
+
+// `main.tsx` des apps monte tout sous `<React.StrictMode>` : en développement React y montre chaque
+// composant, nettoie ses effets, puis les rejoue. Le champ de la nouvelle ligne, tout juste focalisé,
+// était donc détruit et recréé sans focus : « Entrée ne met pas le focus sur la ligne suivante ».
+describe('sous React.StrictMode (le double montage des effets, en développement)', () => {
+  beforeEach(() => vi.useFakeTimers())
+  afterEach(() => {
+    vi.clearAllTimers()
+    vi.useRealTimers()
+  })
+
+  it('Entrée garde le focus dans la nouvelle ligne malgré le démontage-remontage de son champ', async () => {
+    render(
+      <StrictMode>
+        <Harness initial={[L('a', '1+1')]} />
+      </StrictMode>
+    )
+    await act(async () => {})
+    await act(async () => {})
+    HTMLElement.prototype.focus.call(fields()[0])
+    await pressEnter(fields()[0])
+    expect(fields()).toHaveLength(2)
+    expect(document.activeElement).toBe(fields()[1])
+  })
+
+  it('un champ focalisé dont le libellé change (lignes renumérotées) garde le focus', async () => {
+    function Labelled({ label }: { label: string }) {
+      return <MathFieldEditor latex="x" onChange={() => {}} ariaLabel={label} fallback={<input />} />
+    }
+    const { rerender } = render(<Labelled label="Ligne 1 du calcul" />)
+    await act(async () => {})
+    await act(async () => {})
+    HTMLElement.prototype.focus.call(fields()[0])
+    expect(document.activeElement).toBe(fields()[0])
+    rerender(<Labelled label="Ligne 2 du calcul" />)
+    await act(async () => {})
+    expect(fields()).toHaveLength(1)
+    expect(document.activeElement).toBe(fields()[0])
+  })
+
+
+  it('un bloc qu\'on vient de créer garde le focus que son parent lui donne (focus différé de MathLive)', async () => {
+    // MathLive est déjà chargé dans la session : le champ naît tout de suite, dans l'effet du composant.
+    const warm = render(<MathFieldEditor latex="" onChange={() => {}} ariaLabel="chauffe" fallback={<input />} />)
+    await act(async () => {})
+    await act(async () => {})
+    warm.unmount()
+
+    // Comme `BlockStack` pour un bloc ajouté : le PARENT, une seule fois (`toFocus`), appelle le
+    // `focus()` de MathLive — qui marque le champ focalisé mais ne déplace le focus DOM que 60 ms après.
+    function Creator() {
+      const done = useRef(false)
+      useEffect(() => {
+        if (done.current) return
+        done.current = true
+        fields()[0]?.focus()
+      }, [])
+      return <MathFieldEditor latex="" onChange={() => {}} ariaLabel="Ligne 1 du calcul" fallback={<input />} />
+    }
+    render(
+      <StrictMode>
+        <Creator />
+      </StrictMode>
+    )
+    await act(async () => {})
+    expect(fields()).toHaveLength(1)
+    expect(document.activeElement).toBe(fields()[0])
   })
 })
