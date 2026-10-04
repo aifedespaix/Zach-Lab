@@ -93,4 +93,46 @@ describe('tableLayout', () => {
     const cells = [['Distance (km)', 'Temps (h)'], ['10', '1']]
     expect(tableLayout(cells)).toEqual({ axis: 'columns', units: ['km', 'h'] })
   })
+
+  it('refuse une lettre seule d\'en-tête si ce ne sont pas toutes des unités : données vs en-têtes', () => {
+    // Taille | S | M | L | XL : L serait litres, mais S, M, XL ne sont pas des unités → aucune couleur
+    expect(tableLayout([['Taille', 'S', 'M', 'L', 'XL'], ['Effectif', '3', '5', '4', '2']])).toBeNull()
+    // Même table en colonnes (data par colonne)
+    expect(tableLayout([['Taille', 'Effectif'], ['S', '3'], ['M', '5'], ['L', '4'], ['XL', '2']])).toBeNull()
+    // Jour | L | M | M | J | V : L serait lundi, mais J et V ne sont pas des unités
+    expect(tableLayout([['Jour', 'L', 'M', 'M', 'J', 'V'], ['Effectif', '1', '2', '3', '4', '5']])).toBeNull()
+    // Lettre | a | e | m | s : m et s seraient mètre et seconde, mais a et e ne sont pas des unités
+    expect(tableLayout([['Lettre', 'a', 'e', 'm', 's'], ['Effectif', '1', '2', '3', '4']])).toBeNull()
+  })
+
+  it('accepte une lettre seule d\'en-tête que si TOUTES les voisines sont aussi des unités', () => {
+    // h et km : tous deux reconnus comme unités → coloration
+    expect(tableLayout([['', 'h', 'km'], ['a', '1', '2']])).toEqual({ axis: 'columns', units: [null, 'h', 'km'] })
+    // h et s : tous deux d\'un caractère et reconnus comme unités → coloration
+    expect(tableLayout([['', 'h', 's'], ['a', '1', '2']])).toEqual({ axis: 'columns', units: [null, 'h', 's'] })
+    // h seul, aucune voisine : accepté (vide n\'est pas une contradiction)
+    expect(tableLayout([['', 'h'], ['a', '1']])).toEqual({ axis: 'columns', units: [null, 'h'] })
+  })
+
+  it('refuse une lettre seule si au moins une voisine n\'est pas une unité', () => {
+    // h, Remarque : Remarque n\'est pas une unité → aucune couleur (prudence)
+    expect(tableLayout([['', 'h', 'Remarque'], ['a', '1', 'ok']])).toBeNull()
+  })
+
+  it('accepte les lettres dans des en-têtes lus entre parenthèses ou après « en »', () => {
+    // Temps (h) : h entre parenthèses, pas besoin de vérifier les voisines → coloration
+    expect(tableLayout([['Distance (km)', '10', '20'], ['Temps (h)', '1', '2']])).toEqual({
+      axis: 'rows',
+      units: ['km', 'h'],
+    })
+  })
+
+  it('accepte les lettres d\'un caractère qui ne sont pas des unités lues seules : multi-caractères', () => {
+    // m et kg : m seul serait mètre, mais ici c\'est passé par parseUnit donc accepté même seul
+    // kg n\'est jamais un problème (deux caractères)
+    expect(tableLayout([['', 'm', 'kg'], ['a', '1', '2']])).toEqual({
+      axis: 'columns',
+      units: [null, 'm', 'kg'],
+    })
+  })
 })

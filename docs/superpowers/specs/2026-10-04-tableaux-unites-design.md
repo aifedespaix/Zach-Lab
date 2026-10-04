@@ -1,8 +1,6 @@
 # Coloration des tableaux par unité d'en-tête (Zach'Math)
 
-Statut : à relire. Aucun code écrit pour cette fonctionnalité. Troisième aide de la même
-famille que la coloration des unités (`2026-10-04-coloration-unites-design.md`) et celle des
-termes semblables (`2026-10-04-termes-semblables-design.md`) : même bouton, même teinte par unité.
+Statut : implémenté (voir CLAUDE.md, point Tableaux).
 
 ## But
 
@@ -34,7 +32,12 @@ la colonne (ou toute la ligne) de la couleur de cette unité. Un tableau de prop
    `t (s)` donne `s`).
 4. Seules les colonnes (ou lignes) dont l'en-tête est une unité sont colorées ; les autres restent
    telles quelles.
-5. **Hors périmètre de cette version** : le tableau de Zachar't Mentale, les tableaux des cours
+5. **Garde contre les faux en-têtes** : une unité d'un seul caractère lue seule (pas entre parenthèses ou
+   après « en ») ne compte que si TOUTES les autres cellules d'en-tête NON VIDES du même axe (hors coin)
+   sont aussi des unités. Cela évite de colorer des colonnes comme `S | M | L | XL` où `L` serait litre,
+   ou des lignes comme `Jour | L | M | M | J | V` où `L` serait lundi et `M` mètres. Les unités multi-caractères
+   (`km`, `min`, `cm`) et celles lues entre parenthèses ou après « en » ne sont pas concernées.
+6. **Hors périmètre de cette version** : le tableau de Zachar't Mentale, les tableaux des cours
    Markdown, les unités écrites dans les cellules de données.
 
 ## Conception
@@ -106,8 +109,12 @@ Tout sous `apps/zachart-maths/src/exercises/`.
 ## Risques
 
 - **Faux en-têtes** : une première ligne « 3 | 5 » n'est pas un en-tête, mais « h | m » ou « g | s »
-  en est un. Garde-fou : on exige que la cellule soit **tout entière** une unité (ou finisse par une
-  unité entre parenthèses ou après « en »), jamais un nombre avec unité ; une lettre `t` seule est refusée.
+  seraient un en-tête si toutes les cellules voisines étaient aussi des unités. Garde-fou : on exige que la
+  cellule soit **tout entière** une unité (ou finisse par une unité entre parenthèses ou après « en »), jamais
+  un nombre avec unité ; une lettre `t` seule est refusée. Une unité d'une lettre lue seule (`h`, `m`, `s`)
+  ne compte que si **tous** les autres en-têtes du même axe (hors coin) en sont aussi (voir règle 5,
+  « Garde contre les faux en-têtes »). Tests : `Taille | S | M | L | XL` et `Jour | L | M | M | J | V` →
+  `null` (pas une coloration inattendue).
 - **Ordre d'attribution** : un tableau qui apporte une unité nouvelle peut décaler la teinte d'une unité
   qui apparaît après lui dans la lecture. Accepté, comme pour les textes.
 - **Fond inline sur `<input>`** : à vérifier visuellement avec le thème sombre, où `toneOf` se mélange à

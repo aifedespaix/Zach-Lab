@@ -175,7 +175,7 @@ under `src/`, wired together in `App.tsx`:
   `field-sizing: content`, `overflow-y: auto`, `resize: none` (il grandit au lieu de défiler) et son défilement
   est recopié sur le miroir en repli. Les `<mark>` n'ajoutent aucune métrique et ont `color: transparent`. Un `t`
   seul n'est jamais une unité (c'est aussi une inconnue) : `2t` n'est pas coloré, seul `2 t` (avec espace) =
-  tonnes. Les formules MathLive, les tableaux et les cours ne sont pas colorés. Réglage : bouton
+  tonnes. Le texte des cellules de tableau, les formules MathLive et les cours ne sont pas colorés (le fond d'un tableau suit son en-tête : voir Tableaux). Réglage : bouton
   `view.toggleUnitColors` de la barre du haut, clé `localStorage` `zachart-maths:unit-colors`, activé par défaut.
 - **Termes semblables** (`likeTerms.ts`, `termColors.ts`, `LikeTermsHelp.tsx`) : `colorTerms(latex)` découpe un
   membre aux `+`/`−` de premier niveau en segments `{ text, group }` (`group` = partie littérale `x`, `xy`, `x^2` ;
@@ -190,10 +190,14 @@ under `src/`, wired together in `App.tsx`:
   `16 km` n'en est pas un ; `t` seul refusé, `t (s)` donne `s`) ; `tableLayout(cells)` cherche d'abord sur la première
   ligne (coin exclu), à défaut sur la première colonne, la première ligne l'emporte. Le coin ne décide pas de l'axe,
   mais une fois l'axe retenu il en fait partie et porte son unité s'il en a une (`units[0] = headerUnit(coin)` ; un
-  titre comme `Grandeur` reste `null`). `TableEditor` pose un fond inline (`toneOf`, `headerToneOf` pour l'en-tête) sur
-  les `<input>` de la colonne ou ligne concernée, avec la teinte de `UnitHuesContext` ; `assignExerciseHues` donne une
-  teinte aux unités d'en-tête (même d'une lettre). Même bouton que les unités et les termes ; rien dans
-  `packages/shared`, `TableGrid` ne change.
+  titre comme `Grandeur` reste `null`). **Garde contre les faux en-têtes** : une unité d'un seul caractère lue seule (via
+  `parseUnit`, pas entre parenthèses ou après « en ») ne compte que si TOUTES les autres cellules d'en-tête NON VIDES du
+  même axe (hors coin) sont aussi des unités ; sinon elle vaut `null`. Cela évite de colorer `S | M | L | XL` (L serait
+  litres) et `Jour | L | M | M | J | V` (L lundi, M mardi, mais J et V ne sont pas des unités). Les unités multi-caractères
+  (`km`, `min`) et celles en parenthèses (`Temps (h)`) n'en sont pas concernées. `TableEditor` pose un fond inline
+  (`toneOf`, `headerToneOf` pour l'en-tête) sur les `<input>` de la colonne ou ligne concernée, avec la teinte de
+  `UnitHuesContext` ; `assignExerciseHues` donne une teinte aux unités d'en-tête (même d'une lettre si la garde passe).
+  Même bouton que les unités et les termes ; rien dans `packages/shared`, `TableGrid` ne change.
 - **`math/`** — `isMathField` (the toolbar's target check); MathLive itself and `renderMathToHtml` come from `@suite/shared`.
 - **`cours/`** — courses are Markdown files in `cours/contenu/` (front matter `titre`,
   `chapitre`, `mots-cles`), compiled in with `import.meta.glob`; adding a course is adding a
