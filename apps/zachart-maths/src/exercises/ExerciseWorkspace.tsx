@@ -1,3 +1,4 @@
+import { spacing, useCompact } from './useCompact'
 import { useEffect, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight, Columns2, Plus, Trash2 } from 'lucide-react'
 import { Button, ConfirmDialog } from '@suite/shared/ui'
@@ -29,6 +30,7 @@ const field = 'rounded border bg-background px-2 py-1 text-sm'
 
 /** La zone centrale : l'exercice ouvert, de son titre jusqu'à la réponse finale. */
 export function ExerciseWorkspace() {
+  const compact = useCompact(state => state.enabled)
   const { exercise, sheet, status } = useOpenExercise()
   const edit = useOpenExercise(s => s.edit)
   const editTitle = useOpenExercise(s => s.editTitle)
@@ -138,7 +140,8 @@ export function ExerciseWorkspace() {
     setArrived({ zone: from === 'a' ? 'b' : 'a', id })
   }
 
-  const zone = { minWidth: 0, minHeight: 0, overflowY: 'auto', padding: 16, background: 'var(--background)' } as const
+  const space = spacing(compact)
+  const zone = { minWidth: 0, minHeight: 0, overflowY: 'auto', padding: space.zone, background: 'var(--background)' } as const
 
   return (
     <SymbolInsertContext value={insertSymbol}>
@@ -146,7 +149,7 @@ export function ExerciseWorkspace() {
     <section aria-label="Exercice" onFocus={rememberField} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <header
         style={{
-          display: 'flex', flexDirection: 'column', gap: 8, padding: 12,
+          display: 'flex', flexDirection: 'column', gap: compact ? 4 : 8, padding: space.header,
           background: 'color-mix(in oklab, #3b82f6 18%, var(--background))', borderBottom: '2px solid #3b82f6',
         }}
       >
@@ -256,7 +259,7 @@ export function ExerciseWorkspace() {
 
       <footer
         aria-label="Zone de réponse"
-        style={{ padding: 12, background: 'color-mix(in oklab, #3b82f6 18%, var(--background))', borderTop: '2px solid #3b82f6' }}
+        style={{ padding: space.footer, background: 'color-mix(in oklab, #3b82f6 18%, var(--background))', borderTop: '2px solid #3b82f6' }}
       >
         <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }} htmlFor="reponse-finale">
           Réponse

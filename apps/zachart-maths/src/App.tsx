@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BookOpen, Download, ChevronsDownUp, FolderPlus, Highlighter, Keyboard, Moon, NotebookPen, Search, Settings as SettingsIcon, Shapes } from 'lucide-react'
+import { BookOpen, Download, ChevronsDownUp, FolderPlus, Highlighter, Keyboard, Minus, Moon, Plus, Rows3, NotebookPen, Search, Settings as SettingsIcon, Shapes } from 'lucide-react'
 import {
   CommandButton,
   CommandPalette,
@@ -19,6 +19,8 @@ import { ExerciseTree } from './exercises/ExerciseTree'
 import { ExerciseWorkspace } from './exercises/ExerciseWorkspace'
 import { SheetOutline } from './exercises/SheetOutline'
 import { ToolbarSettingsPanel } from './exercises/ToolbarSettingsPanel'
+import { useCompact } from './exercises/useCompact'
+import { useZoom } from './exercises/useZoom'
 import { useUnitColors } from './exercises/useUnitColors'
 import { useToolbarFamilies } from './exercises/useToolbarFamilies'
 import './exercises/useOpenExercise'
@@ -71,6 +73,15 @@ export default function App() {
   const unitColors = useUnitColors(state => state.enabled)
   useCommand('app.palette', () => setPaletteOpen(true))
   useCommand('app.settings', () => setSettingsOpen(true))
+  const compact = useCompact(state => state.enabled)
+  const zoom = useZoom(state => state.percent)
+  useEffect(() => {
+    document.documentElement.style.zoom = zoom === 100 ? '' : `${zoom}%`
+  }, [zoom])
+  useCommand('view.toggleCompact', () => useCompact.getState().toggle())
+  useCommand('view.zoomOut', () => useZoom.getState().zoomOut())
+  useCommand('view.zoomIn', () => useZoom.getState().zoomIn())
+  useCommand('view.zoomReset', () => useZoom.getState().reset())
   useCommand('view.toggleUnitColors', () => useUnitColors.getState().toggle())
   useCommand('app.toggleTheme', () => {
     startCircularThemeTransition({
@@ -124,6 +135,18 @@ export default function App() {
             <CommandButton command="cours.search" icon={BookOpen} variant="ghost" size="icon-sm" />
             <CommandButton command="notes.toggle" icon={NotebookPen} variant="ghost" size="icon-sm" />
             <CommandButton command="view.toggleUnitColors" icon={Highlighter} variant={unitColors ? 'secondary' : 'ghost'} size="icon-sm" />
+            <CommandButton command="view.toggleCompact" icon={Rows3} variant={compact ? 'secondary' : 'ghost'} size="icon-sm" />
+            <div role="group" aria-label="Zoom" style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <CommandButton command="view.zoomOut" icon={Minus} variant="ghost" size="icon-sm" />
+              <button
+                type="button"
+                aria-label="Zoom à 100 %"
+                title="Remettre le zoom à 100 %"
+                onClick={() => useZoom.getState().reset()}
+                style={{ minWidth: 44, fontSize: 12, fontVariantNumeric: 'tabular-nums' }}
+              >{zoom} %</button>
+              <CommandButton command="view.zoomIn" icon={Plus} variant="ghost" size="icon-sm" />
+            </div>
             <CommandButton command="app.toggleTheme" icon={Moon} variant="ghost" size="icon-sm" />
             <CommandButton command="app.settings" icon={SettingsIcon} variant="ghost" size="icon-sm" />
           </>

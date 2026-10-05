@@ -12,6 +12,7 @@ import { FieldContextMenu } from './FieldContextMenu'
 import { HighlightedTextarea, UnitHuesContext } from './HighlightedTextarea'
 import { borderOf, headerToneOf, toneOf } from './toolbarCatalog'
 import { tableLayout } from './tableUnits'
+import { spacing, useCompact } from './useCompact'
 import { useUnitColors } from './useUnitColors'
 import {
   BLOCK_TYPES, newBlock, addColumn, addRow, canGrow, convertBlock, duplicateBlock, insertBlockAfter, isKnown, moveBlock, parseBlocks,
@@ -131,6 +132,7 @@ export function BlockStack({ value, onChange, label = "Blocs de l'exercice", onS
   /** Le bloc qui vient de l'autre zone : fondu d'entrée, halo et curseur. */
   arrivedId?: string | null
 }) {
+  const compact = useCompact(state => state.enabled)
   const blocks = useMemo(() => parseBlocks(value), [value])
   const toFocus = useRef<string | null>(arrivedId)
   const reduced = useReducedMotion()
@@ -189,7 +191,7 @@ export function BlockStack({ value, onChange, label = "Blocs de l'exercice", onS
     <EmptyAreaContextMenu onAdd={add} split={split} onToggleSplit={onToggleSplit}>
     {/* `minHeight: 100%` : le clic droit sur le blanc sous les blocs, jusqu'au bas de la zone, ouvre le menu du vide. */}
     <div data-testid="zone-vide" style={{ minHeight: '100%' }}>
-      <ul aria-label={label} style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <ul aria-label={label} style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: spacing(compact).stackGap }}>
         {blocks.map((block, i) => (
           <motion.li
             key={block.id}

@@ -1,3 +1,4 @@
+import { spacing, useCompact } from './useCompact'
 import type { ReactNode } from 'react'
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, HelpCircle, Trash2 } from 'lucide-react'
 import { Button } from '@suite/shared/ui'
@@ -25,6 +26,7 @@ interface BlockCardProps {
  * le contenu. La gouttière est discrète tant qu'on ne survole ni ne focalise la carte.
  */
 export function BlockCard({ block, index, count, onMove, onRemove, onSend, sendTo = 'right', halo, onHaloEnd, children }: BlockCardProps) {
+  const compact = useCompact(state => state.enabled)
   const meta = isKnown(block) ? BLOCK_META[block.type] : null
   const label = meta?.label ?? 'Bloc inconnu'
   const Icon = meta?.icon ?? HelpCircle
@@ -56,7 +58,7 @@ export function BlockCard({ block, index, count, onMove, onRemove, onSend, sendT
         )}
         <Button variant="ghost" size="icon-sm" aria-label="Supprimer le bloc" onClick={onRemove}><Trash2 /></Button>
       </div>
-      <div style={{ flex: 1, minWidth: 0, padding: 8 }}>{children}</div>
+      <div style={{ flex: 1, minWidth: 0, padding: spacing(compact).cardPad }}>{children}</div>
     </section>
   )
 }
