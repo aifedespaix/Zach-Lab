@@ -1,0 +1,74 @@
+name: publish-manual
+
+# Le bouton « Run workflow » (onglet Actions, ou l'app GitHub mobile) : bumpe la
+# version de l'app choisie, commit sur main, pose le tag, puis lance `release.yml`
+# sur ce tag. Équivalent de `bun run deploy`, sans machine locale.
+# `bump` = none : publie la version DÉJÀ dans le code (pose juste le tag).
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: 'App à publier'
+        type: choice
+        required: true
+        options: [zachart-maths, zachart-mentale, base]
+      bump:
+        description: 'Type de version (none = garder la version actuelle du code)'
+        type: choice
+        required: true
+        default: patch
+        options: [patch, minor, major, none]
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  tag-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: only from main
+        if: github.ref != 'refs/heads/main'
+        run: echo "::error::Lance ce workflow depuis la branche main." && exit 1
+
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: bump the version
+        if: inputs.bump != 'none'
+        run: bun scripts/bump-version.mjs "${{ inputs.app }}" "${{ inputs.bump }}"
+
+      - name: commit and tag
+        id: tag
+        shell: bash
+        run: |
+          case "${{ inputs.app }}" in
+            zachart-mentale) prefix=zachart ;;
+            *) prefix="${{ inputs.app }}" ;;
+          esac
+          version=$(node -p "require('./apps/${{ inputs.app }}/src-tauri/tauri.conf.json').version")
+          tag="$prefix-v$version"
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null 2>&1; then
+            echo "::error::Le tag $tag existe déjà : choisis un type de version qui l'incrémente."
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain)" ]; then
+            git add -u
+            git commit -m "chore(${{ inputs.app }}): bump version to $version"
+            git push origin HEAD:main
+          fi
+          git tag "$tag"
+          git push origin "$tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      # Un tag poussé avec GITHUB_TOKEN ne déclenche pas `release.yml` tout seul :
+      # on le lance explicitement sur le tag.
+      - name: start the release build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run release.yml --ref "${{ steps.tag.outputs.tag }}"

@@ -10,6 +10,9 @@ on:
       - 'zachart-v*'
       - 'base-v*'
       - 'zachart-maths-v*'
+  # Lancé sur un tag par `publish-manual.yml` (un tag posé par un workflow ne
+  # déclenche pas `push`) : GITHUB_REF_NAME est alors ce tag.
+  workflow_dispatch:
 
 jobs:
   publish-tauri:

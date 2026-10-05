@@ -37,6 +37,10 @@ bun run deploy all patch --yes --dry-run        # --dry-run : montre le plan san
 les tags. **Seul le tag lance la construction** : un simple push sur `main` ne
 construit rien (`build.yml` ne tourne que sur les PR et à la demande).
 
+**Sans machine locale** : onglet Actions → « publish-manual » → *Run workflow* (aussi dans l'app GitHub
+mobile). On choisit l'app et `patch` / `minor` / `major` (ou `none` pour publier la version déjà dans le
+code) ; le workflow bumpe, commit sur `main`, pose le tag et lance `release.yml` dessus. À lancer depuis `main`.
+
 Les étapes à la main, si besoin :
 
 ```bash
