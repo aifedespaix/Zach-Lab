@@ -75,3 +75,12 @@ describe('blocsB à la lecture', () => {
     expect(validateSheet(file({ blocsB: [] }))!.exercices[0].blocsB).toEqual([])
   })
 })
+
+describe('corrige', () => {
+  const raw = (corrige: unknown) => ({ version: 2, id: 's', titre: 'T', exercices: [{ id: 'a', enonce: 'x', corrige }] })
+  it('ne garde que `true`', () => {
+    expect(validateSheet(raw(true))?.exercices[0].corrige).toBe(true)
+    expect(validateSheet(raw(false))?.exercices[0]).not.toHaveProperty('corrige')
+    expect(validateSheet(raw('oui'))?.exercices[0]).not.toHaveProperty('corrige')
+  })
+})

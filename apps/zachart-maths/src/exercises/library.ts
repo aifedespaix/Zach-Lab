@@ -1,6 +1,7 @@
 import type { ExerciseFs } from './fsPort'
 import { EXERCISE_EXT, ORDER_FILE, joinPath, safeName, splitPath, uniqueName } from './names'
-import { newSheet, validateSheet, type ChapterNode, type ExerciseEntry, type Sheet } from './types'
+import { NO_CORRECTION, summarizeSheet } from './correction'
+import { newSheet, validateSheet, type ChapterNode, type Exercise, type ExerciseEntry, type Sheet } from './types'
 
 /** Demandé par l'élève : un nom qui ne donne aucun nom de fichier utilisable. */
 export class InvalidNameError extends Error {
@@ -72,6 +73,7 @@ export async function loadTree(fs: ExerciseFs): Promise<ChapterNode[]> {
         path,
         titre: sheet?.titre ?? file.slice(0, -EXERCISE_EXT.length),
         exercices: sheet?.exercices.length ?? 0,
+        ...(sheet === null ? NO_CORRECTION : summarizeSheet(sheet)),
         corrompu: sheet === null,
       })
     }
@@ -184,4 +186,29 @@ export async function moveChapter(fs: ExerciseFs, chapter: string, index: number
   const order = (await chapterNames(fs)).filter(n => n !== chapter)
   order.splice(index, 0, chapter)
   await writeOrder(fs, '', order)
+}
+
+/** Un exercice corrigé, tel que le mode révision le liste. */
+export interface ReviewItem {
+  path: string
+  chapter: string
+  sheetTitle: string
+  /** Son numéro dans la fiche (1…). */
+  position: number
+  exercise: Exercise
+}
+
+/** Tous les exercices marqués corrigés de la bibliothèque, le plus récemment corrigé d'abord. */
+export async function loadReviewItems(fs: ExerciseFs): Promise<ReviewItem[]> {
+  const items: ReviewItem[] = []
+  for (const chapter of await chapterNames(fs)) {
+    for (const file of await exerciseFiles(fs, chapter)) {
+      const path = joinPath(chapter, file)
+      const sheet = await readSheet(fs, path)
+      sheet?.exercices.forEach((exercise, i) => {
+        if (exercise.corrige === true) items.push({ path, chapter, sheetTitle: sheet.titre, position: i + 1, exercise })
+      })
+    }
+  }
+  return items.sort((a, b) => (b.exercise.corrigeLe ?? '').localeCompare(a.exercise.corrigeLe ?? ''))
 }
