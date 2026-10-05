@@ -1,6 +1,7 @@
-import type { ComponentProps } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import { PanelLeftOpen, PanelRightOpen } from 'lucide-react'
-import { CommandButton } from '../commands'
+import { CommandButton, formatBinding, runCommand, useBinding } from '../commands'
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui'
 import type { PanelSide } from './usePanelResize'
 
 interface CollapsedRailProps extends Omit<ComponentProps<'div'>, 'children'> {
@@ -10,30 +11,80 @@ interface CollapsedRailProps extends Omit<ComponentProps<'div'>, 'children'> {
   command: string
   /** The button's accessible name, e.g. « Déplier le panneau des fiches ». */
   label: string
+  /**
+   * Text of the folded panel, written vertically. Given, the whole rail is ONE button that unfolds the
+   * panel; absent, the rail is a bare strip holding a small unfold button.
+   */
+  children?: ReactNode
 }
 
 /**
- * The 32px strip a folded side panel leaves behind: one button that unfolds it.
+ * The strip a folded side panel leaves behind.
  *
- * Bottom-aligned so folding and unfolding does not make the control jump to another corner of
- * the screen. Extra props go to the strip itself, so an app can hang a `data-testid` on it.
+ * Without `children`: 32px, one button, bottom-aligned so folding and unfolding does not make the
+ * control jump to another corner of the screen. With `children`: the strip itself is the button, full
+ * height, its text turned 90° and centred; it stays on one line and only wraps into a second column
+ * when the height runs out. Extra props go to the strip, so an app can hang a `data-testid` on it.
  */
-export function CollapsedRail({ side, command, label, style, ...rest }: CollapsedRailProps) {
+export function CollapsedRail({ side, command, label, children, style, ...rest }: CollapsedRailProps) {
+  const binding = useBinding(command)
+  const Icon = side === 'left' ? PanelLeftOpen : PanelRightOpen
+  const edge = side === 'left' ? { borderRight: '1px solid var(--border)' } : { borderLeft: '1px solid var(--border)' }
+
+  if (children === undefined) {
+    return (
+      <div
+        {...rest}
+        style={{ width: 32, flexShrink: 0, display: 'flex', justifyContent: 'center', alignItems: 'flex-end', paddingBottom: 8, ...edge, ...style }}
+      >
+        <CommandButton command={command} icon={Icon} label={label} variant="ghost" size="icon-sm" />
+      </div>
+    )
+  }
+
+  const shortcut = formatBinding(binding)
   return (
-    <div
-      {...rest}
-      style={{
-        width: 32,
-        flexShrink: 0,
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'flex-end',
-        paddingBottom: 8,
-        ...(side === 'left' ? { borderRight: '1px solid var(--border)' } : { borderLeft: '1px solid var(--border)' }),
-        ...style,
-      }}
-    >
-      <CommandButton command={command} icon={side === 'left' ? PanelLeftOpen : PanelRightOpen} label={label} variant="ghost" size="icon-sm" />
+    <div {...rest} style={{ flex: 1, display: 'flex', minWidth: 0, ...style }}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            aria-label={label}
+            aria-keyshortcuts={binding ?? undefined}
+            onClick={() => runCommand(command)}
+            className="hover:bg-accent focus-visible:bg-accent focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+            style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '8px 0', cursor: 'pointer', transition: 'background-color 120ms ease' }}
+          >
+            <Icon size={16} aria-hidden style={{ flexShrink: 0 }} />
+            <span
+              style={{
+                flex: 1,
+                minHeight: 0,
+                maxWidth: '100%',
+                writingMode: 'vertical-rl',
+                // Left rail reads bottom-to-top, right rail top-to-bottom.
+                transform: side === 'left' ? 'rotate(180deg)' : undefined,
+                // Centred along the line (the vertical axis) and between the lines.
+                textAlign: 'center',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 13,
+                lineHeight: 1.3,
+                overflow: 'hidden',
+              }}
+            >
+              <span>{children}</span>
+            </span>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side={side === 'left' ? 'right' : 'left'}>
+          <span>
+            {label}
+            {shortcut && <span style={{ opacity: 0.7, marginLeft: 8 }}>{shortcut}</span>}
+          </span>
+        </TooltipContent>
+      </Tooltip>
     </div>
   )
 }

@@ -17,7 +17,7 @@ import { HighlightedTextarea, UnitHuesContext } from './HighlightedTextarea'
 import { insertAtCursor, isTextField, type TextField } from './insertAtCursor'
 import { isMathField, type MathfieldElement } from '../math/mathFieldElement'
 import { splitPath } from './names'
-import { isBlank } from './sheet'
+import { exerciseStatus, isBlank, type Status } from './sheet'
 import { Toolbar, type InsertTarget } from './Toolbar'
 import type { SymbolEntry } from './toolbarCatalog'
 import { useExerciseStore } from './useExerciseStore'
@@ -32,6 +32,15 @@ const STATUS_TEXT = {
   saving: 'Enregistrement…',
   failed: "L'enregistrement a échoué : tes dernières modifications ne sont pas sur le disque.",
 } as const
+
+/** L'état affiché à côté de « Réponse » ; un exercice vierge n'en a pas. Les couleurs sont celles des boutons du pied. */
+const CORRECTION_STATE: Record<Status, { text: string; className: string } | null> = {
+  vide: null,
+  'en-cours': { text: 'À corriger', className: 'bg-blue-500/15 text-blue-600 dark:text-blue-400' },
+  fait: { text: 'À corriger', className: 'bg-blue-500/15 text-blue-600 dark:text-blue-400' },
+  corrige: { text: 'Corrigé', className: 'bg-green-500/15 text-green-600 dark:text-green-400' },
+  revoir: { text: 'À revoir', className: 'bg-orange-500/15 text-orange-600 dark:text-orange-400' },
+}
 
 const GREEN = '#22c55e'
 const ORANGE = '#f97316'
@@ -188,6 +197,7 @@ export function ExerciseWorkspace() {
   const corrected = exercise.corrige === true
   const toReview = corrected && exercise.rate === true
   const accent = toReview ? ORANGE : GREEN
+  const correctionState = CORRECTION_STATE[exerciseStatus(exercise)]
   // Une teinte par unité pour tout l'exercice : un champ la consulte, il ne parcourt pas l'exercice.
   const unitHues = assignExerciseHues(exercise)
 
@@ -321,9 +331,20 @@ export function ExerciseWorkspace() {
             : { padding: space.footer, background: 'color-mix(in oklab, #3b82f6 18%, var(--background))', borderTop: '2px solid #3b82f6' }),
         } as unknown as React.CSSProperties}
       >
-        <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }} htmlFor="reponse-finale">
-          Réponse
-        </label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <label style={{ fontSize: 12, fontWeight: 600 }} htmlFor="reponse-finale">
+            Réponse
+          </label>
+          {correctionState !== null && (
+            <span
+              data-testid="correction-state"
+              className={correctionState.className}
+              style={{ fontSize: 11, fontWeight: 600, padding: '1px 8px', borderRadius: 999 }}
+            >
+              {correctionState.text}
+            </span>
+          )}
+        </div>
         <FieldContextMenu kind="text">
           <HighlightedTextarea
             id="reponse-finale"

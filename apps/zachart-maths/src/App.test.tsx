@@ -24,6 +24,9 @@ vi.mock('@tauri-apps/api/path', () => ({
 
 import App from './App'
 
+/** Un panneau rangé reste monté (sa largeur s'anime) : il a perdu sa poignée de redimensionnement. */
+const isFolded = (name: string) => screen.getByRole('complementary', { name }).querySelector('[role="separator"]') === null
+
 describe('App base', () => {
   beforeEach(() => {
     localStorage.clear()
@@ -69,9 +72,9 @@ describe('App base', () => {
     render(<App />)
     await act(async () => {})
     await user.click(await screen.findByRole('button', { name: "Replier l'arborescence" }))
-    expect(screen.queryByRole('complementary', { name: 'Panneau gauche' })).toBeNull()
+    expect(isFolded('Panneau gauche')).toBe(true)
     await user.click(screen.getByRole('button', { name: "Déplier l'arborescence" }))
-    expect(screen.getByRole('complementary', { name: 'Panneau gauche' })).toBeInTheDocument()
+    expect(isFolded('Panneau gauche')).toBe(false)
   })
 
   it('le bouton « Nouveau chapitre » du pied ouvre le champ de nom', async () => {
@@ -87,9 +90,9 @@ describe('App base', () => {
     render(<App />)
     await act(async () => {})
     await user.keyboard('{Control>}b{/Control}')
-    expect(screen.queryByRole('complementary', { name: 'Panneau gauche' })).toBeNull()
+    expect(isFolded('Panneau gauche')).toBe(true)
     await user.keyboard('{Control>}b{/Control}')
-    expect(screen.getByRole('complementary', { name: 'Panneau gauche' })).toBeInTheDocument()
+    expect(isFolded('Panneau gauche')).toBe(false)
   })
 
   it('Ctrl+Maj+B range le panneau des cours, indépendamment de celui de gauche', async () => {
@@ -97,10 +100,10 @@ describe('App base', () => {
     render(<App />)
     await act(async () => {})
     await user.keyboard('{Control>}{Shift>}b{/Shift}{/Control}')
-    expect(screen.queryByRole('complementary', { name: 'Panneau droit' })).toBeNull()
+    expect(isFolded('Panneau droit')).toBe(true)
     expect(screen.getByRole('complementary', { name: 'Panneau gauche' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Déplier le panneau des cours' }))
-    expect(screen.getByRole('complementary', { name: 'Panneau droit' })).toBeInTheDocument()
+    expect(isFolded('Panneau droit')).toBe(false)
   })
 
   it("l'état rangé d'un panneau est retenu au lancement suivant", async () => {
@@ -111,7 +114,7 @@ describe('App base', () => {
     unmount()
     render(<App />)
     await act(async () => {})
-    expect(screen.queryByRole('complementary', { name: 'Panneau gauche' })).toBeNull()
+    expect(isFolded('Panneau gauche')).toBe(true)
   })
 
   it('n\'affiche pas de bannière de mise à jour quand il n\'y en a pas', async () => {

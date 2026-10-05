@@ -20,6 +20,7 @@ import { ExerciseWorkspace } from './exercises/ExerciseWorkspace'
 import { ReviewDialog } from './exercises/ReviewDialog'
 import { useCorrectionView } from './exercises/useCorrectionView'
 import { SheetOutline } from './exercises/SheetOutline'
+import { TreeRailLabel } from './exercises/TreeRailLabel'
 import { ToolbarSettingsPanel } from './exercises/ToolbarSettingsPanel'
 import { useCompact } from './exercises/useCompact'
 import { useZoom } from './exercises/useZoom'
@@ -113,6 +114,8 @@ export default function App() {
             toggleCommand="view.toggleTree"
             foldLabel="Replier l'arborescence"
             unfoldLabel="Déplier l'arborescence"
+            railContent={<TreeRailLabel />}
+            railWidth={40}
             footer={
               <>
                 <CommandButton command="tree.newChapter" icon={FolderPlus} variant="ghost" size="icon-sm" />
@@ -135,6 +138,7 @@ export default function App() {
             toggleCommand="view.toggleCourses"
             foldLabel="Replier le panneau des cours"
             unfoldLabel="Déplier le panneau des cours"
+            railContent="Afficher les cours"
           >
             <CoursePanel />
           </CollapsiblePanel>

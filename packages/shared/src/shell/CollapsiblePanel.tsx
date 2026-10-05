@@ -23,15 +23,20 @@ interface CollapsiblePanelProps {
   unfoldLabel: string
   /** The app's own footer actions, shown before the fold button. */
   footer?: ReactNode
+  /** What the folded rail says, written vertically — the open sheet and its counts, say. Defaults to `unfoldLabel`. */
+  railContent?: ReactNode
+  /** Width of the folded rail, 32 by default; a rail whose text may need two columns takes more. */
+  railWidth?: number
   children?: ReactNode
 }
 
 /**
- * A `ResizablePanel` that can be folded to a 32px rail and brought back.
+ * A `ResizablePanel` that folds to a rail and unfolds back, animated.
  *
- * The command is registered BEFORE the folded early-return: folding the panel away must not take
- * the very shortcut that unfolds it. The panel's width needs no care here — `ResizablePanel`
- * saves it as it changes and reads it back when it mounts again.
+ * The panel stays mounted when folded (its width animates, the content fades into the rail), so its
+ * content is `inert` meanwhile: no focus, no tab stop. The command is registered whatever the state,
+ * so the shortcut that folds the panel is the one that unfolds it. The panel's width needs no care
+ * here — `ResizablePanel` keeps it while folded.
  *
  * The fold button lives in the panel's footer (after the app's `footer` actions); the folded rail
  * carries the unfold one.
@@ -46,14 +51,27 @@ export function CollapsiblePanel({
   foldLabel,
   unfoldLabel,
   footer,
+  railContent,
+  railWidth,
   children,
 }: CollapsiblePanelProps) {
   const [collapsed, setCollapsed] = usePanelCollapsed(collapsedKey)
   useCommand(toggleCommand, () => setCollapsed(current => !current), true, collapsed ? unfoldLabel : foldLabel)
 
-  if (collapsed) return <CollapsedRail side={side} command={toggleCommand} label={unfoldLabel} />
   return (
-    <ResizablePanel side={side} label={label} resizeLabel={resizeLabel} storage={storage}>
+    <ResizablePanel
+      side={side}
+      label={label}
+      resizeLabel={resizeLabel}
+      storage={storage}
+      collapsed={collapsed}
+      railWidth={railWidth}
+      rail={
+        <CollapsedRail side={side} command={toggleCommand} label={unfoldLabel}>
+          {railContent ?? unfoldLabel}
+        </CollapsedRail>
+      }
+    >
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>{children}</div>
         <PanelFooter label={`Actions — ${label}`}>
