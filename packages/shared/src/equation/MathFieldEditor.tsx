@@ -449,6 +449,7 @@ export function MathFieldEditor({
     // champ.
     field.setAttribute('math-virtual-keyboard-policy', 'manual')
     field.style.width = '100%'
+    field.style.overscrollBehaviorX = 'contain'
     field.value = latex
     field.addEventListener('input', () => onChangeRef.current(field.value))
     // Capture, pas bulle : MathLive écoute lui-même `keydown` en phase de

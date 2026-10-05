@@ -171,7 +171,7 @@ export function ExerciseWorkspace() {
   }
 
   const space = spacing(compact)
-  const zone = { minWidth: 0, minHeight: 0, overflowY: 'auto', padding: space.zone, background: 'var(--background)' } as const
+  const zone = { minWidth: 0, minHeight: 0, overflowY: 'auto', overflowX: 'clip', overscrollBehaviorX: 'contain', padding: space.zone, background: 'var(--background)' } as const
 
   return (
     <SymbolInsertContext value={insertSymbol}>
@@ -256,7 +256,7 @@ export function ExerciseWorkspace() {
         <div
           style={{
             flex: 1, minWidth: 0, minHeight: 0, display: 'grid',
-            gridTemplateColumns: split ? '1fr 1fr' : '1fr', gap: split ? 1 : 0, background: split ? 'var(--border)' : undefined,
+            gridTemplateColumns: split ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', gap: split ? 1 : 0, background: split ? 'var(--border)' : undefined,
           }}
         >
           <div role="group" aria-label={split ? 'Zone de travail de gauche' : 'Zone de travail'} style={zone}>

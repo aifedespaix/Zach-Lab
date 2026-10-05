@@ -81,7 +81,11 @@ export default function App() {
   const compact = useCompact(state => state.enabled)
   const zoom = useZoom(state => state.percent)
   useEffect(() => {
-    document.documentElement.style.zoom = zoom === 100 ? '' : `${zoom}%`
+    const root = document.documentElement
+    root.style.zoom = zoom === 100 ? '' : `${zoom}%`
+    // `vh` n'est pas mis à l'échelle par `zoom` : sans cette division, dézoomé on laisse une bande vide
+    // en bas, zoomé on dépasse la fenêtre et la page défile.
+    root.style.setProperty('--app-height', `calc(100vh / ${zoom / 100})`)
   }, [zoom])
   useCommand('view.toggleCompact', () => useCompact.getState().toggle())
   useCommand('view.zoomOut', () => useZoom.getState().zoomOut())

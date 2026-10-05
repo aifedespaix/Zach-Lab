@@ -269,7 +269,9 @@ export function ExerciseTree() {
                               style={{
                                 display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '4px 8px 4px 24px',
                                 fontSize: 13, textAlign: 'left',
-                                background: selected === exo.path ? 'var(--accent)' : undefined,
+                                background: selected === exo.path ? 'color-mix(in oklab, #3b82f6 24%, transparent)' : undefined,
+                                boxShadow: selected === exo.path ? 'inset 4px 0 0 #2563eb' : undefined,
+                                fontWeight: selected === exo.path ? 600 : undefined,
                                 color: exo.corrompu ? 'var(--destructive)' : undefined,
                                 opacity: dragging === exo.path ? 0.5 : undefined,
                               }}

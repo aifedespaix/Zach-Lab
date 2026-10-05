@@ -23,7 +23,7 @@ interface AppShellProps {
  */
 export function AppShell({ toolbar, left, right, overlays, children }: AppShellProps) {
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', height: 'var(--app-height, 100vh)', overflow: 'clip' }}>
       {left}
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
         {toolbar !== undefined && (
