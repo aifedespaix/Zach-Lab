@@ -9,7 +9,7 @@ export const AUTOSAVE_DELAY_MS = 600
 type Status = 'empty' | 'loading' | 'unreadable' | 'saved' | 'dirty' | 'saving' | 'failed'
 
 /** Les champs que l'élève modifie dans l'éditeur ; `id` et le titre de la fiche ont leurs propres actions. */
-export type ExerciseEdit = Partial<Pick<Exercise, 'numero' | 'enonce' | 'page' | 'blocs' | 'blocsB' | 'reponse' | 'notes' | 'corrige'>>
+export type ExerciseEdit = Partial<Pick<Exercise, 'numero' | 'enonce' | 'page' | 'blocs' | 'blocsB' | 'reponse' | 'notes' | 'corrige' | 'corrigeLe' | 'rate'>>
 
 interface OpenExerciseStore {
   path: string | null
@@ -43,6 +43,8 @@ interface OpenExerciseStore {
 let timer: ReturnType<typeof setTimeout> | undefined
 /** Chaque ouverture prend un numéro : une lecture lente d'un fichier déjà quitté est ignorée. */
 let generation = 0
+/** L'exercice à afficher quand la fiche en cours d'ouverture sera lue (un saut depuis une autre fiche). */
+let pendingId: string | null = null
 
 const show = (sheet: Sheet, currentId: string) => ({
   sheet,
@@ -154,7 +156,21 @@ async function open(path: string | null) {
   const fs = useExerciseStore.getState().fs
   const sheet = fs === null ? null : await readSheet(fs, path)
   if (mine !== generation) return
-  useOpenExercise.setState(sheet === null ? { status: 'unreadable' } : { ...show(sheet, sheet.exercices[0].id), status: 'saved' })
+  const wanted = pendingId
+  pendingId = null
+  const first = sheet?.exercices.find(e => e.id === wanted)?.id ?? sheet?.exercices[0].id
+  useOpenExercise.setState(sheet === null || first === undefined ? { status: 'unreadable' } : { ...show(sheet, first), status: 'saved' })
+}
+
+/** Ouvre la fiche `path` directement sur l'exercice `exerciseId`. */
+export function goToExercise(path: string, exerciseId: string) {
+  if (useOpenExercise.getState().path === path && useOpenExercise.getState().sheet !== null) {
+    useExerciseStore.getState().select(path)
+    useOpenExercise.getState().goTo(exerciseId)
+    return
+  }
+  pendingId = exerciseId
+  useExerciseStore.getState().select(path)
 }
 
 // La fiche ouverte suit la sélection de l'arbre, y compris quand un renommage de chapitre ou un

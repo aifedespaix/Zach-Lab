@@ -24,6 +24,12 @@ export interface Exercise {
   reponse: string
   /** Marqué corrigé par l'élève ; absent (jamais écrit à `false`) tant qu'il ne l'a pas fait. */
   corrige?: boolean
+  /** Quand il a été marqué corrigé (ISO) ; n'existe que si `corrige`. */
+  corrigeLe?: string
+  /** Corrigé, mais raté : à revoir. N'existe que si `corrige`, et jamais écrit à `false`. */
+  rate?: boolean
+  /** Quand l'exercice a été créé (ISO) ; les fiches plus anciennes n'en ont pas. */
+  creeLe?: string
   /** Les notes libres prises à côté de l'exercice (sidebar droite). */
   notes: string
 }
@@ -38,7 +44,7 @@ export interface Sheet {
 }
 
 export function newExercise(): Exercise {
-  return { id: crypto.randomUUID(), numero: '', enonce: '', page: '', blocs: [], reponse: '', notes: '' }
+  return { id: crypto.randomUUID(), numero: '', enonce: '', page: '', blocs: [], reponse: '', notes: '', creeLe: new Date().toISOString() }
 }
 
 export function newSheet(titre: string): Sheet {
@@ -75,8 +81,15 @@ function normalizeExercise(raw: unknown, seen: Set<string>): Exercise | null {
   // `...r` a laissé passer un `blocsB` qui n'est peut-être pas un tableau : seul un tableau compte.
   if (Array.isArray(r.blocsB)) exercise.blocsB = withIds(r.blocsB)
   else delete exercise.blocsB
-  if (r.corrige === true) exercise.corrige = true
+  const corrected = r.corrige === true
+  if (corrected) exercise.corrige = true
   else delete exercise.corrige
+  if (corrected && typeof r.corrigeLe === 'string') exercise.corrigeLe = r.corrigeLe
+  else delete exercise.corrigeLe
+  if (corrected && r.rate === true) exercise.rate = true
+  else delete exercise.rate
+  if (typeof r.creeLe === 'string') exercise.creeLe = r.creeLe
+  else delete exercise.creeLe
   return exercise
 }
 
@@ -122,6 +135,16 @@ export interface ExerciseEntry {
   exercices: number
   /** Exercices commencés et pas encore marqués corrigés (0 pour un fichier illisible). */
   aCorriger: number
+  /** Exercices marqués corrigés. */
+  corriges: number
+  /** Exercices corrigés et ratés : à revoir. */
+  aRevoir: number
+  /** Le premier exercice à corriger de la fiche, pour y sauter. */
+  premierACorriger: string | null
+  /** Les dates de correction (ISO) des exercices corrigés. */
+  corrigeLes: string[]
+  /** Les dates de création (ISO) des exercices qui attendent une correction (ceux qui en ont une). */
+  enAttente: string[]
   /** `true` quand le fichier est illisible : il reste visible, mais ne s'ouvre pas. */
   corrompu: boolean
 }

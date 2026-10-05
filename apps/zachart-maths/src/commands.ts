@@ -107,6 +107,35 @@ export const COMMANDS = [
     category: 'tree',
     defaultBinding: null,
   },
+  {
+    id: 'tree.onlyToCorrect',
+    label: 'Fiches à corriger seulement',
+    description: 'Ne montre dans l’arborescence que les fiches qui ont encore des exercices à corriger.',
+    category: 'tree',
+    defaultBinding: null,
+  },
+  {
+    id: 'correction.next',
+    label: 'Prochain exercice à corriger',
+    description: 'Saute à l’exercice commencé et pas encore corrigé qui suit, dans la fiche puis dans les suivantes.',
+    category: 'tree',
+    defaultBinding: 'Mod+Shift+J',
+    allowInEditable: true,
+  },
+  {
+    id: 'correction.toggleHide',
+    label: 'Masquer les exercices corrigés du plan',
+    description: 'Cache, dans le plan de la fiche, les exercices déjà corrigés.',
+    category: 'tree',
+    defaultBinding: null,
+  },
+  {
+    id: 'review.open',
+    label: 'Mode révision',
+    description: 'Liste les exercices corrigés pour les relire, par chapitre, avec ceux à revoir.',
+    category: 'tree',
+    defaultBinding: null,
+  },
 ] as const
 
 export type CommandId = (typeof COMMANDS)[number]['id']

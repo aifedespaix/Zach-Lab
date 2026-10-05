@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BookOpen, Download, ChevronsDownUp, FolderPlus, Highlighter, Keyboard, Minus, Moon, Plus, Rows3, NotebookPen, Search, Settings as SettingsIcon, Shapes } from 'lucide-react'
+import { BookOpen, ClipboardCheck, Download, ChevronsDownUp, ListChecks, ListFilter, FolderPlus, Highlighter, Keyboard, Minus, Moon, Plus, Rows3, NotebookPen, Search, Settings as SettingsIcon, Shapes } from 'lucide-react'
 import {
   CommandButton,
   CommandPalette,
@@ -17,6 +17,8 @@ import './commands'
 import { CoursePanel } from './cours/CoursePanel'
 import { ExerciseTree } from './exercises/ExerciseTree'
 import { ExerciseWorkspace } from './exercises/ExerciseWorkspace'
+import { ReviewDialog } from './exercises/ReviewDialog'
+import { useCorrectionView } from './exercises/useCorrectionView'
 import { SheetOutline } from './exercises/SheetOutline'
 import { ToolbarSettingsPanel } from './exercises/ToolbarSettingsPanel'
 import { useCompact } from './exercises/useCompact'
@@ -73,6 +75,9 @@ export default function App() {
   const unitColors = useUnitColors(state => state.enabled)
   useCommand('app.palette', () => setPaletteOpen(true))
   useCommand('app.settings', () => setSettingsOpen(true))
+  const onlyToCorrect = useCorrectionView(state => state.onlyToCorrect)
+  useCommand('review.open', () => useCorrectionView.getState().setReviewOpen(true))
+  useCommand('correction.toggleHide', () => useCorrectionView.getState().toggleHideCorrected())
   const compact = useCompact(state => state.enabled)
   const zoom = useZoom(state => state.percent)
   useEffect(() => {
@@ -108,6 +113,7 @@ export default function App() {
               <>
                 <CommandButton command="tree.newChapter" icon={FolderPlus} variant="ghost" size="icon-sm" />
                 <CommandButton command="tree.toggleAll" icon={ChevronsDownUp} variant="ghost" size="icon-sm" />
+                <CommandButton command="tree.onlyToCorrect" icon={ListFilter} variant={onlyToCorrect ? 'secondary' : 'ghost'} size="icon-sm" />
               </>
             }
           >
@@ -133,6 +139,8 @@ export default function App() {
           <>
             <CommandButton command="app.palette" icon={Search} variant="ghost" size="icon-sm" />
             <CommandButton command="cours.search" icon={BookOpen} variant="ghost" size="icon-sm" />
+            <CommandButton command="correction.next" icon={ListChecks} variant="ghost" size="icon-sm" />
+            <CommandButton command="review.open" icon={ClipboardCheck} variant="ghost" size="icon-sm" />
             <CommandButton command="notes.toggle" icon={NotebookPen} variant="ghost" size="icon-sm" />
             <CommandButton command="view.toggleUnitColors" icon={Highlighter} variant={unitColors ? 'secondary' : 'ghost'} size="icon-sm" />
             <CommandButton command="view.toggleCompact" icon={Rows3} variant={compact ? 'secondary' : 'ghost'} size="icon-sm" />
@@ -158,6 +166,7 @@ export default function App() {
                 <AnimatedLogo mode="draw-fade" size={120} />
               </BootScreen>
             )}
+            <ReviewDialog />
             <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
             <SettingsDialog
               open={settingsOpen}

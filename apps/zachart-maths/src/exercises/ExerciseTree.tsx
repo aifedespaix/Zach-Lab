@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
-import { ToCorrectBadge } from './ToCorrectBadge'
+import { ToCorrectBadge, ToReviewBadge } from './ToCorrectBadge'
+import { useCorrectionView } from './useCorrectionView'
 import {
   ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, CopyPlus, FilePlus, FileText, FileWarning, FolderPlus, PanelLeftClose,
 } from 'lucide-react'
@@ -129,7 +130,18 @@ export function ExerciseTree() {
     }),
   )
 
-  const view = useMemo(() => filterChapters(tree, search), [tree, search])
+  const onlyToCorrect = useCorrectionView(s => s.onlyToCorrect)
+  useCommand('tree.onlyToCorrect', () => useCorrectionView.getState().toggleOnlyToCorrect())
+
+  const view = useMemo(() => {
+    const found = filterChapters(tree, search)
+    if (!onlyToCorrect) return found
+    // Une vue de plus : seules les fiches qui attendent une correction, et leurs chapitres, restent.
+    const chapters = found.chapters
+      .map(c => ({ ...c, exercises: c.exercises.filter(e => e.aCorriger > 0) }))
+      .filter(c => c.exercises.length > 0)
+    return { chapters, forcedOpen: new Set(chapters.map(c => c.name)) }
+  }, [tree, search, onlyToCorrect])
   forcedOpenRef.current = view.forcedOpen
 
   if (!loaded) return <p style={{ padding: 12, fontSize: 13 }}>Chargement des exercices…</p>
@@ -159,6 +171,12 @@ export function ExerciseTree() {
         {tree.length === 0 && naming === null && search.trim() === '' && (
           <p style={{ padding: '4px 12px', fontSize: 13, color: 'var(--muted-foreground)' }}>
             Aucun chapitre. Crée-en un avec le bouton en bas du panneau.
+          </p>
+        )}
+
+        {onlyToCorrect && search.trim() === '' && view.chapters.length === 0 && tree.length > 0 && (
+          <p role="status" style={{ padding: '4px 12px', fontSize: 13, color: 'var(--muted-foreground)' }}>
+            Rien à corriger : tout est à jour.
           </p>
         )}
 
@@ -259,6 +277,7 @@ export function ExerciseTree() {
                               {exo.corrompu ? <FileWarning size={14} /> : <FileText size={14} />}
                               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{exo.titre}</span>
                               <ToCorrectBadge count={exo.aCorriger} />
+                              <ToReviewBadge count={exo.aRevoir} />
                             </button>
                           </ContextMenuTrigger>
                           <ContextMenuContent onCloseAutoFocus={keepNameFocus}>

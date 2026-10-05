@@ -1,9 +1,13 @@
 import { spacing, useCompact } from './useCompact'
 import { useEffect, useRef, useState } from 'react'
-import { Check, ChevronLeft, ChevronRight, Columns2, Plus, Trash2 } from 'lucide-react'
+import { useCommand } from '@suite/shared/commands'
+import { Check, ChevronLeft, ListChecks, RotateCcw, ChevronRight, Columns2, Plus, Trash2 } from 'lucide-react'
 import { Button, ConfirmDialog } from '@suite/shared/ui'
 import { RecentFilesList } from '@suite/shared/shell'
-import { ToCorrectBadge } from './ToCorrectBadge'
+import { ToCorrectBadge, ToReviewBadge } from './ToCorrectBadge'
+import { CorrectionStatsBar } from './CorrectionStatsBar'
+import { toggleCorrected, toggleRate } from './correction'
+import { jumpToNextToCorrect } from './jumpToCorrect'
 import { AnimatedLogo } from '../AnimatedLogo'
 import { BlockStack } from './BlockStack'
 import { FieldContextMenu } from './FieldContextMenu'
@@ -28,6 +32,7 @@ const STATUS_TEXT = {
 } as const
 
 const GREEN = '#22c55e'
+const ORANGE = '#f97316'
 
 const field = 'rounded border bg-background px-2 py-1 text-sm'
 
@@ -76,6 +81,8 @@ export function ExerciseWorkspace() {
     insertAtCursor(field, field.dataset.mathRaw !== undefined ? (symbol.plain ?? symbol.latex.replace(/#[0?]/g, '')) : symbol.glyph)
     field.focus()
   }
+  useCommand('correction.next', () => { jumpToNextToCorrect() })
+
   // Un autre exercice, d'autres champs : l'ancien champ ne doit plus recevoir de signes, et le
   // « bloc arrivé » de l'ancien n'a plus de sens.
   useEffect(() => {
@@ -105,14 +112,29 @@ export function ExerciseWorkspace() {
       const entry = entries.get(r.path)
       return entry === undefined || entry.corrompu ? [] : [{ path: r.path, name: entry.titre, folder: splitPath(r.path)[0], openedAt: r.openedAt }]
     })
-    const toCorrect = (path: string) => entries.get(path)?.aCorriger ?? 0
+    const counts = (path: string) => entries.get(path)
+    const badges = (item: { path: string }) => (
+      <>
+        <ToCorrectBadge count={counts(item.path)?.aCorriger ?? 0} />
+        <ToReviewBadge count={counts(item.path)?.aRevoir ?? 0} />
+      </>
+    )
+    // Les fiches qui attendent une correction passent devant, sous leur propre titre.
+    const toFinish = items.filter(i => (counts(i.path)?.aCorriger ?? 0) > 0)
+    const others = items.filter(i => (counts(i.path)?.aCorriger ?? 0) === 0)
+    const open = (path: string) => useExerciseStore.getState().select(path)
     return (
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
         <AnimatedLogo mode="draw-pulse" size={140} />
+        <CorrectionStatsBar tree={tree} />
         {items.length === 0
           ? <p style={{ color: 'var(--muted-foreground)', fontSize: 14 }}>Choisis un exercice dans la liste de gauche.</p>
-          : <RecentFilesList title="Exercices ouverts récemment" items={items} onOpen={path => useExerciseStore.getState().select(path)}
-              adornment={item => <ToCorrectBadge count={toCorrect(item.path)} />} />}
+          : (
+            <>
+              <RecentFilesList title="À finir : des exercices attendent leur correction" items={toFinish} onOpen={open} adornment={badges} />
+              <RecentFilesList title="Exercices ouverts récemment" items={others} onOpen={open} adornment={badges} />
+            </>
+          )}
       </div>
     )
   }
@@ -128,6 +150,8 @@ export function ExerciseWorkspace() {
   const blank = isBlank(exercise)
   const split = isSplit(exercise)
   const corrected = exercise.corrige === true
+  const toReview = corrected && exercise.rate === true
+  const accent = toReview ? ORANGE : GREEN
   // Une teinte par unité pour tout l'exercice : un champ la consulte, il ne parcourt pas l'exercice.
   const unitHues = assignExerciseHues(exercise)
 
@@ -265,9 +289,9 @@ export function ExerciseWorkspace() {
 
       <footer
         aria-label="Zone de réponse"
-        data-corrige={exercise.corrige === true ? 'true' : undefined}
+        data-corrige={corrected ? (toReview ? 'revoir' : 'true') : undefined}
         style={corrected
-          ? { padding: space.footer, background: `color-mix(in oklab, ${GREEN} 18%, var(--background))`, border: `2px solid ${GREEN}` }
+          ? { padding: space.footer, background: `color-mix(in oklab, ${accent} 18%, var(--background))`, border: `2px solid ${accent}` }
           : { padding: space.footer, background: 'color-mix(in oklab, #3b82f6 18%, var(--background))', borderTop: '2px solid #3b82f6' }}
       >
         <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }} htmlFor="reponse-finale">
@@ -289,14 +313,34 @@ export function ExerciseWorkspace() {
           >
             {status in STATUS_TEXT ? STATUS_TEXT[status as keyof typeof STATUS_TEXT] : ''}
           </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 6 }}>
           <Button
             variant={corrected ? 'secondary' : 'outline'} size="sm"
             aria-pressed={corrected}
             aria-label="Exercice corrigé"
             title={corrected ? 'Corrigé : cliquer pour le remettre à corriger' : 'Marquer cet exercice comme corrigé'}
-            onClick={() => edit({ corrige: corrected ? undefined : true })}
+            onClick={() => edit(toggleCorrected(exercise))}
           >
             <Check />{corrected ? 'Corrigé' : 'Marquer corrigé'}
+          </Button>
+          {corrected && (
+            <Button
+              variant={toReview ? 'secondary' : 'outline'} size="sm"
+              aria-pressed={toReview}
+              aria-label="À revoir"
+              title={toReview ? 'À revoir : cliquer pour retirer' : 'Corrigé mais raté : à revoir'}
+              onClick={() => edit(toggleRate(exercise))}
+            >
+              <RotateCcw />À revoir
+            </Button>
+          )}
+          <Button
+            variant="ghost" size="sm"
+            aria-label="Prochain exercice à corriger"
+            title="Prochain exercice à corriger"
+            onClick={() => { jumpToNextToCorrect() }}
+          >
+            <ListChecks />Prochain à corriger
           </Button>
           <Button
             variant="outline" size="sm"
@@ -307,6 +351,7 @@ export function ExerciseWorkspace() {
           >
             {position < count ? <>Exercice suivant<ChevronRight /></> : <>Nouvel exercice<Plus /></>}
           </Button>
+          </div>
         </div>
       </footer>
       <ConfirmDialog

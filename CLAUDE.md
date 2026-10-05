@@ -147,9 +147,15 @@ under `src/`, wired together in `App.tsx`:
   exercise titles ONLY, not file contents; it is a view over the tree (matching chapters forced
   open), never touching the real folded state. The left panel footer carries the commands
   `tree.newChapter` and `tree.toggleAll` (category `tree`), then the fold button.
-- **Corrigé** (`Exercise.corrige?`, jamais écrit à `false`) : bouton à bascule dans le pied de l'exercice (cadre vert).
-  `sheet.needsCorrection` / `countToCorrect` comptent les exercices commencés non corrigés (un exercice vierge n'attend rien) ;
-  `ExerciseEntry.aCorriger` alimente `ToCorrectBadge` dans l'arbre et les récents de l'écran d'accueil.
+- **Corrigé** (`Exercise.corrige?`, `corrigeLe?`, `rate?`, `creeLe?` — jamais écrits à `false`; `corrigeLe` et `rate`
+  n'existent que si `corrige`) : bouton à bascule dans le pied de l'exercice (cadre vert, orange si « à revoir »).
+  `correction.ts` est la logique pure : `summarizeSheet` (alimente `ExerciseEntry.aCorriger/corriges/aRevoir/premierACorriger/
+  corrigeLes/enAttente`), `toggleCorrected`, `toggleRate`, `findNextToCorrect` (fiche ouverte, puis fiches suivantes en boucle),
+  `correctionStats` (série de jours, corrigés depuis lundi, relance après `STALE_DAYS` = 10). `sheet.needsCorrection` : commencé
+  et non corrigé (un vierge n'attend rien). UI : `ToCorrectBadge`/`ToReviewBadge` (arbre, récents), `CorrectionStatsBar` et section
+  « À finir » sur l'accueil, commandes `correction.next` (Mod+Shift+J, `jumpToNextToCorrect`, `goToExercise` ouvre une fiche sur un
+  exercice), `tree.onlyToCorrect` (filtre de l'arbre), `correction.toggleHide` (le plan grise ou masque les corrigés), `review.open`
+  (`ReviewDialog` : tous les corrigés, filtre chapitre / à revoir, cours suggérés pour les ratés). État de vue : `useCorrectionView`.
 - **Blocks** (`blocks.ts`): `texte`, `calcul`, `tableau`, `equation`. A new block type = a
   type in `blocks.ts` (`newBlock`, `parseBlocks`), an editor in `BlockStack.tsx`, an icon and
   hue in `blockMeta.ts`. A block of an unknown type is kept verbatim in the file, never dropped.
