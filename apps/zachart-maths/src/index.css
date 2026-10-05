@@ -154,3 +154,26 @@
 .block-halo {
   animation: block-halo 600ms ease-out;
 }
+
+/*
+ * Les champs de saisie aux couleurs de leur zone (énoncé, texte, réponse). La zone pose `--field-hue`
+ * (la teinte de son bloc) ; le fond est un voile de cette teinte, le texte une version FONCÉE de la
+ * teinte en thème clair et CLAIRE en thème sombre : contraste texte/fond d'au moins 7:1 dans les deux.
+ */
+.hue-field {
+  --field-bg: color-mix(in oklab, hsl(var(--field-hue, 215) 75% 50%) 14%, var(--background));
+  --field-fg: hsl(var(--field-hue, 215) 70% 20%);
+  --field-border: color-mix(in oklab, hsl(var(--field-hue, 215) 75% 50%) 45%, var(--background));
+  background: var(--field-bg);
+  color: var(--field-fg);
+  border-color: var(--field-border);
+}
+.dark .hue-field {
+  --field-fg: hsl(var(--field-hue, 215) 85% 90%);
+}
+
+/* Mode condensé : les formules perdent le vide que MathLive ajoute autour de leur contenu. */
+[data-compact] math-field {
+  padding: 0;
+  min-height: 0;
+}

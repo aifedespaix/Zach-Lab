@@ -60,7 +60,7 @@ export function HighlightedTextarea({ className, style, ref, onScroll, ...props 
   if (!enabled) return <textarea ref={ref} className={className} style={style} onScroll={onScroll} {...props} />
   const text = typeof props.value === 'string' ? props.value : ''
   return (
-    <div style={{ position: 'relative', width: '100%', minWidth: 0, background: 'var(--background)', borderRadius: 4 }}>
+    <div style={{ position: 'relative', width: '100%', minWidth: 0, background: 'var(--field-bg, var(--background))', borderRadius: 4 }}>
       <div
         ref={mirror}
         aria-hidden

@@ -29,7 +29,7 @@ function TextEditor({ block, onChange }: { block: TextBlock; onChange: (patch: P
         value={block.contenu}
         rows={Math.max(2, block.contenu.split('\n').length)}
         onChange={e => onChange({ contenu: e.target.value })}
-        className={`${field} w-full`}
+        className={`${field} hue-field w-full`}
       />
     </FieldContextMenu>
   )
