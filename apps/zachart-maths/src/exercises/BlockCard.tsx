@@ -1,7 +1,7 @@
 import { spacing, useCompact } from './useCompact'
 import type { ReactNode } from 'react'
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, HelpCircle, Trash2 } from 'lucide-react'
-import { Button } from '@suite/shared/ui'
+import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@suite/shared/ui'
 import { isKnown, type Block } from './blocks'
 import { BLOCK_META } from './blockMeta'
 import { borderOf, toneOf } from './toolbarCatalog'
@@ -22,7 +22,7 @@ interface BlockCardProps {
 }
 
 /**
- * Une carte de bloc : la gouttière à gauche (icône du type, monter, descendre, supprimer) puis
+ * Une carte de bloc : la gouttière à gauche (l'icône du type, qui ouvre le menu : monter, descendre, changer de zone, supprimer) puis
  * le contenu. La gouttière est discrète tant qu'on ne survole ni ne focalise la carte.
  */
 export function BlockCard({ block, index, count, onMove, onRemove, onSend, sendTo = 'right', halo, onHaloEnd, children }: BlockCardProps) {
@@ -45,18 +45,22 @@ export function BlockCard({ block, index, count, onMove, onRemove, onSend, sendT
         className="opacity-60 transition-opacity group-hover/card:opacity-100 group-focus-within/card:opacity-100"
         style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: 4, background: toneOf(hue), borderRight: `2px solid ${borderOf(hue)}` }}
       >
-        <span role="img" aria-label={`Type : ${label}`} title={label} style={{ display: 'flex', padding: 4 }}><Icon size={16} /></span>
-        <Button variant="ghost" size="icon-sm" aria-label="Monter le bloc" disabled={index === 0} onClick={() => onMove(-1)}><ArrowUp /></Button>
-        <Button variant="ghost" size="icon-sm" aria-label="Descendre le bloc" disabled={index === count - 1} onClick={() => onMove(1)}><ArrowDown /></Button>
-        {onSend !== undefined && (
-          <Button
-            variant="ghost" size="icon-sm"
-            aria-label={sendTo === 'right' ? 'Envoyer le bloc dans la zone de droite' : 'Envoyer le bloc dans la zone de gauche'}
-            title={sendTo === 'right' ? 'Envoyer dans la zone de droite' : 'Envoyer dans la zone de gauche'}
-            onClick={onSend}
-          >{sendTo === 'right' ? <ArrowRight /> : <ArrowLeft />}</Button>
-        )}
-        <Button variant="ghost" size="icon-sm" aria-label="Supprimer le bloc" onClick={onRemove}><Trash2 /></Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon-sm" aria-label={`Actions du bloc ${label}`} title={`${label} — actions`}><Icon /></Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuItem disabled={index === 0} onSelect={() => onMove(-1)}><ArrowUp size={14} />Monter</DropdownMenuItem>
+            <DropdownMenuItem disabled={index === count - 1} onSelect={() => onMove(1)}><ArrowDown size={14} />Descendre</DropdownMenuItem>
+            {onSend !== undefined && (
+              <DropdownMenuItem onSelect={onSend}>
+                {sendTo === 'right' ? <ArrowRight size={14} /> : <ArrowLeft size={14} />}
+                {sendTo === 'right' ? 'Envoyer à droite' : 'Envoyer à gauche'}
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem variant="destructive" onSelect={onRemove}><Trash2 size={14} />Supprimer</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
       <div style={{ flex: 1, minWidth: 0, padding: spacing(compact).cardPad }}>{children}</div>
     </section>

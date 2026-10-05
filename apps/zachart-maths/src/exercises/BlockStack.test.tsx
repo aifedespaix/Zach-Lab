@@ -21,6 +21,11 @@ function Harness({ initial = [] }: { initial?: unknown[] }) {
 
 const names = () => screen.queryAllByRole('region').map(r => r.getAttribute('aria-label'))
 
+async function moveVia(user: ReturnType<typeof userEvent.setup>, region: HTMLElement, item: string) {
+  await user.click(within(region).getByRole('button', { name: /^Actions du bloc / }))
+  await user.click(await screen.findByRole('menuitem', { name: item }))
+}
+
 describe('BlockStack', () => {
   it('invite à ajouter un premier bloc, puis empile les blocs dans l\'ordre', async () => {
     const user = userEvent.setup()
@@ -36,17 +41,19 @@ describe('BlockStack', () => {
     const user = userEvent.setup()
     render(<Harness initial={[{ id: 'a', type: 'texte', contenu: 'A' }, { id: 'b', type: 'calcul' }]} />)
     const first = () => screen.getAllByRole('region')[0]
-    expect(within(first()).getByRole('button', { name: 'Monter le bloc' })).toBeDisabled()
-    await user.click(within(screen.getAllByRole('region')[1]).getByRole('button', { name: 'Monter le bloc' }))
+    await user.click(within(first()).getByRole('button', { name: /^Actions du bloc / }))
+    expect(await screen.findByRole('menuitem', { name: 'Monter' })).toHaveAttribute('aria-disabled', 'true')
+    await user.keyboard('{Escape}')
+    await moveVia(user, screen.getAllByRole('region')[1], 'Monter')
     expect(names()[0]).toMatch(/Calcul/)
-    await user.click(within(first()).getByRole('button', { name: 'Descendre le bloc' }))
+    await moveVia(user, first(), 'Descendre')
     expect(names()[0]).toMatch(/Texte/)
   })
 
   it('supprime un bloc', async () => {
     const user = userEvent.setup()
     render(<Harness initial={[{ id: 'a', type: 'texte' }, { id: 'b', type: 'calcul' }]} />)
-    await user.click(within(screen.getAllByRole('region')[0]).getByRole('button', { name: 'Supprimer le bloc' }))
+    await moveVia(user, screen.getAllByRole('region')[0], 'Supprimer')
     expect(names()).toEqual(['Bloc Calcul, 1 sur 1'])
   })
 
@@ -105,20 +112,20 @@ describe('BlockStack', () => {
     const unknown = { id: 'e', type: 'schema', etapes: [1] }
     render(<Harness initial={[unknown, { id: 'a', type: 'texte' }]} />)
     expect(screen.getByText(/pas encore pris en charge/)).toBeInTheDocument()
-    await user.click(screen.getAllByRole('button', { name: 'Descendre le bloc' })[0])
+    await moveVia(user, screen.getAllByRole('region')[0], 'Descendre')
     expect(current[1]).toEqual(unknown)
   })
 })
 
 describe('BlockStack — carte, gouttière et ajout', () => {
-  it("chaque carte porte l'icône de son type, et la gouttière tient les trois actions", () => {
+  it("la gouttière tient un seul bouton, l'icône du type, qui ouvre le menu", async () => {
+    const user = userEvent.setup()
     render(<Harness initial={[{ id: 'a', type: 'texte', contenu: '' }, { id: 'b', type: 'equation', etapes: [] }]} />)
-    const [first, second] = screen.getAllByRole('region')
-    expect(within(first).getByRole('img', { name: 'Type : Texte' })).toBeInTheDocument()
-    expect(within(second).getByRole('img', { name: 'Type : Équation' })).toBeInTheDocument()
+    const [first] = screen.getAllByRole('region')
     const gutter = within(first).getByRole('group', { name: 'Actions du bloc' })
-    expect(within(gutter).getAllByRole('button').map(b => b.getAttribute('aria-label')))
-      .toEqual(['Monter le bloc', 'Descendre le bloc', 'Supprimer le bloc'])
+    expect(within(gutter).getAllByRole('button').map(b => b.getAttribute('aria-label'))).toEqual(['Actions du bloc Texte'])
+    await user.click(within(gutter).getByRole('button'))
+    expect((await screen.findAllByRole('menuitem')).map(m => m.textContent)).toEqual(['Monter', 'Descendre', 'Supprimer'])
   })
 
   it("les boutons d'ajout ont une icône et le libellé du type", () => {
@@ -134,7 +141,7 @@ describe('BlockStack — carte, gouttière et ajout', () => {
   it("une zone vide garde ses boutons d'ajout", async () => {
     const user = userEvent.setup()
     render(<Harness initial={[{ id: 'a', type: 'texte', contenu: '' }]} />)
-    await user.click(screen.getByRole('button', { name: 'Supprimer le bloc' }))
+    await moveVia(user, screen.getByRole('region'), 'Supprimer')
     expect(screen.queryAllByRole('region')).toHaveLength(0)
     expect(screen.getByRole('button', { name: 'Ajouter un bloc Texte' })).toBeInTheDocument()
   })
@@ -157,7 +164,7 @@ describe('BlockStack — halo', () => {
   it("le bloc déplacé reçoit un halo, pas les autres", async () => {
     const user = userEvent.setup()
     render(<Harness initial={[{ id: 'a', type: 'texte', contenu: '' }, { id: 'b', type: 'calcul' }]} />)
-    await user.click(within(screen.getAllByRole('region')[1]).getByRole('button', { name: 'Monter le bloc' }))
+    await moveVia(user, screen.getAllByRole('region')[1], 'Monter')
     expect(document.querySelector('[data-block-id="b"]')!.classList.contains('block-halo')).toBe(true)
     expect(document.querySelector('[data-block-id="a"]')!.classList.contains('block-halo')).toBe(false)
     expect(names()[0]).toMatch(/Calcul/)
