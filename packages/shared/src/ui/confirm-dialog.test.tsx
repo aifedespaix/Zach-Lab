@@ -28,4 +28,11 @@ describe('ConfirmDialog', () => {
     await user.keyboard('{Escape}')
     expect(onCancel).toHaveBeenCalledTimes(2)
   })
+  it('met le focus sur le bouton de confirmation : Entrée accepte', async () => {
+    const user = userEvent.setup()
+    const { onConfirm } = setup()
+    expect(screen.getByRole('button', { name: 'Supprimer' })).toHaveFocus()
+    await user.keyboard('{Enter}')
+    expect(onConfirm).toHaveBeenCalledTimes(1)
+  })
 })

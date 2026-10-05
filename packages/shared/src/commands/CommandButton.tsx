@@ -30,6 +30,8 @@ export interface CommandButtonProps {
    * the tests assert, whatever the state happens to be.
    */
   tooltipDetail?: string
+  /** For a toggle: sets `aria-pressed`, so the state is announced and a stylesheet can hang on it. */
+  pressed?: boolean
   /**
    * Extra classes for the button itself, for the few states the variants cannot
    * express — a locked padlock wearing the same colour as the rows it explains,
@@ -59,6 +61,7 @@ export function CommandButton({
   showLabel = false,
   spinning = false,
   tooltipDetail,
+  pressed,
   className,
 }: CommandButtonProps) {
   const definition = commandById(command)
@@ -79,6 +82,7 @@ export function CommandButton({
           className={className}
           aria-label={name}
           aria-keyshortcuts={binding ?? undefined}
+          aria-pressed={pressed}
           disabled={!enabled}
           onClick={() => runCommand(command)}
         >

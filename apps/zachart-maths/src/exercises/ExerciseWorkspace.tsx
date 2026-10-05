@@ -1,12 +1,12 @@
 import { spacing, useCompact } from './useCompact'
 import { useEffect, useRef, useState } from 'react'
-import { useCommand } from '@suite/shared/commands'
+import { CommandButton, useCommand } from '@suite/shared/commands'
 import { Check, ChevronLeft, ListChecks, RotateCcw, ChevronRight, Columns2, Plus, Trash2 } from 'lucide-react'
-import { Button, ConfirmDialog } from '@suite/shared/ui'
+import { ConfirmDialog } from '@suite/shared/ui'
 import { RecentFilesList } from '@suite/shared/shell'
 import { ToCorrectBadge, ToReviewBadge } from './ToCorrectBadge'
 import { CorrectionStatsBar } from './CorrectionStatsBar'
-import { toggleCorrected, toggleRate } from './correction'
+import { findNextToCorrect, toggleCorrected, toggleRate } from './correction'
 import { jumpToNextToCorrect } from './jumpToCorrect'
 import { AnimatedLogo } from '../AnimatedLogo'
 import { BlockStack } from './BlockStack'
@@ -81,7 +81,32 @@ export function ExerciseWorkspace() {
     insertAtCursor(field, field.dataset.mathRaw !== undefined ? (symbol.plain ?? symbol.latex.replace(/#[0?]/g, '')) : symbol.glyph)
     field.focus()
   }
-  useCommand('correction.next', () => { jumpToNextToCorrect() })
+
+  // Les commandes vivent avant les retours anticipés (règle des hooks) : elles lisent donc l'état
+  // courant au moment d'agir, et se désactivent d'elles-mêmes quand aucun exercice n'est ouvert.
+  const path = useOpenExercise(s => s.path)
+  const ready = selected !== null && exercise !== null && sheet !== null && status !== 'loading' && status !== 'unreadable'
+  const at = ready ? sheet.exercices.findIndex(e => e.id === exercise.id) + 1 : 0
+  const total = ready ? sheet.exercices.length : 0
+  const blankNow = ready && isBlank(exercise)
+  const nextToCorrect = ready && findNextToCorrect(tree, path, sheet, currentId) !== null
+  const advance = (delta: -1 | 1) => {
+    const size = () => useOpenExercise.getState().sheet?.exercices.length ?? 0
+    const before = size()
+    useOpenExercise.getState().step(delta)
+    // Si l'action a créé un exercice (au bord de la fiche), le curseur ira dans son énoncé.
+    if (size() > before) focusEnonce.current = true
+  }
+  const toggleSplit = () => {
+    if (exercise !== null) edit(isSplit(exercise) ? mergeZones(exercise) : splitZones())
+  }
+  useCommand('correction.next', () => { jumpToNextToCorrect() }, nextToCorrect)
+  useCommand('exercise.toggleCorrected', () => { if (exercise !== null) edit(toggleCorrected(exercise)) }, ready)
+  useCommand('exercise.toggleReview', () => { if (exercise !== null) edit(toggleRate(exercise)) }, ready && exercise.corrige === true)
+  useCommand('exercise.previous', () => advance(-1), ready && !(at === 1 && blankNow))
+  useCommand('exercise.next', () => advance(1), ready && !(at === total && blankNow))
+  useCommand('exercise.toggleSplit', toggleSplit, ready)
+  useCommand('exercise.delete', () => setConfirming(true), ready && total > 1)
 
   // Un autre exercice, d'autres champs : l'ancien champ ne doit plus recevoir de signes, et le
   // « bloc arrivé » de l'ancien n'a plus de sens.
@@ -155,14 +180,6 @@ export function ExerciseWorkspace() {
   // Une teinte par unité pour tout l'exercice : un champ la consulte, il ne parcourt pas l'exercice.
   const unitHues = assignExerciseHues(exercise)
 
-  /** Avance d'un exercice ; si l'action en a créé un (au bord de la fiche), le curseur ira dans son énoncé. */
-  const advance = (delta: -1 | 1) => {
-    const total = () => useOpenExercise.getState().sheet?.exercices.length ?? 0
-    const before = total()
-    useOpenExercise.getState().step(delta)
-    if (total() > before) focusEnonce.current = true
-  }
-  const toggleSplit = () => edit(split ? mergeZones(exercise) : splitZones())
   const send = (from: Zone, id: string) => {
     const patch = sendBlock(exercise, id, from)
     if (patch === null) return
@@ -189,44 +206,35 @@ export function ExerciseWorkspace() {
             aria-label="Titre de l'exercice"
             value={sheet.titre}
             onChange={e => editTitle(e.target.value)}
-            className={`${field} flex-1 text-base font-semibold`}
+            className={`${field} hue-field flex-1 text-base font-semibold`}
             style={{ minWidth: 200 }}
           />
-          <input
-            aria-label="Numéro de l'exercice (facultatif)"
-            placeholder={String(position)}
-            value={exercise.numero}
-            onChange={e => edit({ numero: e.target.value })}
-            className={field}
-            style={{ width: 110 }}
-          />
-          <input
-            aria-label="Page (facultatif)"
-            placeholder="Page"
-            value={exercise.page}
-            onChange={e => edit({ page: e.target.value })}
-            className={field}
-            style={{ width: 80 }}
-          />
+          <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600 }}>
+            ex
+            <input
+              aria-label="Numéro de l'exercice (facultatif)"
+              placeholder={String(position)}
+              value={exercise.numero}
+              onChange={e => edit({ numero: e.target.value })}
+              className={`${field} hue-field`}
+              style={{ width: 80 }}
+            />
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600 }}>
+            p
+            <input
+              aria-label="Page (facultatif)"
+              value={exercise.page}
+              onChange={e => edit({ page: e.target.value })}
+              className={`${field} hue-field`}
+              style={{ width: 70 }}
+            />
+          </label>
           <div role="group" aria-label="Navigation dans la fiche" style={{ display: 'flex', alignItems: 'center', gap: 2, marginLeft: 'auto' }}>
-            <Button
-              variant="ghost" size="icon-sm" aria-label="Exercice précédent"
-              title={position === 1 && blank ? "Écris dans cet exercice avant d'en ajouter un avant" : 'Exercice précédent'}
-              disabled={position === 1 && blank}
-              onClick={() => advance(-1)}
-            ><ChevronLeft /></Button>
+            <CommandButton command="exercise.previous" icon={ChevronLeft} variant="ghost" size="icon-sm" tooltipDetail={position === 1 && blank ? "Écris dans cet exercice avant d'en ajouter un avant" : undefined} />
             <span aria-live="polite" style={{ fontSize: 13, minWidth: 44, textAlign: 'center' }}>{position} / {count}</span>
-            <Button
-              variant="ghost" size="icon-sm" aria-label="Exercice suivant"
-              title={position === count && blank ? "Écris dans cet exercice avant d'en ajouter un après" : 'Exercice suivant'}
-              disabled={position === count && blank}
-              onClick={() => advance(1)}
-            ><ChevronRight /></Button>
-            <Button
-              variant="ghost" size="icon-sm" aria-label="Supprimer l'exercice" title="Supprimer l'exercice"
-              disabled={count <= 1}
-              onClick={() => setConfirming(true)}
-            ><Trash2 /></Button>
+            <CommandButton command="exercise.next" icon={ChevronRight} variant="ghost" size="icon-sm" tooltipDetail={position === count && blank ? "Écris dans cet exercice avant d'en ajouter un après" : undefined} />
+            <CommandButton command="exercise.delete" icon={Trash2} label="Supprimer l'exercice" variant="ghost" size="icon-sm" />
           </div>
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
@@ -241,14 +249,11 @@ export function ExerciseWorkspace() {
               className={`${field} hue-field w-full`}
             />
           </FieldContextMenu>
-          <Button
-            variant={split ? 'secondary' : 'ghost'}
-            size="icon-sm"
-            aria-pressed={split}
-            aria-label={split ? 'Réunir les zones de travail' : 'Scinder la zone de travail en deux'}
-            title={split ? 'Réunir les zones de travail' : 'Scinder la zone de travail en deux'}
-            onClick={toggleSplit}
-          ><Columns2 /></Button>
+          <CommandButton
+            command="exercise.toggleSplit" icon={Columns2} variant={split ? 'secondary' : 'ghost'} size="icon-sm"
+            pressed={split}
+            label={split ? 'Réunir les zones de travail' : 'Scinder la zone de travail en deux'}
+          />
         </div>
       </header>
 
@@ -318,43 +323,32 @@ export function ExerciseWorkspace() {
             {status in STATUS_TEXT ? STATUS_TEXT[status as keyof typeof STATUS_TEXT] : ''}
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 6 }}>
-          <Button
-            variant={corrected ? 'secondary' : 'outline'} size="sm"
-            aria-pressed={corrected}
-            aria-label="Exercice corrigé"
-            title={corrected ? 'Corrigé : cliquer pour le remettre à corriger' : 'Marquer cet exercice comme corrigé'}
-            onClick={() => edit(toggleCorrected(exercise))}
-          >
-            <Check />{corrected ? 'Corrigé' : 'Marquer corrigé'}
-          </Button>
+          {/* « À revoir » apparaît en tête de liste : la rangée est alignée à droite, rien ne se décale. */}
           {corrected && (
-            <Button
-              variant={toReview ? 'secondary' : 'outline'} size="sm"
-              aria-pressed={toReview}
-              aria-label="À revoir"
-              title={toReview ? 'À revoir : cliquer pour retirer' : 'Corrigé mais raté : à revoir'}
-              onClick={() => edit(toggleRate(exercise))}
-            >
-              <RotateCcw />À revoir
-            </Button>
+            <CommandButton
+              command="exercise.toggleReview" icon={RotateCcw} variant="ghost" size="icon-sm"
+              pressed={toReview} label="À revoir"
+              tooltipDetail={toReview ? 'Cliquer pour retirer' : 'Corrigé mais raté : à revoir'}
+              className="text-orange-600 hover:bg-orange-500/15 hover:text-orange-600 aria-pressed:bg-orange-500/25 dark:text-orange-400 dark:hover:text-orange-400"
+            />
           )}
-          <Button
-            variant="ghost" size="sm"
-            aria-label="Prochain exercice à corriger"
-            title="Prochain exercice à corriger"
-            onClick={() => { jumpToNextToCorrect() }}
-          >
-            <ListChecks />Prochain à corriger
-          </Button>
-          <Button
-            variant="outline" size="sm"
-            aria-label={position < count ? "Passer à l'exercice suivant" : 'Nouvel exercice'}
-            title={position === count && blank ? "Écris dans cet exercice avant d'en ajouter un après" : undefined}
-            disabled={position === count && blank}
-            onClick={() => advance(1)}
-          >
-            {position < count ? <>Exercice suivant<ChevronRight /></> : <>Nouvel exercice<Plus /></>}
-          </Button>
+          <CommandButton
+            command="exercise.toggleCorrected" icon={Check} variant="ghost" size="icon-sm"
+            pressed={corrected} label="Exercice corrigé"
+            tooltipDetail={corrected ? 'Corrigé : cliquer pour le remettre à corriger' : 'Marquer cet exercice comme corrigé'}
+            className="text-green-600 hover:bg-green-500/15 hover:text-green-600 aria-pressed:bg-green-500/25 dark:text-green-400 dark:hover:text-green-400"
+          />
+          <CommandButton
+            command="correction.next" icon={ListChecks} variant="ghost" size="icon-sm"
+            label="Prochain exercice à corriger"
+            tooltipDetail={nextToCorrect ? undefined : 'Plus rien à corriger'}
+            className="text-blue-600 hover:bg-blue-500/15 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-400"
+          />
+          <CommandButton
+            command="exercise.next" icon={position < count ? ChevronRight : Plus} variant="ghost" size="icon-sm"
+            label={position < count ? "Passer à l'exercice suivant" : 'Nouvel exercice'}
+            tooltipDetail={position === count && blank ? "Écris dans cet exercice avant d'en ajouter un après" : undefined}
+          />
           </div>
         </div>
       </footer>

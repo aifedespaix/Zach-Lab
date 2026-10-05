@@ -1,5 +1,7 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { TooltipProvider } from '@suite/shared/ui'
+import '../commands'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { runCommand } from '@suite/shared/commands'
 import '../commands'
@@ -27,7 +29,7 @@ const FILES = {
 
 async function setup(ui: React.ReactNode) {
   const fs = createMemoryFs(FILES)
-  render(ui)
+  render(<TooltipProvider>{ui}</TooltipProvider>)
   await act(async () => useExerciseStore.getState().init(fs))
   return userEvent.setup()
 }

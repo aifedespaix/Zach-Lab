@@ -160,16 +160,38 @@
  * (la teinte de son bloc) ; le fond est un voile de cette teinte, le texte une version FONCÉE de la
  * teinte en thème clair et CLAIRE en thème sombre : contraste texte/fond d'au moins 7:1 dans les deux.
  */
-.hue-field {
+.hue-field,
+.hue-field-wrap {
   --field-bg: color-mix(in oklab, hsl(var(--field-hue, 215) 75% 50%) 14%, var(--background));
   --field-fg: hsl(var(--field-hue, 215) 70% 20%);
   --field-border: color-mix(in oklab, hsl(var(--field-hue, 215) 75% 50%) 45%, var(--background));
+}
+.hue-field {
   background: var(--field-bg);
   color: var(--field-fg);
   border-color: var(--field-border);
 }
 .dark .hue-field {
   --field-fg: hsl(var(--field-hue, 215) 85% 90%);
+}
+
+/*
+ * Le trait à gauche d'un exercice de l'outline suit son état. Jaune (ambre foncé en clair, pour rester
+ * visible sur fond blanc) et orange (plus rouge) restent distincts dans les deux thèmes.
+ */
+:root {
+  --statut-vide: #9ca3af;
+  --statut-en-cours: #ca8a04;
+  --statut-fait: #2563eb;
+  --statut-corrige: #16a34a;
+  --statut-revoir: #ea580c;
+}
+.dark {
+  --statut-vide: #6b7280;
+  --statut-en-cours: #facc15;
+  --statut-fait: #60a5fa;
+  --statut-corrige: #4ade80;
+  --statut-revoir: #fb923c;
 }
 
 /* Mode condensé : les formules perdent le vide que MathLive ajoute autour de leur contenu. */

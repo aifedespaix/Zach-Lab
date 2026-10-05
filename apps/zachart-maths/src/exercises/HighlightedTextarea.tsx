@@ -60,7 +60,11 @@ export function HighlightedTextarea({ className, style, ref, onScroll, ...props 
   if (!enabled) return <textarea ref={ref} className={className} style={style} onScroll={onScroll} {...props} />
   const text = typeof props.value === 'string' ? props.value : ''
   return (
-    <div style={{ position: 'relative', width: '100%', minWidth: 0, background: 'var(--field-bg, var(--background))', borderRadius: 4 }}>
+    // Le fond vient du conteneur (le champ est transparent) : il porte donc les variables `--field-*` lui aussi.
+    <div
+      className={className?.includes('hue-field') ? 'hue-field-wrap' : undefined}
+      style={{ position: 'relative', width: '100%', minWidth: 0, background: 'var(--field-bg, var(--background))', borderRadius: 4 }}
+    >
       <div
         ref={mirror}
         aria-hidden

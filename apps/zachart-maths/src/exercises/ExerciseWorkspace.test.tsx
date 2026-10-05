@@ -1,5 +1,7 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { TooltipProvider } from '@suite/shared/ui'
+import '../commands'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ExerciseWorkspace } from './ExerciseWorkspace'
 import { createMemoryFs } from './memoryFs'
@@ -14,7 +16,7 @@ const stored = (fs: ReturnType<typeof createMemoryFs>, path: string) => JSON.par
 
 async function setup(files: Record<string, string>) {
   const fs = createMemoryFs(files)
-  render(<ExerciseWorkspace />)
+  render(<TooltipProvider><ExerciseWorkspace /></TooltipProvider>)
   await act(async () => useExerciseStore.getState().init(fs))
   return fs
 }
