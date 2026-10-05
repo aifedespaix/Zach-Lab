@@ -165,6 +165,7 @@ under `src/`, wired together in `App.tsx`:
   `glyph` (plain fields), a `latex` (MathLive; `#0`/`#?` placeholders) and an optional `plain`.
   Text fields are filled with `insertAtCursor` (`setRangeText`, not `value =`: React and
   user-event both track `value`).
+- **Affichage** (`useZoom.ts`, `useCompact.ts`, barre du haut) : le zoom (`documentElement.style.zoom`, 50–150 %, pas de 10, clé `zachart-maths:zoom`, commandes `view.zoomOut` Mod+Minus / `view.zoomIn` Mod+Plus / `view.zoomReset` Mod+0, le « % » cliquable remet à 100) et le mode condensé (`view.toggleCompact`, clé `zachart-maths:compact`, `spacing(compact)` donne les paddings/gaps de la zone centrale : `ExerciseWorkspace`, `BlockStack`, `BlockCard`).
 - **Coloration des unités** (`quantities.ts`, `unitColors.ts`, `HighlightedTextarea.tsx`,
   `useUnitColors.ts`) : `findQuantities(text)` trouve les grandeurs (`16 km`, `3 km/h`, `x km/h`, `km/h`
   seul) ; `assignExerciseHues(exercise)` donne une teinte par unité canonique pour TOUT l'exercice

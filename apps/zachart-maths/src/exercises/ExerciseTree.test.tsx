@@ -37,6 +37,12 @@ describe('ExerciseTree', () => {
     expect(useExerciseStore.getState().selected).toBe('Fractions/Exo 1.json')
   })
 
+  it('met le focus sur le champ de nom dès la création', async () => {
+    await setup()
+    await act(async () => void runCommand('tree.newChapter'))
+    await waitFor(() => expect(screen.getByLabelText('Nom du nouveau chapitre')).toHaveFocus())
+  })
+
   it('le clic sur un exercice le sélectionne', async () => {
     const exo = JSON.stringify({ version: 1, id: 'a', titre: 'Premier' })
     const { user } = await setup({ 'Algèbre/p.json': exo })

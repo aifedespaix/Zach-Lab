@@ -30,7 +30,14 @@ function NameField({ initial = '', label, onSubmit, onCancel }: {
 }) {
   const [value, setValue] = useState(initial)
   const ref = useRef<HTMLInputElement>(null)
-  useEffect(() => ref.current?.select(), [])
+  // Après le tour de fermeture du menu contextuel (Radix reprend le focus pendant qu'il se démonte).
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      ref.current?.focus()
+      ref.current?.select()
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [])
   const submit = (e: FormEvent) => {
     e.preventDefault()
     onSubmit(value)
@@ -55,6 +62,10 @@ export function ExerciseTree() {
   const { tree, loaded, selected, error } = useExerciseStore()
   const store = useExerciseStore.getState()
   const [naming, setNaming] = useState<Naming | null>(null)
+  // En se fermant, le menu rend le focus à son déclencheur : si on est en train de nommer, le champ de nom le garde.
+  const namingRef = useRef(naming)
+  namingRef.current = naming
+  const keepNameFocus = (e: Event) => { if (namingRef.current !== null) e.preventDefault() }
   const [deletion, setDeletion] = useState<Deletion | null>(null)
   const [folded, setFolded] = useState<ReadonlySet<string>>(new Set())
   const [search, setSearch] = useState('')
@@ -190,7 +201,7 @@ export function ExerciseTree() {
                     )}
                   </div>
                 </ContextMenuTrigger>
-                <ContextMenuContent>
+                <ContextMenuContent onCloseAutoFocus={keepNameFocus}>
                   <ContextMenuItem onSelect={() => toggle(chapter.name)}>{open ? 'Replier' : 'Déplier'}</ContextMenuItem>
                   <ContextMenuSeparator />
                   <ContextMenuItem onSelect={() => { setFolded(p => { const n = new Set(p); n.delete(chapter.name); return n }); setNaming({ kind: 'new-exercise', chapter: chapter.name }) }}>
@@ -248,7 +259,7 @@ export function ExerciseTree() {
                               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{exo.titre}</span>
                             </button>
                           </ContextMenuTrigger>
-                          <ContextMenuContent>
+                          <ContextMenuContent onCloseAutoFocus={keepNameFocus}>
                             <ContextMenuItem disabled={exo.corrompu} onSelect={() => setNaming({ kind: 'rename-exercise', path: exo.path })}>Renommer</ContextMenuItem>
                             <ContextMenuItem disabled={realEi === 0} onSelect={() => void store.shiftExercise(exo.path, -1)}>Monter</ContextMenuItem>
                             <ContextMenuItem disabled={realEi === realExercises.length - 1} onSelect={() => void store.shiftExercise(exo.path, 1)}>Descendre</ContextMenuItem>
@@ -278,7 +289,7 @@ export function ExerciseTree() {
         })}
       </div>
         </ContextMenuTrigger>
-        <ContextMenuContent>
+        <ContextMenuContent onCloseAutoFocus={keepNameFocus}>
           <ContextMenuItem onSelect={() => setNaming({ kind: 'new-chapter' })}><FolderPlus /> Nouveau chapitre</ContextMenuItem>
           <ContextMenuItem disabled={tree.length === 0} onSelect={() => setFolded(new Set(tree.map(c => c.name)))}>
             <ChevronsDownUp /> Tout replier

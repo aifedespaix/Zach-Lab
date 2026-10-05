@@ -188,6 +188,26 @@ describe('MathFieldEditor', () => {
     expect(field.executeCommand).toHaveBeenCalledWith('moveToMathfieldEnd')
   })
 
+  it('« / » deux fois de suite défait la fraction et pose ÷ ; un seul « / » reste à MathLive', async () => {
+    render(<MathFieldEditor latex="" onChange={() => {}} ariaLabel="Formule" fallback={<textarea />} />)
+    await waitFor(() => expect(screen.getByTestId('math-field')).toBeInTheDocument())
+    const field = screen.getByTestId('math-field').firstElementChild as HTMLElement & {
+      insert: (s: string) => void
+      executeCommand: (c: string) => boolean
+    }
+    field.insert = vi.fn()
+    field.executeCommand = vi.fn()
+    const press = () => field.dispatchEvent(new KeyboardEvent('keydown', { key: '/', bubbles: true, cancelable: true }))
+
+    press()
+    expect(field.insert).not.toHaveBeenCalled()
+    press()
+    expect(field.executeCommand).toHaveBeenCalledWith('undo')
+    expect(field.insert).toHaveBeenCalledWith('\\div ')
+    press()
+    expect(field.insert).toHaveBeenCalledTimes(1)
+  })
+
   it('focusEnd() falls back to the caller’s own field before the editor has loaded', async () => {
     vi.resetModules()
     const { MathFieldEditor: Fresh } = await import('./MathFieldEditor')
