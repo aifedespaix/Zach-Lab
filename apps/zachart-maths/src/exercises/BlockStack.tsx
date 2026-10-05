@@ -90,7 +90,7 @@ function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: 
               aria-label={`Ligne ${r + 1}, colonne ${c + 1}`}
               value={cells[r][c]}
               onChange={e => set(setCell(cells, r, c, e.target.value))}
-              className="w-full bg-background px-2 py-1 text-sm"
+              className="focus-cell-input w-full bg-background px-2 py-1 text-sm"
               style={{ border: '1px solid var(--border)', background: fillOf(r, c) }}
             />
           </FieldContextMenu>

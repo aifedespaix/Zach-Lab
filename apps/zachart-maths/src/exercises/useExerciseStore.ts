@@ -11,6 +11,12 @@ interface ExerciseStore {
   loaded: boolean
   /** Chemin de l'exercice affiché dans la zone centrale. */
   selected: string | null
+  /**
+   * Quand `selected` change parce que le fichier ouvert a CHANGÉ DE CHEMIN (chapitre renommé, fichier
+   * déplacé) et non parce qu'on en ouvre un autre : l'ancien et le nouveau chemin. La fiche ouverte
+   * s'y rattache sans se recharger.
+   */
+  relocated: { from: string; to: string } | null
   /** Les derniers fichiers ouverts, le plus récent d'abord (mémorisés entre deux lancements). */
   recent: RecentFile[]
   /** Dernier échec d'une opération sur disque, à montrer à l'élève. */
@@ -55,6 +61,7 @@ export const useExerciseStore = create<ExerciseStore>((set, get) => {
     tree: [],
     loaded: false,
     selected: null,
+    relocated: null,
     recent: loadRecent(),
     error: null,
 
@@ -82,7 +89,7 @@ export const useExerciseStore = create<ExerciseStore>((set, get) => {
         const to = `${renamed}/${splitPath(selected)[1]}`
         const recent = renameRecent(get().recent, selected, to)
         saveRecent(recent)
-        set({ selected: to, recent })
+        set({ selected: to, recent, relocated: { from: selected, to } })
       }
     },
     async removeChapter(chapter) {
@@ -117,7 +124,7 @@ export const useExerciseStore = create<ExerciseStore>((set, get) => {
       if (moved !== undefined) {
         const recent = renameRecent(get().recent, path, moved)
         saveRecent(recent)
-        set(get().selected === path ? { selected: moved, recent } : { recent })
+        set(get().selected === path ? { selected: moved, recent, relocated: { from: path, to: moved } } : { recent })
       }
     },
     async shiftExercise(path, delta) {

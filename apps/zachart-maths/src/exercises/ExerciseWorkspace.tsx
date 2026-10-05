@@ -4,10 +4,12 @@ import { CommandButton, useCommand } from '@suite/shared/commands'
 import { Check, ChevronLeft, ListChecks, RotateCcw, ChevronRight, Columns2, Plus, Trash2 } from 'lucide-react'
 import { ConfirmDialog } from '@suite/shared/ui'
 import { RecentFilesList } from '@suite/shared/shell'
+import { ChapterField } from './ChapterField'
 import { ToCorrectBadge, ToReviewBadge } from './ToCorrectBadge'
 import { CorrectionStatsBar } from './CorrectionStatsBar'
 import { findNextToCorrect, toggleCorrected, toggleRate } from './correction'
 import { jumpToNextToCorrect } from './jumpToCorrect'
+import { bumpLabel } from './label'
 import { AnimatedLogo } from '../AnimatedLogo'
 import { BlockStack } from './BlockStack'
 import { FieldContextMenu } from './FieldContextMenu'
@@ -33,6 +35,15 @@ const STATUS_TEXT = {
 
 const GREEN = '#22c55e'
 const ORANGE = '#f97316'
+
+/** ↑ / ↓ dans un champ de numéro ou de page : le cran suivant ou précédent (« 1a » → « 1b »). */
+const bumpOnArrow = (current: string, set: (next: string) => void) => (event: React.KeyboardEvent) => {
+  if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
+  if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return
+  event.preventDefault()
+  const next = bumpLabel(current, event.key === 'ArrowUp' ? 1 : -1)
+  if (next !== null) set(next)
+}
 
 const field = 'rounded border bg-background px-2 py-1 text-sm'
 
@@ -188,7 +199,9 @@ export function ExerciseWorkspace() {
   }
 
   const space = spacing(compact)
-  const zone = { minWidth: 0, minHeight: 0, overflowY: 'auto', overflowX: 'clip', overscrollBehaviorX: 'contain', padding: space.zone, background: 'var(--background)' } as const
+  // `position: relative` : MathLive pose dans chaque formule des éléments `absolute` (clavier, lecteur d'écran). Sans ancêtre positionné ils
+  // échappent au défilement de la zone et agrandissent la page entière, qui se met à défiler.
+  const zone = { position: 'relative', minWidth: 0, minHeight: 0, overflowY: 'auto', overflowX: 'clip', overscrollBehaviorX: 'contain', padding: space.zone, background: 'var(--background)' } as const
 
   return (
     <SymbolInsertContext value={insertSymbol}>
@@ -202,6 +215,7 @@ export function ExerciseWorkspace() {
         } as React.CSSProperties}
       >
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <ChapterField key={splitPath(selected)[0]} chapter={splitPath(selected)[0]} className={`${field} hue-field`} />
           <input
             aria-label="Titre de l'exercice"
             value={sheet.titre}
@@ -216,8 +230,9 @@ export function ExerciseWorkspace() {
               placeholder={String(position)}
               value={exercise.numero}
               onChange={e => edit({ numero: e.target.value })}
+              onKeyDown={bumpOnArrow(exercise.numero || String(position), numero => edit({ numero }))}
               className={`${field} hue-field`}
-              style={{ width: 80 }}
+              style={{ width: 'calc(5ch + 1.25rem)' }}
             />
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600 }}>
@@ -226,8 +241,9 @@ export function ExerciseWorkspace() {
               aria-label="Page (facultatif)"
               value={exercise.page}
               onChange={e => edit({ page: e.target.value })}
+              onKeyDown={bumpOnArrow(exercise.page || '0', page => edit({ page }))}
               className={`${field} hue-field`}
-              style={{ width: 70 }}
+              style={{ width: 'calc(3ch + 1.25rem)' }}
             />
           </label>
           <div role="group" aria-label="Navigation dans la fiche" style={{ display: 'flex', alignItems: 'center', gap: 2, marginLeft: 'auto' }}>
@@ -262,6 +278,8 @@ export function ExerciseWorkspace() {
         <div
           style={{
             flex: 1, minWidth: 0, minHeight: 0, display: 'grid',
+            // Une seule rangée de la hauteur de la zone (jamais celle du contenu) : c'est la zone qui défile, pas l'interface.
+            gridTemplateRows: 'minmax(0, 1fr)',
             gridTemplateColumns: split ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 1fr)', gap: split ? 1 : 0, background: split ? 'var(--border)' : undefined,
           }}
         >
@@ -341,7 +359,7 @@ export function ExerciseWorkspace() {
           <CommandButton
             command="correction.next" icon={ListChecks} variant="ghost" size="icon-sm"
             label="Prochain exercice à corriger"
-            tooltipDetail={nextToCorrect ? undefined : 'Plus rien à corriger'}
+            tooltipLabel={nextToCorrect ? undefined : 'Aucun exercice à corriger'}
             className="text-blue-600 hover:bg-blue-500/15 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-400"
           />
           <CommandButton

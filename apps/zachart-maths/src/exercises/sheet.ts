@@ -1,3 +1,4 @@
+import { bumpLabel } from './label'
 import { newExercise, type Exercise, type Sheet } from './types'
 
 /** Les opérations sur une fiche, sans React ni disque : chacune rend une nouvelle fiche. */
@@ -6,9 +7,19 @@ export type Position = 'start' | 'end'
 
 const indexOf = (sheet: Sheet, id: string) => sheet.exercices.findIndex(e => e.id === id)
 
+/**
+ * Un exercice vierge qui suit `from` : même page, numéro décalé d'un cran (« 1a » → « 1b ») si
+ * `from` en avait un qui s'y prête, sinon vide.
+ */
+const following = (from: Exercise | undefined, delta: -1 | 1): Exercise => {
+  const added = newExercise()
+  if (from === undefined) return added
+  return { ...added, page: from.page, numero: bumpLabel(from.numero, delta) ?? '' }
+}
+
 /** Un exercice vierge au début ou à la fin ; `added` est celui qu'on vient de créer. */
 export function insertExercise(sheet: Sheet, position: Position): { sheet: Sheet; added: Exercise } {
-  const added = newExercise()
+  const added = position === 'start' ? following(sheet.exercices[0], -1) : following(sheet.exercices[sheet.exercices.length - 1], 1)
   const exercices = position === 'start' ? [added, ...sheet.exercices] : [...sheet.exercices, added]
   return { sheet: { ...sheet, exercices }, added }
 }
@@ -19,12 +30,21 @@ export function neighbour(sheet: Sheet, id: string, delta: -1 | 1): string | nul
   return i < 0 ? null : (sheet.exercices[i + delta]?.id ?? null)
 }
 
-/** Rien n'a encore été écrit dedans (la page seule ne compte pas). */
+/** Rien n'a encore été écrit dedans (la page et le numéro, repris de l'exercice voisin, ne comptent pas). */
 export const isBlank = (e: Exercise) =>
-  e.numero.trim() === '' && e.enonce.trim() === '' && e.reponse.trim() === '' && e.notes.trim() === '' && e.blocs.length === 0 && (e.blocsB ?? []).length === 0
+  e.enonce.trim() === '' && e.reponse.trim() === '' && e.notes.trim() === '' && e.blocs.length === 0 && (e.blocsB ?? []).length === 0
 
 /** Un exercice commencé (pas vierge) et pas encore marqué corrigé : un exercice vide n'attend aucune correction. */
 export const needsCorrection = (e: Exercise) => e.corrige !== true && !isBlank(e)
+
+export type Status = 'vide' | 'en-cours' | 'fait' | 'corrige' | 'revoir'
+
+/** Où en est un exercice : vierge, commencé, réponse écrite, corrigé, ou corrigé mais à revoir. */
+export function exerciseStatus(e: Exercise): Status {
+  if (e.corrige === true) return e.rate === true ? 'revoir' : 'corrige'
+  if (isBlank(e)) return 'vide'
+  return e.reponse.trim() === '' ? 'en-cours' : 'fait'
+}
 
 export const countToCorrect = (sheet: Sheet) => sheet.exercices.filter(needsCorrection).length
 
@@ -51,8 +71,8 @@ export function moveExercise(sheet: Sheet, id: string, delta: -1 | 1): Sheet {
 
 /** Un exercice vierge juste avant ou après `id` ; à la fin si `id` n'y est pas. `added` est le créé. */
 export function insertExerciseAt(sheet: Sheet, id: string, where: 'before' | 'after'): { sheet: Sheet; added: Exercise } {
-  const added = newExercise()
   const at = indexOf(sheet, id)
+  const added = following(sheet.exercices[at < 0 ? sheet.exercices.length - 1 : at], where === 'before' && at >= 0 ? -1 : 1)
   const exercices = [...sheet.exercices]
   exercices.splice(at < 0 ? exercices.length : where === 'before' ? at : at + 1, 0, added)
   return { sheet: { ...sheet, exercices }, added }

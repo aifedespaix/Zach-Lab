@@ -4,6 +4,7 @@ import {
   ConfirmDialog, ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger,
 } from '@suite/shared/ui'
 import { useCorrectionView } from './useCorrectionView'
+import { exerciseStatus } from './sheet'
 import { useOpenExercise } from './useOpenExercise'
 
 /** La liste des exercices de la fiche ouverte, sous l'arbre des fichiers de la sidebar gauche. */
@@ -48,6 +49,7 @@ export function SheetOutline() {
             // Un exercice corrigé est grisé, ou caché sur demande : jamais celui qu'on est en train de lire.
             const done = exercise.corrige === true
             if (done && hideCorrected && exercise.id !== currentId) return null
+            const status = exerciseStatus(exercise)
             const label = exercise.numero.trim() === '' ? String(i + 1) : exercise.numero
             const firstLine = exercise.enonce.split('\n')[0].trim()
             return (
@@ -59,9 +61,10 @@ export function SheetOutline() {
                       aria-label={`Exercice ${label}`}
                       aria-current={exercise.id === currentId ? 'true' : undefined}
                       onClick={() => actions.goTo(exercise.id)}
+                      data-statut={status}
                       data-corrige={done ? (exercise.rate === true ? 'revoir' : 'true') : undefined}
-                      style={done ? { opacity: exercise.id === currentId ? 1 : 0.55 } : undefined}
-                      className="flex w-full items-center gap-1.5 px-2 py-1 text-left text-[13px] hover:bg-accent aria-[current=true]:bg-[color-mix(in_oklab,#3b82f6_24%,transparent)] aria-[current=true]:font-semibold aria-[current=true]:shadow-[inset_4px_0_0_#2563eb]"
+                      style={{ boxShadow: `inset 4px 0 0 var(--statut-${status})`, opacity: done && exercise.id !== currentId ? 0.55 : undefined }}
+                      className="flex w-full items-center gap-1.5 px-2 py-1 text-left text-[13px] hover:bg-accent aria-[current=true]:bg-[color-mix(in_oklab,var(--foreground)_12%,transparent)] aria-[current=true]:font-semibold"
                     >
                       <strong style={{ minWidth: 20 }}>{label}</strong>
                       {exercise.page.trim() !== '' && <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>p.{exercise.page}</span>}
@@ -69,7 +72,7 @@ export function SheetOutline() {
                         {firstLine}
                       </span>
                       {exercise.corrige === true
-                        ? <Check size={14} aria-label={exercise.rate === true ? 'À revoir' : 'Corrigé'} style={{ color: exercise.rate === true ? '#f97316' : '#22c55e' }} />
+                        ? <Check size={14} aria-label={exercise.rate === true ? 'À revoir' : 'Corrigé'} style={{ color: exercise.rate === true ? 'var(--statut-revoir)' : 'var(--statut-corrige)' }} />
                         : exercise.reponse.trim() !== '' && <Check size={14} aria-label="Réponse remplie" />}
                     </button>
                   </ContextMenuTrigger>

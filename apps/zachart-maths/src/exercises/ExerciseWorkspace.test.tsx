@@ -53,6 +53,22 @@ describe('ExerciseWorkspace', () => {
     expect(useExerciseStore.getState().selected).toBe('Fractions/exo-1.json')
   })
 
+  it('renomme le chapitre depuis le champ, sans recharger la fiche ouverte', async () => {
+    const fs = await setup({ 'A/a.json': sheetFile('Fiche', [ex('a', { enonce: 'Q1' })]) })
+    await open('A/a.json')
+    const user = userEvent.setup()
+    const chapter = await screen.findByRole('textbox', { name: 'Chapitre' })
+    expect(chapter).toHaveValue('A')
+    await user.clear(chapter)
+    await user.type(chapter, 'Fractions{Enter}')
+    await waitFor(() => expect(useExerciseStore.getState().selected).toBe('Fractions/a.json'))
+    expect(useOpenExercise.getState().path).toBe('Fractions/a.json')
+    expect(useOpenExercise.getState().status).not.toBe('loading')
+    expect(screen.getByLabelText("Énoncé de l'exercice")).toHaveValue('Q1')
+    expect(fs.files.has('Fractions/a.json')).toBe(true)
+    expect(screen.getByRole('textbox', { name: 'Chapitre' })).toHaveValue('Fractions')
+  })
+
   it('marque un exercice corrigé (cadre vert), et les récents comptent ceux à corriger', async () => {
     const fs = await setup({ 'A/a.json': sheetFile('Fiche', [ex('a', { enonce: 'Q1' }), ex('b', { enonce: 'Q2' })]) })
     await act(async () => useExerciseStore.setState({ recent: [{ path: 'A/a.json', openedAt: new Date().toISOString() }] }))

@@ -385,7 +385,39 @@
  * variables sont publiques (documentées par MathLive) et priment sur ses
  * valeurs par défaut ; les jetons suivent le thème de l'app.
  */
+/*
+ * La case en cours de saisie (cellule de tableau, ligne de calcul, membre d'équation, champ de
+ * texte) : un anneau de 2px à la teinte de son bloc (`--field-hue`, bleu par défaut), en plus du
+ * changement de bordure, donc jamais la couleur seule. Un `outline` plutôt qu'une bordure plus
+ * épaisse : rien ne bouge. Décalé de -1px vers l'intérieur, pour que ni les cases voisines ni un
+ * `overflow: hidden` ne le rognent. La teinte est assez foncée (claire en thème sombre) pour
+ * dépasser 3:1 face au fond. Le champ MathLive perd son propre contour : l'anneau est celui de sa case.
+ */
+.hue-field,
+.focus-cell-input,
+[data-focus-cell] {
+  --focus-cell-ring: hsl(var(--field-hue, 215) 80% 40%);
+}
+.dark .hue-field,
+.dark .focus-cell-input,
+.dark [data-focus-cell] {
+  --focus-cell-ring: hsl(var(--field-hue, 215) 90% 68%);
+}
+.hue-field:focus-visible,
+.focus-cell-input:focus-visible,
+[data-focus-cell]:focus-within {
+  outline: 2px solid var(--focus-cell-ring);
+  outline-offset: -1px;
+  border-color: var(--focus-cell-ring);
+}
+[data-focus-cell] math-field,
+[data-focus-cell] math-field:focus-within {
+  outline: none;
+}
+
 math-field {
+  /* Le fond de la case qui le porte, pas le gris que MathLive choisit selon le thème de Windows. */
+  background: transparent;
   --contains-highlight-background-color: var(--math-fence-bg);
   --contains-highlight-color: var(--math-fence-fg);
 }
@@ -479,3 +511,7 @@ math-field {
 @media (prefers-reduced-motion: reduce) {
   .table-handle { transition: none; }
 }
+
+/* La sous-ligne « opération » d'une équation (+ 3, × 2) : vert, foncé en thème clair et clair en thème sombre. */
+:root { --equation-operation: #15803d; }
+.dark { --equation-operation: #4ade80; }

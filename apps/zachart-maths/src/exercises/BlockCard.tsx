@@ -68,7 +68,7 @@ export function BlockCard({ block, index, count, onMove, onRemove, onSend, sendT
           flex: 1, minWidth: 0, padding: spacing(compact).cardPad,
           '--field-hue': hue,
           // Le vide autour d'une formule (cases des étapes et des lignes, `@suite/shared/equation`).
-          ...(compact ? { '--eq-term-pad': '1px 6px' } : {}),
+          ...(compact ? { '--eq-term-pad': '0' } : {}),
         } as React.CSSProperties}
       >{children}</div>
     </section>

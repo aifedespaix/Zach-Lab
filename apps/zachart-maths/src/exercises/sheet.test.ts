@@ -15,6 +15,17 @@ describe('insertExercise', () => {
     expect(ids(base)).toEqual(['a', 'b'])
     expect(isBlank(end.added)).toBe(true)
   })
+  it('reprend la page du voisin et décale son numéro (« 1a » → « 1b »)', () => {
+    const base = sheet('a', 'b')
+    base.exercices[0] = { ...base.exercices[0], numero: '2', page: '14' }
+    base.exercices[1] = { ...base.exercices[1], numero: '1a', page: '15' }
+    const end = insertExercise(base, 'end').added
+    expect([end.numero, end.page]).toEqual(['1b', '15'])
+    const start = insertExercise(base, 'start').added
+    expect([start.numero, start.page]).toEqual(['1', '14'])
+    expect(insertExerciseAt(base, 'a', 'after').added.numero).toBe('3')
+    expect(insertExerciseAt(sheet('a'), 'a', 'after').added.numero).toBe('')
+  })
 })
 
 describe('neighbour', () => {
@@ -33,7 +44,7 @@ describe('isBlank', () => {
     const blank = newExercise()
     expect(isBlank(blank)).toBe(true)
     expect(isBlank({ ...blank, numero: ' ' })).toBe(true)
-    expect(isBlank({ ...blank, numero: '1' })).toBe(false)
+    expect(isBlank({ ...blank, numero: '1', page: '12' })).toBe(true)
     expect(isBlank({ ...blank, enonce: 'Calcule' })).toBe(false)
     expect(isBlank({ ...blank, blocs: [{}] })).toBe(false)
     expect(isBlank({ ...blank, reponse: '7' })).toBe(false)

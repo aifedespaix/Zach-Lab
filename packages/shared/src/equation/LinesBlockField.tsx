@@ -26,6 +26,8 @@ export interface LinesBlockFieldProps {
 const ROW: CSSProperties = {
   boxSizing: 'border-box',
   padding: 'var(--eq-term-pad, 8px 14px)',
+  // La formule épouse les coins arrondis de sa case, même sans marge (mode condensé).
+  overflow: 'hidden',
   borderRadius: 10,
   border: '1.5px solid var(--border)',
   background: 'transparent',
@@ -149,7 +151,7 @@ export function LinesBlockField({ lines, onChange, ariaLabel, onEnterBlock, onDe
         const label = `Ligne ${index + 1} du calcul`
         const intents = intentsFor(index)
         return (
-          <div key={line.id} style={ROW} onFocus={() => onFieldChange(handles.current.get(line.id) ?? null)}>
+          <div key={line.id} data-focus-cell="" style={ROW} onFocus={() => onFieldChange(handles.current.get(line.id) ?? null)}>
             <MathFieldEditor
               latex={line.latex}
               onChange={latex => setLatex(index, latex)}

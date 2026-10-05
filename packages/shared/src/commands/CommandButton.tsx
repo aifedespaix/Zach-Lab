@@ -30,6 +30,11 @@ export interface CommandButtonProps {
    * the tests assert, whatever the state happens to be.
    */
   tooltipDetail?: string
+  /**
+   * Replaces the tooltip's first line (the accessible name stays the label), and drops the
+   * shortcut: for a disabled button, whose useful message is why it is, not which key it has.
+   */
+  tooltipLabel?: string
   /** For a toggle: sets `aria-pressed`, so the state is announced and a stylesheet can hang on it. */
   pressed?: boolean
   /**
@@ -61,6 +66,7 @@ export function CommandButton({
   showLabel = false,
   spinning = false,
   tooltipDetail,
+  tooltipLabel,
   pressed,
   className,
 }: CommandButtonProps) {
@@ -71,11 +77,13 @@ export function CommandButton({
   if (definition === undefined) return null
 
   const name = label ?? contextualLabel ?? definition.label
-  const shortcut = formatBinding(binding)
+  const shortcut = tooltipLabel === undefined ? formatBinding(binding) : ''
 
   return (
     <Tooltip>
+      {/* Un bouton désactivé ne reçoit aucun évènement du pointeur : le conteneur porte l'infobulle. */}
       <TooltipTrigger asChild>
+        <span style={{ display: 'inline-flex' }}>
         <Button
           variant={variant}
           size={size ?? (showLabel ? 'default' : 'icon')}
@@ -89,10 +97,11 @@ export function CommandButton({
           <Icon className={spinning ? 'animate-spin' : undefined} />
           {showLabel && <span>{name}</span>}
         </Button>
+        </span>
       </TooltipTrigger>
       <TooltipContent className={tooltipDetail ? 'flex-col items-start gap-1' : undefined}>
         <span>
-          {name}
+          {tooltipLabel ?? name}
           {shortcut && <span style={{ opacity: 0.7, marginLeft: 8 }}>{shortcut}</span>}
         </span>
         {tooltipDetail && <span style={{ opacity: 0.75 }}>{tooltipDetail}</span>}

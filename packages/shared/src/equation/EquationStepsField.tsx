@@ -24,6 +24,8 @@ const TERM_BOX: CSSProperties = {
   // `index.css`) redéfinit cette variable pour une case plus petite — même
   // convention que `--be-row-pad-*` dans `BlockEditor.tsx`.
   padding: 'var(--eq-term-pad, 8px 14px)',
+  // La formule épouse les coins arrondis de sa case, même sans marge (mode condensé).
+  overflow: 'hidden',
   borderRadius: 10,
   border: '1.5px solid var(--border)',
   background: 'transparent',
@@ -54,6 +56,7 @@ const SOLVED_ROW: CSSProperties = {
   background: 'color-mix(in oklch, #2f8f5b, transparent 93%)',
   borderRadius: 10,
   padding: 'var(--eq-term-pad, 8px 14px)',
+  overflow: 'hidden',
 }
 
 const SOLVED_TERM: CSSProperties = {
@@ -67,7 +70,7 @@ const OPERATION_FIELD_STYLE: CSSProperties = {
   textAlign: 'center',
   fontSize: 12.5,
   fontWeight: 800,
-  color: 'var(--destructive)',
+  color: 'var(--equation-operation)',
 }
 
 const OPERATION_MIRROR_STYLE: CSSProperties = {
@@ -83,10 +86,10 @@ const OPERATION_ADD_BUTTON_STYLE: CSSProperties = {
   gap: 4,
   width: '100%',
   padding: '2px 6px',
-  border: '1px dashed color-mix(in oklch, var(--destructive), transparent 50%)',
+  border: '1px dashed color-mix(in oklch, var(--equation-operation), transparent 50%)',
   borderRadius: 6,
   background: 'transparent',
-  color: 'var(--destructive)',
+  color: 'var(--equation-operation)',
   fontSize: 11.5,
   fontWeight: 700,
   cursor: 'pointer',
@@ -145,7 +148,7 @@ function EquationTermField({
   style?: CSSProperties
 }) {
   return (
-    <div data-equation-side={side} onFocus={onFocusHandle} style={style}>
+    <div data-equation-side={side} data-focus-cell="" onFocus={onFocusHandle} style={style}>
       <MathFieldEditor
         latex={value}
         onChange={onChangeValue}

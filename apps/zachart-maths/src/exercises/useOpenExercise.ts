@@ -177,6 +177,12 @@ export function goToExercise(path: string, exerciseId: string) {
 // déplacement en change le chemin : dans ce cas la fiche est déjà à jour en mémoire.
 useExerciseStore.subscribe((state, previous) => {
   if (state.selected === previous.selected) return
+  // Même fiche, nouveau chemin : on la rattache, sans la relire (ni perdre le curseur).
+  const { relocated } = state
+  if (relocated !== null && relocated.from === useOpenExercise.getState().path && relocated.to === state.selected) {
+    useOpenExercise.setState({ path: relocated.to })
+    return
+  }
   if (state.selected !== null && state.selected === useOpenExercise.getState().path) return
   void open(state.selected)
 })
