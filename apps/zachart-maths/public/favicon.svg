@@ -9,14 +9,14 @@
     stroke-linecap="round"
   />
 
-  <!-- 1. Rouge : Haut Gauche -->
-  <circle cx="36" cy="36" r="20" fill="#EF4444" />
+  <!-- 1. Rouge : Bas Gauche -->
+  <circle cx="36" cy="92" r="20" fill="#EF4444" />
 
-  <!-- 2. Orange : Haut Droite -->
-  <circle cx="92" cy="36" r="20" fill="#F97316" />
+  <!-- 2. Orange : Haut Gauche -->
+  <circle cx="36" cy="36" r="20" fill="#F97316" />
 
-  <!-- 3. Bleu : Bas Gauche -->
-  <circle cx="36" cy="92" r="20" fill="#3B82F6" />
+  <!-- 3. Bleu : Haut Droite -->
+  <circle cx="92" cy="36" r="20" fill="#3B82F6" />
 
   <!-- 4. Jaune : Bas Droite -->
   <circle cx="92" cy="92" r="20" fill="#EAB308" />
