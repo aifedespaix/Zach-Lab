@@ -467,11 +467,15 @@ export function MathFieldEditor({
     // d'une flèche ou de Tab, ni si une touche de modification était tenue.
     let lastKey = ''
     let lastModified = false
+    // Vrai quand la touche précédente était un « / » laissé à MathLive (donc une fraction vient d'être créée).
+    let slashMadeFraction = false
     field.addEventListener(
       'keydown',
       event => {
         // Une frappe qui compose (IME) appartient à l'IME, pas à la description.
         if (event.isComposing) return
+        const afterSlash = slashMadeFraction
+        slashMadeFraction = false
         lastKey = event.key
         lastModified = event.shiftKey || event.ctrlKey || event.metaKey || event.altKey
         // Au bord, une touche d'effacement RÉPÉTÉE est avalée, et celle qui
@@ -497,6 +501,17 @@ export function MathFieldEditor({
           event.preventDefault()
           field.insert('\\times ')
           return
+        }
+        // « / » fait une fraction (MathLive) ; « / » deux fois de suite la défait et pose le signe ÷.
+        // Pas Maj+« / » : sur AZERTY, « / » EST Maj+« : ».
+        if (event.key === '/' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+          if (afterSlash && field.insert !== undefined && field.executeCommand !== undefined) {
+            event.preventDefault()
+            field.executeCommand('undo')
+            field.insert('\\div ')
+            return
+          }
+          slashMadeFraction = true
         }
         if (event.key === '=' && !event.ctrlKey && !event.metaKey && !event.altKey && onEqualsRef.current !== undefined) {
           event.preventDefault()
