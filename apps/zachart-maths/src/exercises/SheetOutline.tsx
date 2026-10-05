@@ -61,7 +61,7 @@ export function SheetOutline() {
                       onClick={() => actions.goTo(exercise.id)}
                       data-corrige={done ? (exercise.rate === true ? 'revoir' : 'true') : undefined}
                       style={done ? { opacity: exercise.id === currentId ? 1 : 0.55 } : undefined}
-                      className="flex w-full items-center gap-1.5 px-2 py-1 text-left text-[13px] hover:bg-accent aria-[current=true]:bg-primary/15 aria-[current=true]:font-semibold aria-[current=true]:shadow-[inset_3px_0_0_var(--primary)]"
+                      className="flex w-full items-center gap-1.5 px-2 py-1 text-left text-[13px] hover:bg-accent aria-[current=true]:bg-[color-mix(in_oklab,#3b82f6_24%,transparent)] aria-[current=true]:font-semibold aria-[current=true]:shadow-[inset_4px_0_0_#2563eb]"
                     >
                       <strong style={{ minWidth: 20 }}>{label}</strong>
                       {exercise.page.trim() !== '' && <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>p.{exercise.page}</span>}

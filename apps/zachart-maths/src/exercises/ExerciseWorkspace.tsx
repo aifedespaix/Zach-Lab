@@ -171,7 +171,7 @@ export function ExerciseWorkspace() {
   }
 
   const space = spacing(compact)
-  const zone = { minWidth: 0, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', overscrollBehaviorX: 'contain', padding: space.zone, background: 'var(--background)' } as const
+  const zone = { minWidth: 0, minHeight: 0, overflowY: 'auto', overflowX: 'clip', overscrollBehaviorX: 'contain', padding: space.zone, background: 'var(--background)' } as const
 
   return (
     <SymbolInsertContext value={insertSymbol}>

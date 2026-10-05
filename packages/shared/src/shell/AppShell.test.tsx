@@ -30,7 +30,7 @@ describe('AppShell', () => {
     )
     // jsdom résout `vh` en pixels : on lit le style tel qu'il est écrit.
     const { style } = container.firstElementChild as HTMLElement
-    expect([style.height, style.overflow]).toEqual(['100vh', 'hidden'])
+    expect([style.height, style.overflow]).toEqual(['var(--app-height, 100vh)', 'clip'])
   })
 
   it('range les panneaux de part et d\'autre du centre, dans cet ordre', () => {
