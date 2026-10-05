@@ -9,7 +9,7 @@ describe('AnimatedLogo', () => {
     const { container } = render(<AnimatedLogo mode="draw-fade" />)
     const dots = [...container.querySelectorAll('circle')]
     expect(dots.map(d => [d.getAttribute('cx'), d.getAttribute('cy')])).toEqual([['36', '92'], ['36', '36'], ['92', '36'], ['92', '92']])
-    expect(dots.map(d => d.getAttribute('fill'))).toEqual(['#3B82F6', '#EF4444', '#F97316', '#EAB308'])
+    expect(dots.map(d => d.getAttribute('fill'))).toEqual(['#EF4444', '#F97316', '#3B82F6', '#EAB308'])
     expect(container.querySelectorAll('polyline')).toHaveLength(3)
     expect(container.querySelector('svg')).toHaveAttribute('aria-hidden', 'true')
   })
@@ -38,6 +38,6 @@ describe('AnimatedLogo', () => {
 
   it('le favicon est le même M que l\'animation : mêmes points, mêmes couleurs', () => {
     expect(favicon).toContain('points="36,92 36,36 64,78 92,36 92,92"')
-    for (const color of ['#3B82F6', '#EF4444', '#F97316', '#EAB308']) expect(favicon).toContain(color)
+    for (const color of ['#EF4444', '#F97316', '#3B82F6', '#EAB308']) expect(favicon).toContain(color)
   })
 })

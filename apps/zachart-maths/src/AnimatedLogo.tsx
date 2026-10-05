@@ -21,9 +21,9 @@ export function AnimatedLogo({ mode, size = 96 }: AnimatedLogoProps) {
       <polyline className="animated-logo-seg animated-logo-seg--1" pathLength="80" points="36,92 36,36" />
       <polyline className="animated-logo-seg animated-logo-seg--2" pathLength="80" points="36,36 64,78 92,36" />
       <polyline className="animated-logo-seg animated-logo-seg--3" pathLength="80" points="92,36 92,92" />
-      <circle className="animated-logo-dot animated-logo-dot--1" cx="36" cy="92" r="20" fill="#3B82F6" />
-      <circle className="animated-logo-dot animated-logo-dot--2" cx="36" cy="36" r="20" fill="#EF4444" />
-      <circle className="animated-logo-dot animated-logo-dot--3" cx="92" cy="36" r="20" fill="#F97316" />
+      <circle className="animated-logo-dot animated-logo-dot--1" cx="36" cy="92" r="20" fill="#EF4444" />
+      <circle className="animated-logo-dot animated-logo-dot--2" cx="36" cy="36" r="20" fill="#F97316" />
+      <circle className="animated-logo-dot animated-logo-dot--3" cx="92" cy="36" r="20" fill="#3B82F6" />
       <circle className="animated-logo-dot animated-logo-dot--4" cx="92" cy="92" r="20" fill="#EAB308" />
     </svg>
   )
