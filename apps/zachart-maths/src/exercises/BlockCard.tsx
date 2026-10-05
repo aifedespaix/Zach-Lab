@@ -58,7 +58,15 @@ export function BlockCard({ block, index, count, onMove, onRemove, onSend, sendT
         )}
         <Button variant="ghost" size="icon-sm" aria-label="Supprimer le bloc" onClick={onRemove}><Trash2 /></Button>
       </div>
-      <div style={{ flex: 1, minWidth: 0, padding: spacing(compact).cardPad }}>{children}</div>
+      <div
+        data-compact={compact ? '' : undefined}
+        style={{
+          flex: 1, minWidth: 0, padding: spacing(compact).cardPad,
+          '--field-hue': hue,
+          // Le vide autour d'une formule (cases des étapes et des lignes, `@suite/shared/equation`).
+          ...(compact ? { '--eq-term-pad': '1px 6px' } : {}),
+        } as React.CSSProperties}
+      >{children}</div>
     </section>
   )
 }

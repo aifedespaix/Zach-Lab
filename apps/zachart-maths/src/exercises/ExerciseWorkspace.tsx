@@ -180,8 +180,9 @@ export function ExerciseWorkspace() {
       <header
         style={{
           display: 'flex', flexDirection: 'column', gap: compact ? 4 : 8, padding: space.header,
+          '--field-hue': 215,
           background: 'color-mix(in oklab, #3b82f6 18%, var(--background))', borderBottom: '2px solid #3b82f6',
-        }}
+        } as React.CSSProperties}
       >
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           <input
@@ -237,7 +238,7 @@ export function ExerciseWorkspace() {
               value={exercise.enonce}
               rows={Math.max(2, exercise.enonce.split('\n').length)}
               onChange={e => edit({ enonce: e.target.value })}
-              className={`${field} w-full`}
+              className={`${field} hue-field w-full`}
             />
           </FieldContextMenu>
           <Button
@@ -290,9 +291,12 @@ export function ExerciseWorkspace() {
       <footer
         aria-label="Zone de réponse"
         data-corrige={corrected ? (toReview ? 'revoir' : 'true') : undefined}
-        style={corrected
-          ? { padding: space.footer, background: `color-mix(in oklab, ${accent} 18%, var(--background))`, border: `2px solid ${accent}` }
-          : { padding: space.footer, background: 'color-mix(in oklab, #3b82f6 18%, var(--background))', borderTop: '2px solid #3b82f6' }}
+        style={{
+          '--field-hue': corrected ? (toReview ? 25 : 142) : 215,
+          ...(corrected
+            ? { padding: space.footer, background: `color-mix(in oklab, ${accent} 18%, var(--background))`, border: `2px solid ${accent}` }
+            : { padding: space.footer, background: 'color-mix(in oklab, #3b82f6 18%, var(--background))', borderTop: '2px solid #3b82f6' }),
+        } as unknown as React.CSSProperties}
       >
         <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }} htmlFor="reponse-finale">
           Réponse
@@ -303,7 +307,7 @@ export function ExerciseWorkspace() {
             value={exercise.reponse}
             onChange={e => edit({ reponse: e.target.value })}
             rows={2}
-            className={`${field} w-full`}
+            className={`${field} hue-field w-full`}
           />
         </FieldContextMenu>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 4 }}>
