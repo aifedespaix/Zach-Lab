@@ -49,7 +49,9 @@ export function SheetOutline() {
                       <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--muted-foreground)' }}>
                         {firstLine}
                       </span>
-                      {exercise.reponse.trim() !== '' && <Check size={14} aria-label="Réponse remplie" />}
+                      {exercise.corrige === true
+                        ? <Check size={14} aria-label="Corrigé" style={{ color: '#22c55e' }} />
+                        : exercise.reponse.trim() !== '' && <Check size={14} aria-label="Réponse remplie" />}
                     </button>
                   </ContextMenuTrigger>
                   <ContextMenuContent>

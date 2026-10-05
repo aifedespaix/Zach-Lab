@@ -1,5 +1,6 @@
 import type { ExerciseFs } from './fsPort'
 import { EXERCISE_EXT, ORDER_FILE, joinPath, safeName, splitPath, uniqueName } from './names'
+import { countToCorrect } from './sheet'
 import { newSheet, validateSheet, type ChapterNode, type ExerciseEntry, type Sheet } from './types'
 
 /** Demandé par l'élève : un nom qui ne donne aucun nom de fichier utilisable. */
@@ -72,6 +73,7 @@ export async function loadTree(fs: ExerciseFs): Promise<ChapterNode[]> {
         path,
         titre: sheet?.titre ?? file.slice(0, -EXERCISE_EXT.length),
         exercices: sheet?.exercices.length ?? 0,
+        aCorriger: sheet === null ? 0 : countToCorrect(sheet),
         corrompu: sheet === null,
       })
     }

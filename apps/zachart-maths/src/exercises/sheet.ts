@@ -23,6 +23,11 @@ export function neighbour(sheet: Sheet, id: string, delta: -1 | 1): string | nul
 export const isBlank = (e: Exercise) =>
   e.numero.trim() === '' && e.enonce.trim() === '' && e.reponse.trim() === '' && e.notes.trim() === '' && e.blocs.length === 0 && (e.blocsB ?? []).length === 0
 
+/** Un exercice commencé (pas vierge) et pas encore marqué corrigé : un exercice vide n'attend aucune correction. */
+export const needsCorrection = (e: Exercise) => e.corrige !== true && !isBlank(e)
+
+export const countToCorrect = (sheet: Sheet) => sheet.exercices.filter(needsCorrection).length
+
 /**
  * Retire un exercice et dit lequel afficher ensuite : le suivant, ou le précédent si c'était le
  * dernier. Une fiche garde toujours un exercice : sur le seul restant, rien ne bouge.

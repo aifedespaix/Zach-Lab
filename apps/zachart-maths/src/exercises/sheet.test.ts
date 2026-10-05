@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { dropExercise, insertExercise, insertExerciseAt, isBlank, moveExercise, neighbour, patchExercise } from './sheet'
-import { newExercise, type Sheet } from './types'
+import { countToCorrect, needsCorrection, dropExercise, insertExercise, insertExerciseAt, isBlank, moveExercise, neighbour, patchExercise } from './sheet'
+import { newExercise, newSheet, type Sheet } from './types'
 
 const sheet = (...ids: string[]): Sheet => ({ version: 2, id: 'f', titre: 'T', exercices: ids.map(id => ({ ...newExercise(), id })) })
 const ids = (s: Sheet) => s.exercices.map(e => e.id)
@@ -94,5 +94,18 @@ describe('insertExerciseAt', () => {
   it("un id inconnu : l'exercice est ajouté à la fin, jamais perdu", () => {
     const r = insertExerciseAt(sheet('a'), 'zz', 'before')
     expect(ids(r.sheet)).toEqual(['a', r.added.id])
+  })
+})
+
+describe('needsCorrection', () => {
+  const started = { ...newExercise(), enonce: 'Calcule 2+2' }
+  it('compte un exercice commencé et non corrigé, pas un vierge ni un corrigé', () => {
+    expect(needsCorrection(started)).toBe(true)
+    expect(needsCorrection(newExercise())).toBe(false)
+    expect(needsCorrection({ ...started, corrige: true })).toBe(false)
+  })
+  it('countToCorrect additionne sur la fiche', () => {
+    const sheet = { ...newSheet('F'), exercices: [started, { ...started, id: 'b', corrige: true }, newExercise()] }
+    expect(countToCorrect(sheet)).toBe(1)
   })
 })

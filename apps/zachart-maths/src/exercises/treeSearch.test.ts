@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { filterChapters } from './treeSearch'
 import type { ChapterNode } from './types'
 
-const ex = (path: string, titre: string) => ({ path, titre, exercices: 1, corrompu: false })
+const ex = (path: string, titre: string) => ({ path, titre, exercices: 1, aCorriger: 0, corrompu: false })
 
 const tree: ChapterNode[] = [
   { name: 'Fractions', exercises: [ex('Fractions/a.json', 'Additionner'), ex('Fractions/b.json', 'Simplifier')] },

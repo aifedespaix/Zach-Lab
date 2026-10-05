@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { ToCorrectBadge } from './ToCorrectBadge'
 import {
   ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, CopyPlus, FilePlus, FileText, FileWarning, FolderPlus, PanelLeftClose,
 } from 'lucide-react'
@@ -256,7 +257,8 @@ export function ExerciseTree() {
                               }}
                             >
                               {exo.corrompu ? <FileWarning size={14} /> : <FileText size={14} />}
-                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{exo.titre}</span>
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{exo.titre}</span>
+                              <ToCorrectBadge count={exo.aCorriger} />
                             </button>
                           </ContextMenuTrigger>
                           <ContextMenuContent onCloseAutoFocus={keepNameFocus}>

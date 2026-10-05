@@ -51,6 +51,22 @@ describe('ExerciseWorkspace', () => {
     expect(useExerciseStore.getState().selected).toBe('Fractions/exo-1.json')
   })
 
+  it('marque un exercice corrigé (cadre vert), et les récents comptent ceux à corriger', async () => {
+    const fs = await setup({ 'A/a.json': sheetFile('Fiche', [ex('a', { enonce: 'Q1' }), ex('b', { enonce: 'Q2' })]) })
+    await act(async () => useExerciseStore.setState({ recent: [{ path: 'A/a.json', openedAt: new Date().toISOString() }] }))
+    expect(screen.getByLabelText('2 à corriger')).toBeInTheDocument()
+    await open('A/a.json')
+    const footer = screen.getByRole('contentinfo', { name: 'Zone de réponse' })
+    expect(footer).not.toHaveAttribute('data-corrige')
+    await userEvent.click(screen.getByRole('button', { name: 'Exercice corrigé' }))
+    expect(screen.getByRole('contentinfo', { name: 'Zone de réponse' })).toHaveAttribute('data-corrige', 'true')
+    await act(async () => useOpenExercise.getState().flush())
+    expect(stored(fs, 'A/a.json').exercices[0].corrige).toBe(true)
+    expect(useExerciseStore.getState().tree[0].exercises[0].aCorriger).toBe(1)
+    await userEvent.click(screen.getByRole('button', { name: 'Exercice corrigé' }))
+    expect(screen.getByRole('contentinfo', { name: 'Zone de réponse' })).not.toHaveAttribute('data-corrige')
+  })
+
   it('invite à choisir un exercice, puis l\'affiche', async () => {
     await setup({ 'A/a.json': exo('Premier') })
     expect(screen.getByText(/Choisis un exercice/)).toBeInTheDocument()

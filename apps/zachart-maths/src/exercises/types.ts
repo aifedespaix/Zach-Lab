@@ -22,6 +22,8 @@ export interface Exercise {
    */
   blocsB?: unknown[]
   reponse: string
+  /** Marqué corrigé par l'élève ; absent (jamais écrit à `false`) tant qu'il ne l'a pas fait. */
+  corrige?: boolean
   /** Les notes libres prises à côté de l'exercice (sidebar droite). */
   notes: string
 }
@@ -73,6 +75,8 @@ function normalizeExercise(raw: unknown, seen: Set<string>): Exercise | null {
   // `...r` a laissé passer un `blocsB` qui n'est peut-être pas un tableau : seul un tableau compte.
   if (Array.isArray(r.blocsB)) exercise.blocsB = withIds(r.blocsB)
   else delete exercise.blocsB
+  if (r.corrige === true) exercise.corrige = true
+  else delete exercise.corrige
   return exercise
 }
 
@@ -116,6 +120,8 @@ export interface ExerciseEntry {
   titre: string
   /** Nombre d'exercices de la fiche (0 pour un fichier illisible). */
   exercices: number
+  /** Exercices commencés et pas encore marqués corrigés (0 pour un fichier illisible). */
+  aCorriger: number
   /** `true` quand le fichier est illisible : il reste visible, mais ne s'ouvre pas. */
   corrompu: boolean
 }

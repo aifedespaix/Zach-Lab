@@ -147,6 +147,9 @@ under `src/`, wired together in `App.tsx`:
   exercise titles ONLY, not file contents; it is a view over the tree (matching chapters forced
   open), never touching the real folded state. The left panel footer carries the commands
   `tree.newChapter` and `tree.toggleAll` (category `tree`), then the fold button.
+- **Corrigé** (`Exercise.corrige?`, jamais écrit à `false`) : bouton à bascule dans le pied de l'exercice (cadre vert).
+  `sheet.needsCorrection` / `countToCorrect` comptent les exercices commencés non corrigés (un exercice vierge n'attend rien) ;
+  `ExerciseEntry.aCorriger` alimente `ToCorrectBadge` dans l'arbre et les récents de l'écran d'accueil.
 - **Blocks** (`blocks.ts`): `texte`, `calcul`, `tableau`, `equation`. A new block type = a
   type in `blocks.ts` (`newBlock`, `parseBlocks`), an editor in `BlockStack.tsx`, an icon and
   hue in `blockMeta.ts`. A block of an unknown type is kept verbatim in the file, never dropped.
