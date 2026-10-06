@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { useContext, useEffect, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react'
 import { TableCellMenuItems, TableGrid, type BlockEdgeHandle } from '@suite/shared/equation'
 import { motion, useReducedMotion } from 'motion/react'
 import { Button } from '@suite/shared/ui'
@@ -11,12 +11,12 @@ import { EquationEditor, type SubBlockContext } from './EquationEditor'
 import { FieldContextMenu } from './FieldContextMenu'
 import { HighlightedTextarea, UnitHuesContext } from './HighlightedTextarea'
 import { borderOf, headerToneOf, toneOf } from './toolbarCatalog'
-import { cellKeyAction, cellMove, type CellMove } from './tableNav'
+import { cellKeyAction, cellMove, clearRect, crossProduct, inRect, pasteGrid, rectOf, rectToTsv, type CellMove, type CellPoint } from './tableNav'
 import { tableLayout } from './tableUnits'
 import { spacing, useCompact } from './useCompact'
 import { useUnitColors } from './useUnitColors'
 import {
-  BLOCK_TYPES, newBlock, addColumn, addRow, canGrow, convertBlock, duplicateBlock, insertBlockAfter, isKnown, moveBlock, parseBlocks,
+  BLOCK_TYPES, MAX_TABLE, newBlock, addColumn, addRow, canGrow, convertBlock, duplicateBlock, insertBlockAfter, isKnown, moveBlock, parseBlocks,
   removeBlock, removeColumn, removeRow, setCell, updateBlock, type Block, type BlockType, type EquationBlock, type KnownBlock, type TableBlock, type TextBlock,
 } from './blocks'
 
@@ -85,20 +85,69 @@ function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: 
     pendingFocus.current = null
     focusCell(scrollRef.current, move)
   }, [cells])
+  // La sélection rectangulaire (Maj+flèches, Maj+clic) et la case qui a le focus (pour l'aide au calcul).
+  const [selection, setSelection] = useState<{ anchor: CellPoint; head: CellPoint } | null>(null)
+  const [focused, setFocusCell] = useState<CellPoint | null>(null)
+  const rect = selection === null ? null : rectOf(selection.anchor, selection.head)
+  const multi = rect !== null && (rect.top !== rect.bottom || rect.left !== rect.right)
+  const rowTotal = cells.length
+  const columnTotal = cells[0].length
+  useEffect(() => setSelection(null), [rowTotal, columnTotal])
+
+  const extendSelection = (from: CellPoint, to: CellPoint) => {
+    setSelection({ anchor: selection?.anchor ?? from, head: to })
+    focusCell(scrollRef.current, { row: to.row, column: to.column, caret: 'end' })
+  }
   const onCellKeyDown = (e: KeyboardEvent<HTMLInputElement>, r: number, c: number) => {
-    moveBetweenCells(e, r, c, cells.length, cells[0].length)
-    if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.nativeEvent.isComposing) return
-    const action = cellKeyAction(e.key, e.shiftKey, e.repeat, r, c, cells, canGrow(cells, 'row'))
-    if (action === null) return
+    const input = e.currentTarget
+    if (e.nativeEvent.isComposing) return
+    // Maj+flèches : étendre la sélection. Verticalement toujours ; horizontalement seulement quand le texte ne peut plus s'étendre.
+    if (e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey && e.key.startsWith('Arrow')) {
+      const head = selection?.head ?? { row: r, column: c }
+      const atStart = input.selectionStart === 0 && input.selectionEnd === 0 || (input.selectionStart === 0 && selection !== null)
+      const atEnd = input.selectionEnd === input.value.length && input.selectionStart === input.value.length || (input.selectionEnd === input.value.length && selection !== null)
+      const to: CellPoint | null =
+        e.key === 'ArrowUp' ? { row: Math.max(0, head.row - 1), column: head.column }
+        : e.key === 'ArrowDown' ? { row: Math.min(rowTotal - 1, head.row + 1), column: head.column }
+        : e.key === 'ArrowLeft' && atStart ? { row: head.row, column: Math.max(0, head.column - 1) }
+        : e.key === 'ArrowRight' && atEnd ? { row: head.row, column: Math.min(columnTotal - 1, head.column + 1) }
+        : null
+      if (to !== null) {
+        e.preventDefault()
+        extendSelection({ row: r, column: c }, to)
+      }
+      return
+    }
+    if (multi && rect !== null && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      if (e.key === 'Backspace' || e.key === 'Delete') {
+        e.preventDefault()
+        set(clearRect(cells, rect))
+        return
+      }
+      // Toute autre touche abandonne la sélection et garde son effet.
+      if (e.key !== 'Shift') setSelection(null)
+    } else if (selection !== null && e.key === 'Escape') {
+      setSelection(null)
+    }
+    moveBetweenCells(e, r, c, rowTotal, columnTotal)
+    if (e.defaultPrevented) return
+    const action = cellKeyAction(e.key, e.shiftKey, e.repeat, r, c, cells, canGrow(cells, 'row'), {
+      mod: e.ctrlKey || e.metaKey, canAddColumn: canGrow(cells, 'col'),
+    })
+    if (action === null || e.altKey) return
     e.preventDefault()
     switch (action.kind) {
       case 'move': focusCell(scrollRef.current, action.to); break
       case 'focusAddRow':
-        scrollRef.current?.querySelector<HTMLButtonElement>(`button[aria-label^="Insérer une ligne après la ligne ${cells.length} "]`)?.focus()
+        scrollRef.current?.querySelector<HTMLButtonElement>(`button[aria-label^="Insérer une ligne après la ligne ${rowTotal} "]`)?.focus()
         break
       case 'addRow':
-        pendingFocus.current = { row: cells.length, column: 0, caret: 'start' }
+        pendingFocus.current = { row: rowTotal, column: 0, caret: 'start' }
         set(addRow(cells))
+        break
+      case 'addColumn':
+        pendingFocus.current = { row: r, column: action.after + 1, caret: 'start' }
+        set(addColumn(cells, action.after))
         break
       case 'removeRow':
         pendingFocus.current = action.to
@@ -106,6 +155,19 @@ function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: 
         break
     }
   }
+  const onCellPaste = (e: ClipboardEvent<HTMLInputElement>, r: number, c: number) => {
+    const grid = pasteGrid(cells, r, c, e.clipboardData.getData('text'), MAX_TABLE)
+    if (grid === null) return
+    e.preventDefault()
+    set(grid)
+  }
+  const onCellCopy = (e: ClipboardEvent<HTMLInputElement>, cut: boolean) => {
+    if (!multi || rect === null) return
+    e.preventDefault()
+    e.clipboardData.setData('text/plain', rectToTsv(cells, rect))
+    if (cut) set(clearRect(cells, rect))
+  }
+  const hint = focused === null || multi ? null : crossProduct(cells, focused.row, focused.column)
   const addRowAfter = (after: number) => set(addRow(cells, after))
   const addColumnAfter = (after: number) => set(addColumn(cells, after))
   const removeRowAt = (row: number) => set(removeRow(cells, row))
@@ -114,7 +176,13 @@ function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: 
     // `overflow-x: auto` forces `overflow-y: auto`, which would clip the « + »
     // after the last column / row: they straddle the grid's right and bottom
     // edges by 13px (TableGrid's HANDLE_STRADDLE). 14px keeps them inside.
-    <div ref={scrollRef} data-testid="table-scroll" style={{ overflowX: 'auto', paddingRight: 14, paddingBottom: 14 }}>
+    <div
+      ref={scrollRef}
+      data-testid="table-scroll"
+      onBlur={e => {
+        if (!(e.relatedTarget instanceof Node && scrollRef.current?.contains(e.relatedTarget))) setFocusCell(null)
+      }}
+      style={{ overflowX: 'auto', paddingRight: 14, paddingBottom: 14 }}>
       <TableGrid
         tableLabel={String(index + 1)}
         handlesTabbable={false}
@@ -143,8 +211,22 @@ function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: 
               value={cells[r][c]}
               onChange={e => set(setCell(cells, r, c, e.target.value))}
               onKeyDown={e => onCellKeyDown(e, r, c)}
+              onPaste={e => onCellPaste(e, r, c)}
+              onCopy={e => onCellCopy(e, false)}
+              onCut={e => onCellCopy(e, true)}
+              onFocus={() => setFocusCell({ row: r, column: c })}
+              onMouseDown={e => {
+                // Maj+clic : sélectionne le rectangle depuis la case qui avait le focus.
+                if (!e.shiftKey || focused === null) return
+                e.preventDefault()
+                setSelection({ anchor: selection?.anchor ?? focused, head: { row: r, column: c } })
+              }}
               className="focus-cell-input w-full bg-background px-2 py-1 text-sm"
-              style={{ border: '1px solid var(--border)', background: fillOf(r, c) }}
+              style={{
+                border: '1px solid var(--border)',
+                background: fillOf(r, c),
+                boxShadow: multi && rect !== null && inRect(rect, r, c) ? 'inset 0 0 0 2px var(--primary)' : undefined,
+              }}
             />
           </FieldContextMenu>
         )}
@@ -156,6 +238,18 @@ function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: 
         canAddColumn={canGrow(cells, 'col')}
         addDisabledReason={{ row: '12 lignes au maximum', column: '12 colonnes au maximum' }}
       />
+      {hint !== null && focused !== null && (
+        <p style={{ margin: '6px 0 0', fontSize: 12, opacity: 0.85 }}>
+          Produit en croix : {hint.formula}{' '}
+          <button
+            type="button"
+            tabIndex={-1}
+            onMouseDown={e => e.preventDefault()}
+            onClick={() => set(setCell(cells, focused.row, focused.column, hint.value))}
+            style={{ textDecoration: 'underline' }}
+          >Remplir</button>
+        </p>
+      )}
     </div>
   )
 }

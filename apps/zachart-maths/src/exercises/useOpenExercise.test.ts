@@ -56,3 +56,44 @@ describe('useOpenExercise : réorganiser la fiche', () => {
     expect(ids()).toHaveLength(1)
   })
 })
+
+describe('useOpenExercise : annuler / rétablir', () => {
+  beforeEach(() => {
+    useExerciseStore.setState({ fs: null, tree: [], loaded: false, selected: null, error: null })
+    useOpenExercise.setState({ path: null, sheet: null, currentId: null, exercise: null, status: 'empty', undoDepth: 0, redoDepth: 0 })
+  })
+  const enonce = () => useOpenExercise.getState().exercise!.enonce
+
+  it('groupe les frappes rapprochées en un seul pas', async () => {
+    await openSheet()
+    act(() => { for (const t of ['a', 'ab', 'abc']) useOpenExercise.getState().edit({ enonce: t }) })
+    expect(useOpenExercise.getState().undoDepth).toBe(1)
+    act(() => useOpenExercise.getState().undo())
+    expect(enonce()).toBe('')
+    expect(useOpenExercise.getState().redoDepth).toBe(1)
+    act(() => useOpenExercise.getState().redo())
+    expect(enonce()).toBe('abc')
+  })
+
+  it('annule une suppression et un déplacement, et une nouvelle action vide le rétablissement', async () => {
+    await openSheet()
+    act(() => useOpenExercise.getState().reorder('b', -1))
+    act(() => useOpenExercise.getState().removeById('c'))
+    expect(ids()).toEqual(['b', 'a'])
+    act(() => useOpenExercise.getState().undo())
+    expect(ids()).toEqual(['b', 'a', 'c'])
+    act(() => useOpenExercise.getState().undo())
+    expect(ids()).toEqual(['a', 'b', 'c'])
+    act(() => useOpenExercise.getState().reorder('c', -1))
+    expect(useOpenExercise.getState().redoDepth).toBe(0)
+  })
+
+  it("ne fait rien sans historique, et repart de zéro à l'ouverture d'une autre fiche", async () => {
+    await openSheet()
+    act(() => useOpenExercise.getState().undo())
+    expect(ids()).toEqual(['a', 'b', 'c'])
+    act(() => useOpenExercise.getState().reorder('b', -1))
+    await openSheet()
+    expect(useOpenExercise.getState().undoDepth).toBe(0)
+  })
+})
