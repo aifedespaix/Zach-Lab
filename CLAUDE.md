@@ -187,14 +187,18 @@ under `src/`, wired together in `App.tsx`:
   seul n'est jamais une unité (c'est aussi une inconnue) : `2t` n'est pas coloré, seul `2 t` (avec espace) =
   tonnes. Le texte des cellules de tableau, les formules MathLive et les cours ne sont pas colorés (le fond d'un tableau suit son en-tête : voir Tableaux). Réglage : bouton
   `view.toggleUnitColors` de la barre du haut, clé `localStorage` `zachart-maths:unit-colors`, activé par défaut.
-- **Termes semblables** (`likeTerms.ts`, `termColors.ts`, `LikeTermsHelp.tsx`) : `colorTerms(latex)` découpe un
+- **Termes semblables** (`likeTerms.ts`, `termColors.ts`, `termHighlight.ts`) : `colorTerms(latex)` découpe un
   membre aux `+`/`−` de premier niveau en segments `{ text, group }` (`group` = partie littérale `x`, `xy`, `x^2` ;
   `''` constante ; `null` non coloré — parenthèses, fractions, racines, `/`, commande inconnue ; les segments
   recollés redonnent l'entrée) ; `assignTermColors(groups, theme)` donne une couleur HEXADÉCIMALE par groupe
-  (`\colorbox` de KaTeX n'accepte pas `var(--…)`), attribuée sur TOUT le bloc, la constante étant un gris neutre ; `LikeTermsHelp` recompose les
-  étapes en lecture seule (`\colorbox`, `renderMathToHtml`), une case de 28 px par étape (vide sauf si un groupe a au moins deux termes dans l'étape), sous le bloc équation tant qu'il a le focus et que le
-  réglage est actif. Le champ MathLive n'est jamais modifié et l'aide n'appelle jamais `onChange`. Même bouton que
-  les unités (`view.toggleUnitColors`, « Colorer unités et termes »).
+  (le fond MathLive/KaTeX n'accepte pas `var(--…)`), attribuée sur TOUT le bloc, la constante étant un gris neutre ;
+  `termHighlighter(steps, theme)` renvoie la fonction `(latex, { step, side }) => LatexHighlight[]` que `EquationEditor`
+  passe à `EquationStepsField` (`highlight`) puis à `MathFieldEditor` (`highlight`) : la coloration est peinte DANS les
+  champs MathLive, en continu (sans focus), un membre n'étant coloré que si un groupe a au moins deux termes dans son
+  étape. Côté shared, `paintHighlights` convertit les indices de LaTeX en décalages MathLive et appelle `applyStyle`
+  avec `silenceNotifications` (aucun `input`) ; comme `value` contient alors des `\colorbox`, TOUTE lecture d'un champ
+  coloré passe par `plainValue` (`getValue('latex-unstyled')`) : la valeur enregistrée reste celle de l'élève, et
+  `onChange` ne reçoit jamais de couleur. Même bouton que les unités (`view.toggleUnitColors`, « Colorer unités et termes »).
 - **Tableaux** (`tableUnits.ts`, `parseUnit` de `quantities.ts`, `TableEditor` dans `BlockStack.tsx`) : `headerUnit(cell)`
   lit l'unité d'une cellule d'en-tête (toute la cellule est une unité, ou finit par `(km)` / `[€]`, ou par « en km/h » ;
   `16 km` n'en est pas un ; `t` seul refusé, `t (s)` donne `s`) ; `tableLayout(cells)` cherche d'abord sur la première

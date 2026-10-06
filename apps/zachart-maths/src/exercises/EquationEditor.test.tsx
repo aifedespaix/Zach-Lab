@@ -1,16 +1,25 @@
-import { fireEvent, render } from '@testing-library/react'
+import { render } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TooltipProvider } from '@suite/shared/ui'
 import type { EquationBlock } from './blocks'
 import { EquationEditor, type SubBlockContext } from './EquationEditor'
 import { useUnitColors } from './useUnitColors'
 
+type Painted = { backgroundColor: string; range: [number, number] }
+
+// Un `<math-field>` factice qui garde la valeur en clair et note les couleurs qu'on lui demande de peindre.
 vi.mock('mathlive', () => {
   if (!customElements.get('math-field')) {
     customElements.define('math-field', class extends HTMLElement {
       value = ''
+      painted: Painted[] = []
+      get lastOffset() { return this.value.length }
       connectedCallback() { this.tabIndex = 0 }
       insert(fragment: string) { this.value += fragment.replace(/#[0?]/g, '') }
+      getValue(start: number, end: number) { return this.value.slice(start, end) }
+      applyStyle(style: { backgroundColor: string }, options: { range: [number, number] }) {
+        if (style.backgroundColor !== 'none') this.painted.push({ backgroundColor: style.backgroundColor, range: options.range })
+      }
     })
   }
   return {}
@@ -32,51 +41,42 @@ const ctx: SubBlockContext = {
   edge: { current: null },
 }
 
-function setup(onChange = vi.fn()) {
+async function setup(onChange = vi.fn()) {
   const view = render(
     <TooltipProvider>
       <EquationEditor block={block} onChange={onChange} ctx={ctx} />
     </TooltipProvider>,
   )
-  const root = view.container.querySelector('[data-like-terms-root]') as HTMLElement
-  return { ...view, root, onChange, help: () => view.container.querySelector('[data-like-terms-help]') }
+  const fields = async () => {
+    await vi.waitFor(() => expect(view.container.querySelectorAll('math-field')).toHaveLength(2))
+    return [...view.container.querySelectorAll('math-field')] as unknown as { painted: Painted[]; value: string }[]
+  }
+  return { ...view, onChange, fields }
 }
 
-describe('EquationEditor : aide des termes semblables', () => {
+describe('EquationEditor : termes semblables colorés dans les champs', () => {
   beforeEach(() => useUnitColors.setState({ enabled: true }))
 
-  it('n\'affiche rien tant que le bloc n\'a pas le focus', () => {
-    const { help } = setup()
-    expect(help()).toBeNull()
+  it('peint un fond par terme, directement dans le champ', async () => {
+    const { fields } = await setup()
+    const [left] = await fields()
+    await vi.waitFor(() => expect(left.painted).toHaveLength(3))
+    expect(left.painted.map(p => p.range)).toEqual([[0, 2], [2, 5], [5, 7]])
+    expect(document.querySelector('[data-like-terms-help]')).toBeNull()
   })
 
-  it('affiche la ligne colorée quand le bloc a le focus, et la retire quand il le perd', () => {
-    const { root, help, container } = setup()
-    fireEvent.focusIn(root)
-    expect(help()).not.toBeNull()
-    expect(container.querySelectorAll('[data-like-terms-line]')).toHaveLength(1)
-    fireEvent.focusOut(root, { relatedTarget: null })
-    expect(help()).toBeNull()
-  })
-
-  it('garde l\'aide quand le focus passe d\'un champ à l\'autre du même bloc', () => {
-    const { root, help } = setup()
-    fireEvent.focusIn(root)
-    fireEvent.focusOut(root, { relatedTarget: root.firstElementChild })
-    expect(help()).not.toBeNull()
-  })
-
-  it('n\'affiche rien quand le réglage est coupé', () => {
+  it('ne peint rien quand le réglage est coupé', async () => {
     useUnitColors.setState({ enabled: false })
-    const { root, help } = setup()
-    fireEvent.focusIn(root)
-    expect(help()).toBeNull()
+    const { fields } = await setup()
+    const [left] = await fields()
+    expect(left.painted).toHaveLength(0)
   })
 
-  it('ne modifie jamais la valeur de l\'élève', () => {
-    const { root, onChange } = setup()
-    fireEvent.focusIn(root)
-    fireEvent.focusOut(root, { relatedTarget: null })
+  it('ne modifie jamais la valeur de l\'élève', async () => {
+    const { fields, onChange } = await setup()
+    const [left] = await fields()
+    await vi.waitFor(() => expect(left.painted).toHaveLength(3))
+    expect(left.value).toBe('3x+2y+1')
     expect(onChange).not.toHaveBeenCalled()
   })
 })
