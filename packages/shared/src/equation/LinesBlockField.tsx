@@ -1,7 +1,7 @@
 import { useEffect, useImperativeHandle, useRef, type CSSProperties } from 'react'
 import { renderMathToHtml } from '../math'
 import { AddLineButton } from './AddLineButton'
-import { MathFieldEditor, type MathFieldHandle } from './MathFieldEditor'
+import { MathFieldEditor, type LatexHighlight, type MathFieldHandle } from './MathFieldEditor'
 import { rawFieldKeyDown, type BlockEdgeHandle, type BlockPlace, type ExitDirection, type ExitVia } from './fieldIntents'
 import { insertLineAfter, isLineEmpty, removeLineAt, type SubLine } from './lines'
 
@@ -20,6 +20,8 @@ export interface LinesBlockFieldProps {
   onExitBlock: (side: 'before' | 'after') => void
   /** Le champ vivant de la ligne focalisée, pour la barre de symboles. */
   onFieldChange: (handle: MathFieldHandle | null) => void
+  /** La coloration d'une ligne, dans le champ (voir `MathFieldEditorProps.highlight`). Une fonction stable (`useMemo`). */
+  highlight?: (latex: string) => readonly LatexHighlight[]
   ref?: React.Ref<BlockEdgeHandle>
 }
 
@@ -51,7 +53,7 @@ const RAW: CSSProperties = {
  * un bloc, les flèches passent d'un sous-bloc à l'autre puis sortent du bloc, Retour arrière/Suppr
  * ne retirent qu'une ligne vide — ou, sur l'unique ligne vide, le bloc lui-même.
  */
-export function LinesBlockField({ lines, onChange, ariaLabel, onEnterBlock, onDeleteEmpty, onDeleteForward, onExitBlock, onFieldChange, ref }: LinesBlockFieldProps) {
+export function LinesBlockField({ lines, onChange, ariaLabel, onEnterBlock, onDeleteEmpty, onDeleteForward, onExitBlock, onFieldChange, highlight, ref }: LinesBlockFieldProps) {
   const handles = useRef(new Map<string, MathFieldHandle | null>())
   const pending = useRef<{ id: string; at: 'start' | 'end' } | null>(null)
   const linesRef = useRef(lines)
@@ -155,6 +157,7 @@ export function LinesBlockField({ lines, onChange, ariaLabel, onEnterBlock, onDe
             <MathFieldEditor
               latex={line.latex}
               onChange={latex => setLatex(index, latex)}
+              highlight={highlight}
               ariaLabel={label}
               ref={handle => {
                 handles.current.set(line.id, handle)

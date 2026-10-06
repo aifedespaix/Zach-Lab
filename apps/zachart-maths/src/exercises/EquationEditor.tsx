@@ -1,7 +1,9 @@
-import { useMemo } from 'react'
+import { useContext, useMemo } from 'react'
 import { EquationStepsField, type BlockEdgeHandle, type BlockPlace, type MathFieldHandle } from '@suite/shared/equation'
 import { useResolvedTheme } from '@suite/shared/theme'
 import type { EquationBlock } from './blocks'
+import { UnitHuesContext } from './HighlightedTextarea'
+import { latexQuantityHighlights } from './latexQuantities'
 import { toPlain, withIds } from './stepIds'
 import { termHighlighter } from './termHighlight'
 import { useUnitColors } from './useUnitColors'
@@ -28,14 +30,18 @@ export interface SubBlockContext {
  *
  * Quand la coloration est active, les termes semblables (`3x` et `5x`, les constantes) prennent la même couleur
  * DANS les champs (`highlight`) : MathLive peint le fond des termes, la valeur de l'élève n'est jamais modifiée.
+ * Les grandeurs (`16 km`, écrites `16\text{ km}` en LaTeX) y prennent aussi la teinte de leur unité, la même que dans l'énoncé.
  */
 export function EquationEditor({ block, onChange, ctx }: { block: EquationBlock; onChange: (patch: Partial<EquationBlock>) => void; ctx: SubBlockContext }) {
   const colorEnabled = useUnitColors(state => state.enabled)
   const theme = useResolvedTheme()
-  const highlight = useMemo(
-    () => (colorEnabled ? termHighlighter(block.etapes, theme) : undefined),
-    [colorEnabled, block.etapes, theme],
-  )
+  const hues = useContext(UnitHuesContext)
+  const highlight = useMemo(() => {
+    if (!colorEnabled) return undefined
+    const terms = termHighlighter(block.etapes, theme)
+    // Les grandeurs (`16\text{ km}`) passent APRÈS les termes : MathLive peint dans l'ordre, la teinte de l'unité l'emporte.
+    return (latex: string, where: { step: number; side: 'left' | 'right' }) => [...terms(latex, where), ...latexQuantityHighlights(latex, hues, theme)]
+  }, [colorEnabled, block.etapes, theme, hues])
   return (
     <EquationStepsField
       steps={toPlain(block.etapes)}

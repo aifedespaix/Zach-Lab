@@ -1,3 +1,4 @@
+import { findLatexQuantities } from './latexQuantities'
 import { findQuantities } from './quantities'
 import { tableLayout } from './tableUnits'
 import type { Exercise } from './types'
@@ -39,23 +40,43 @@ const isTableBlock = (block: unknown): block is { type: 'tableau'; cellules: str
   Array.isArray((block as { cellules?: unknown }).cellules) &&
   ((block as { cellules: unknown[] }).cellules).every(row => Array.isArray(row) && row.every(cell => typeof cell === 'string'))
 
+const isCalcBlock = (block: unknown): block is { type: 'calcul'; lignes: { latex: string }[] } =>
+  typeof block === 'object' &&
+  block !== null &&
+  (block as { type?: unknown }).type === 'calcul' &&
+  Array.isArray((block as { lignes?: unknown }).lignes)
+
+const isEquationBlock = (block: unknown): block is { type: 'equation'; etapes: { left?: unknown; right?: unknown; operation?: unknown }[] } =>
+  typeof block === 'object' &&
+  block !== null &&
+  (block as { type?: unknown }).type === 'equation' &&
+  Array.isArray((block as { etapes?: unknown }).etapes)
+
 /**
  * Une teinte par unité de TOUT l'exercice, dans l'ordre de lecture : l'énoncé, les blocs de la zone A,
  * ceux de la zone B, la réponse. Un bloc texte apporte les grandeurs qu'il contient (`16 km`), un
  * bloc tableau les unités de ses en-têtes (`Distance (km)`, `h`) : une unité d'une lettre, que
  * `findQuantities` refuse dans un texte libre, a ainsi sa teinte quand elle n'est que dans un en-tête,
- * et la même unité a la même couleur dans l'énoncé et dans le tableau. Les formules, les tableaux mal
- * formés et les blocs d'un type inconnu n'apportent rien.
+ * et la même unité a la même couleur dans l'énoncé et dans le tableau. Les formules (calcul, équation)
+ * apportent les grandeurs de leur LaTeX (`16\text{ km}`) : une unité n'écrite que dans une formule a donc sa teinte.
+ * Les tableaux mal formés et les blocs d'un type inconnu n'apportent rien.
  */
 export function assignExerciseHues(exercise: Pick<Exercise, 'enonce' | 'blocs' | 'blocsB' | 'reponse'>): Map<string, number> {
   const hues = new Map<string, number>()
   const fromText = (text: string) => {
     for (const quantity of findQuantities(text)) addUnit(hues, quantity.unit)
   }
+  const fromLatex = (latex: string) => {
+    for (const quantity of findLatexQuantities(latex)) addUnit(hues, quantity.unit)
+  }
   const fromBlock = (block: unknown) => {
     if (isTextBlock(block)) fromText(block.contenu)
     else if (isTableBlock(block)) {
       for (const unit of tableLayout(block.cellules)?.units ?? []) if (unit !== null) addUnit(hues, unit)
+    } else if (isCalcBlock(block)) {
+      for (const line of block.lignes) if (typeof line.latex === 'string') fromLatex(line.latex)
+    } else if (isEquationBlock(block)) {
+      for (const step of block.etapes) for (const latex of [step.left, step.right, step.operation]) if (typeof latex === 'string') fromLatex(latex)
     }
   }
   fromText(exercise.enonce)

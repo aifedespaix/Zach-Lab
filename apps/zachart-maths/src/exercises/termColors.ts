@@ -18,7 +18,7 @@ function hslToHex(hue: number, saturation: number, lightness: number): string {
 }
 
 /** Le fond d'un terme : pâle en thème clair, profond en thème sombre, le texte de la page restant lisible dessus. */
-function background(hue: number, theme: Theme, muted: boolean): string {
+export function background(hue: number, theme: Theme, muted: boolean): string {
   if (theme === 'light') return hslToHex(hue, muted ? 0 : 0.9, muted ? 0.68 : 0.86)
   return hslToHex(hue, muted ? 0 : 0.45, muted ? 0.32 : 0.3)
 }

@@ -52,6 +52,19 @@ describe('assignExerciseHues', () => {
     expect([...hues.keys()]).toEqual(['km', 'kg', 'h', 'm'])
   })
 
+  it("compte les unités écrites dans les formules (calcul, équation), à leur place dans l'ordre de lecture", () => {
+    const hues = assignExerciseHues({
+      enonce: '3 km',
+      blocs: [
+        { id: 'c', type: 'calcul', lignes: [{ id: 'l', latex: '2\\text{ kg} \\times 3' }] },
+        { id: 'e', type: 'equation', etapes: [{ id: 's', left: '5\\,\\mathrm{L}', right: 'x', operation: '' }] },
+        { id: 'm', type: 'calcul', lignes: 'oups' },
+      ],
+      reponse: '1 g',
+    })
+    expect([...hues.keys()]).toEqual(['km', 'kg', 'L', 'g'])
+  })
+
   it("donne une teinte à une unité d'une lettre qui n'est que dans un en-tête", () => {
     const hues = assignExerciseHues({ ...base, blocs: [table(['', 'h'], ['a', '1'])] })
     expect(hues.get('h')).toBe(UNIT_HUES[0])
