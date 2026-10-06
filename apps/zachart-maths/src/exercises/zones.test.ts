@@ -32,8 +32,12 @@ describe('zones', () => {
     expect(sendBlock(e, '3', 'b')).toEqual({ blocs: [b('1'), b('2'), b('3')], blocsB: [] })
   })
 
-  it("n'envoie rien : exercice non scindé, ou bloc absent de la zone indiquée", () => {
-    expect(sendBlock(ex([b('1')]), '1', 'a')).toBeNull()
+  it('envoyer à droite depuis un exercice non scindé le scinde', () => {
+    expect(sendBlock(ex([b('1'), b('2')]), '1', 'a')).toEqual({ blocs: [b('2')], blocsB: [b('1')] })
+  })
+
+  it("n'envoie rien : zone de droite d'un exercice non scindé, ou bloc absent de la zone indiquée", () => {
+    expect(sendBlock(ex([b('1')]), '1', 'b')).toBeNull()
     expect(sendBlock(ex([b('1')], []), '1', 'b')).toBeNull()
     expect(sendBlock(ex([b('1')], []), 'inconnu', 'a')).toBeNull()
   })

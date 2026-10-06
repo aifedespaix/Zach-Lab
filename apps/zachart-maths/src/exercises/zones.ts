@@ -20,15 +20,19 @@ export const mergeZones = (e: Exercise): { blocs: unknown[]; blocsB: undefined }
 const idOf = (block: unknown): unknown =>
   typeof block === 'object' && block !== null ? (block as { id?: unknown }).id : undefined
 
-/** Le bloc `id` passe de la zone `from` à la fin de l'autre ; `null` si l'envoi n'a pas de sens. */
+/**
+ * Le bloc `id` passe de la zone `from` à la fin de l'autre ; `null` si l'envoi n'a pas de sens.
+ * Depuis la zone de gauche d'un exercice non scindé, l'envoi scinde : la zone de droite naît avec le bloc.
+ */
 export function sendBlock(
   e: Exercise,
   id: string,
   from: Zone,
 ): { blocs: unknown[]; blocsB: unknown[] } | null {
-  if (e.blocsB === undefined) return null
-  const source = from === 'a' ? e.blocs : e.blocsB
-  const target = from === 'a' ? e.blocsB : e.blocs
+  if (e.blocsB === undefined && from === 'b') return null
+  const blocsB = e.blocsB ?? []
+  const source = from === 'a' ? e.blocs : blocsB
+  const target = from === 'a' ? blocsB : e.blocs
   const block = source.find(b => idOf(b) === id)
   if (block === undefined) return null
   const rest = source.filter(b => idOf(b) !== id)
