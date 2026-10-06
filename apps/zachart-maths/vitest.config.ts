@@ -9,6 +9,9 @@ export default defineConfig({
     alias: {
       // @ts-expect-error type error without @types/node package
       '@': path.resolve(import.meta.dirname, './src'),
+      // Le paquet ne publie que `index.js` (lecture par `fs`) : on veut les fichiers Hunspell bruts.
+      // @ts-expect-error type error without @types/node package
+      '@dictionary-fr': path.resolve(import.meta.dirname, './node_modules/dictionary-fr'),
     },
   },
   test: {

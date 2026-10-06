@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { useContext, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { TableCellMenuItems, TableGrid, type BlockEdgeHandle } from '@suite/shared/equation'
 import { motion, useReducedMotion } from 'motion/react'
 import { Button } from '@suite/shared/ui'
@@ -11,6 +11,7 @@ import { EquationEditor, type SubBlockContext } from './EquationEditor'
 import { FieldContextMenu } from './FieldContextMenu'
 import { HighlightedTextarea, UnitHuesContext } from './HighlightedTextarea'
 import { borderOf, headerToneOf, toneOf } from './toolbarCatalog'
+import { cellMove } from './tableNav'
 import { tableLayout } from './tableUnits'
 import { spacing, useCompact } from './useCompact'
 import { useUnitColors } from './useUnitColors'
@@ -33,6 +34,24 @@ function TextEditor({ block, onChange }: { block: TextBlock; onChange: (patch: P
       />
     </FieldContextMenu>
   )
+}
+
+/** Les flèches changent de case (voir `cellMove`) ; la case d'arrivée reçoit le focus et le curseur. */
+function moveBetweenCells(e: KeyboardEvent<HTMLInputElement>, row: number, column: number, rows: number, columns: number) {
+  if (e.shiftKey || e.altKey || e.ctrlKey || e.metaKey) return
+  const input = e.currentTarget
+  const move = cellMove(e.key, row, column, rows, columns, {
+    start: input.selectionStart ?? 0, end: input.selectionEnd ?? 0, length: input.value.length,
+  })
+  if (move === null) return
+  const target = input
+    .closest<HTMLElement>('[data-testid="table-scroll"]')
+    ?.querySelector<HTMLInputElement>(`input[aria-label="Ligne ${move.row + 1}, colonne ${move.column + 1}"]`)
+  if (target === null || target === undefined) return
+  e.preventDefault()
+  target.focus()
+  const caret = move.caret === 'start' ? 0 : target.value.length
+  target.setSelectionRange(caret, caret)
 }
 
 function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: (patch: Partial<TableBlock>) => void; index: number }) {
@@ -90,6 +109,7 @@ function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: 
               aria-label={`Ligne ${r + 1}, colonne ${c + 1}`}
               value={cells[r][c]}
               onChange={e => set(setCell(cells, r, c, e.target.value))}
+              onKeyDown={e => moveBetweenCells(e, r, c, cells.length, cells[0].length)}
               className="focus-cell-input w-full bg-background px-2 py-1 text-sm"
               style={{ border: '1px solid var(--border)', background: fillOf(r, c) }}
             />

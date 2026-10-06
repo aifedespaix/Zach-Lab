@@ -1,11 +1,12 @@
-import { useContext, useRef, type ReactNode } from 'react'
-import { ClipboardPaste, Copy, Scissors, Sigma, TextSelect } from 'lucide-react'
+import { useContext, useRef, useState, type ReactNode } from 'react'
+import { ClipboardPaste, Copy, Scissors, Sigma, SpellCheck, TextSelect } from 'lucide-react'
 import {
   ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuSub,
   ContextMenuSubContent, ContextMenuSubTrigger, ContextMenuTrigger,
 } from '@suite/shared/ui'
 import { insertAtCursor, isTextField } from './insertAtCursor'
 import { isMathField } from '../math/mathFieldElement'
+import { misspellingAt, type Misspelling } from './spell'
 import { SymbolInsertContext } from './symbolInsert'
 import { SYMBOL_FAMILIES } from './toolbarCatalog'
 
@@ -19,8 +20,11 @@ const editableIn = (wrapper: HTMLElement) => wrapper.querySelector<HTMLElement>(
  * `display: contents` : le wrapper n'existe pas pour la mise en page, mais reste un nœud par lequel
  * l'évènement remonte, et c'est là qu'on retrouve le vrai champ (textarea, input ou `math-field`).
  *
- * Version propre à Zach'Math (sans correcteur orthographique ni raccourcis affichés, contrairement à
- * celle de Mentale) : les unifier est le sujet du cycle suivant.
+ * Un mot souligné en rouge sous le curseur : ses corrections (dictionnaire français, dans un worker,
+ * `spell.ts`) passent en tête du menu. Le webview n'ouvre pas son propre menu : sans cela, rien à cliquer.
+ *
+ * Version propre à Zach'Math (sans raccourcis affichés, contrairement à celle de Mentale) : les unifier
+ * est le sujet du cycle suivant.
  */
 export function FieldContextMenu({ kind, extra, children }: {
   kind: 'text' | 'math'
@@ -30,6 +34,8 @@ export function FieldContextMenu({ kind, extra, children }: {
 }) {
   const wrapper = useRef<HTMLElement | null>(null)
   const insertSymbol = useContext(SymbolInsertContext)
+  /** Le mot souligné en rouge sous le curseur au moment du clic droit, avec ses corrections. */
+  const [misspelling, setMisspelling] = useState<Misspelling | null>(null)
 
   /** Redonne le focus au champ avant d'agir : Radix le rend au déclencheur en fermant le menu. */
   const withField = (run: (field: HTMLElement) => void) => {
@@ -40,6 +46,13 @@ export function FieldContextMenu({ kind, extra, children }: {
       run(field)
     }, 0)
   }
+  /** Remplace le mot fautif par la correction choisie, sauf si le champ a changé entre-temps. */
+  const correct = (found: Misspelling, replacement: string) =>
+    withField(field => {
+      if (!isTextField(field) || field.value.slice(found.start, found.end) !== found.word) return
+      field.setSelectionRange(found.start, found.end)
+      insertAtCursor(field, replacement)
+    })
   const paste = (field: HTMLElement) => {
     void navigator.clipboard
       .readText()
@@ -61,11 +74,31 @@ export function FieldContextMenu({ kind, extra, children }: {
         onContextMenu={e => {
           e.stopPropagation()
           wrapper.current = e.currentTarget
+          setMisspelling(null)
+          // Chromium place le curseur au clic droit : c'est le mot qu'il a souligné. Les corrections
+          // arrivent d'un worker, le menu les ajoute en haut dès qu'elles sont là.
+          const target = kind === 'text' ? editableIn(e.currentTarget) : null
+          if (target !== null) {
+            void misspellingAt(target).then(setMisspelling).catch(() => setMisspelling(null))
+          }
         }}
       >
         {children}
       </ContextMenuTrigger>
       <ContextMenuContent>
+        {misspelling !== null && (
+          <>
+            {misspelling.suggestions.length === 0 && (
+              <ContextMenuItem disabled><SpellCheck size={14} />Aucune suggestion pour « {misspelling.word} »</ContextMenuItem>
+            )}
+            {misspelling.suggestions.map(suggestion => (
+              <ContextMenuItem key={suggestion} onSelect={() => correct(misspelling, suggestion)}>
+                <SpellCheck size={14} /><strong>{suggestion}</strong>
+              </ContextMenuItem>
+            ))}
+            <ContextMenuSeparator />
+          </>
+        )}
         <ContextMenuItem onSelect={() => withField(() => document.execCommand('cut'))}><Scissors size={14} />Couper</ContextMenuItem>
         <ContextMenuItem onSelect={() => withField(() => document.execCommand('copy'))}><Copy size={14} />Copier</ContextMenuItem>
         <ContextMenuItem onSelect={() => withField(paste)}><ClipboardPaste size={14} />Coller</ContextMenuItem>
