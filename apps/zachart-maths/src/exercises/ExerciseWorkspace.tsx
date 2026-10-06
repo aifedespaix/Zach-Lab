@@ -253,11 +253,13 @@ export function ExerciseWorkspace() {
     <SymbolInsertContext value={insertSymbol}>
     <UnitHuesContext value={unitHues}>
     <section aria-label="Exercice" onFocus={rememberField} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+      {/* Le parent garde le fond normal de l'app ; seul le bloc question porte le bleu, aux coins arrondis. */}
+      <div style={{ padding: space.outer }}>
       <header
         style={{
           display: 'flex', flexDirection: 'column', gap: compact ? 4 : 8, padding: space.header,
           '--field-hue': 215,
-          background: 'color-mix(in oklab, #3b82f6 18%, var(--background))', borderBottom: '2px solid #3b82f6',
+          background: 'color-mix(in oklab, #3b82f6 18%, var(--background))', border: '2px solid #3b82f6', borderRadius: 12,
         } as React.CSSProperties}
       >
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -313,6 +315,7 @@ export function ExerciseWorkspace() {
           />
         </div>
       </header>
+      </div>
 
       <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
         <Toolbar target={target} onSymbol={insertSymbol} />
@@ -356,12 +359,16 @@ export function ExerciseWorkspace() {
         aria-label="Zone de réponse"
         data-corrige={corrected ? (toReview ? 'revoir' : 'true') : undefined}
         style={{
-          '--field-hue': corrected ? (toReview ? 25 : 142) : 215,
-          ...(corrected
-            ? { padding: space.footer, background: `color-mix(in oklab, ${accent} 18%, var(--background))`, border: `2px solid ${accent}` }
-            : { padding: space.footer, background: 'color-mix(in oklab, #3b82f6 18%, var(--background))', borderTop: '2px solid #3b82f6' }),
+          '--field-hue': corrected ? (toReview ? 25 : 142) : 215, padding: space.outer,
         } as unknown as React.CSSProperties}
       >
+        <div
+          style={{
+            padding: space.footer, borderRadius: 12,
+            background: `color-mix(in oklab, ${corrected ? accent : '#3b82f6'} 18%, var(--background))`,
+            border: `2px solid ${corrected ? accent : '#3b82f6'}`,
+          }}
+        >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
           <label style={{ fontSize: 12, fontWeight: 600 }} htmlFor="reponse-finale">
             Réponse
@@ -385,6 +392,7 @@ export function ExerciseWorkspace() {
             className={`${field} hue-field w-full`}
           />
         </FieldContextMenu>
+        </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 8, marginTop: 4 }}>
           <p
             role={status === 'failed' ? 'alert' : 'status'}
