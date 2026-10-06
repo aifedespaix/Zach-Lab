@@ -760,10 +760,9 @@ describe('FileSidebar', () => {
 
     const panel = sidebarPanel()
     const tree = panel.children[1]
-    // Reached through the button rather than by index: the badge wrapper sits
-    // between the two, so the bar is the button's grandparent.
-    const bar = screen.getByRole('button', { name: 'Synchroniser' }).parentElement
-      ?.parentElement as HTMLElement
+    // Reached by its group role rather than by counting wrappers around the button
+    // (the tooltip trigger and the badge each add one).
+    const bar = screen.getByRole('group', { name: 'Actions de la barre latérale' })
 
     expect(panel.children[0]).toHaveTextContent('Cartes mentales')
     expect(tree).not.toHaveTextContent('Synchroniser')
