@@ -117,7 +117,7 @@ function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: 
   const onCellKeyDown = (e: KeyboardEvent<HTMLInputElement>, r: number, c: number) => {
     const input = e.currentTarget
     if (e.nativeEvent.isComposing) return
-    // Ctrl+Alt+flèche : une ligne ou une colonne de ce côté de la case.
+    // Ctrl+Alt+flÃ¨che : une ligne ou une colonne de ce cÃ´tÃ© de la case.
     const insert = insertShortcut(e)
     if (insert !== null) {
       e.preventDefault()

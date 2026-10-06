@@ -172,7 +172,7 @@ export function CoursePanel({ courses = COURSES }: { courses?: readonly Course[]
   const coursesVisible = useCoursesStore(s => s.coursesVisible)
   useCommand('cours.toggle', () => useCoursesStore.getState().toggleCourses())
   useCommand('cours.search', () => {
-    // La recherche vit dans la section des cours : on la remonte si elle était masquée.
+    // La recherche vit dans la section des cours : on la remonte si elle Ã©tait masquÃ©e.
     useCoursesStore.getState().setCoursesVisible(true)
     useCoursesStore.getState().setSearchOpen(true)
   })
@@ -187,7 +187,7 @@ export function CoursePanel({ courses = COURSES }: { courses?: readonly Course[]
           {notesVisible && <BottomSection alone={!coursesVisible} />}
           {!coursesVisible && !notesVisible && (
             <p style={{ margin: 12, fontSize: 13, color: 'var(--muted-foreground)' }}>
-              Rien d'affiché : allume les notes, la calculatrice ou les cours avec les boutons du bas.
+              Rien d'affichÃ© : allume les notes, la calculatrice ou les cours avec les boutons du bas.
             </p>
           )}
         </div>

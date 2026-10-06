@@ -23,8 +23,8 @@ export function cellMove(
 export type InsertShortcut = { axis: 'row' | 'column'; side: 'before' | 'after' }
 
 /**
- * Ctrl/Cmd+Alt+flèche : insère une ligne (haut/bas) ou une colonne (gauche/droite) de ce côté de la case,
- * sans rien d'autre sur la touche (Maj à part, pour ne pas voler la sélection).
+ * Ctrl/Cmd+Alt+flÃ¨che : insÃ¨re une ligne (haut/bas) ou une colonne (gauche/droite) de ce cÃ´tÃ© de la case,
+ * sans rien d'autre sur la touche (Maj Ã  part, pour ne pas voler la sÃ©lection).
  */
 export function insertShortcut(e: { key: string; ctrlKey: boolean; metaKey: boolean; altKey: boolean; shiftKey: boolean }): InsertShortcut | null {
   if (!(e.ctrlKey || e.metaKey) || !e.altKey || e.shiftKey) return null

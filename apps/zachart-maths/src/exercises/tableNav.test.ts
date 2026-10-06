@@ -91,7 +91,7 @@ describe('sÃ©lection, collage, produit en croix', () => {
 
 describe('insertShortcut', () => {
   const key = (name: string, extra = {}) => ({ key: name, ctrlKey: true, metaKey: false, altKey: true, shiftKey: false, ...extra })
-  it('Ctrl+Alt+flèche insère de ce côté de la case', () => {
+  it('Ctrl+Alt+flÃ¨che insÃ¨re de ce cÃ´tÃ© de la case', () => {
     expect(insertShortcut(key('ArrowUp'))).toEqual({ axis: 'row', side: 'before' })
     expect(insertShortcut(key('ArrowDown'))).toEqual({ axis: 'row', side: 'after' })
     expect(insertShortcut(key('ArrowLeft'))).toEqual({ axis: 'column', side: 'before' })

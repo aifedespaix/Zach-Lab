@@ -86,7 +86,7 @@ export function latexQuantityHighlights(
     for (const match of plain.text.matchAll(/(?<![\p{L}\\])[xyz](?![\p{L}])/gu)) {
       const index = match.index
       if (covered.some(([start, end]) => index >= start && index < end)) continue
-      // Le terme entier, comme dans une équation : le coefficient (`3x`) et l'exposant (`x^2`) sont peints avec la lettre.
+      // Le terme entier, comme dans une Ã©quation : le coefficient (`3x`) et l'exposant (`x^2`) sont peints avec la lettre.
       let from = index
       while (from > 0 && /[\d.,]/.test(plain.text[from - 1]) && !covered.some(([start, end]) => from - 1 >= start && from - 1 < end)) from--
       if (!/\d/.test(plain.text[from])) from = index

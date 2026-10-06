@@ -90,7 +90,7 @@ export const COMMANDS = [
   {
     id: 'cours.toggle',
     label: 'Afficher ou masquer la liste des cours',
-    description: 'Montre ou cache la moitié haute du panneau de droite (les cours) ; l’afficher déplie le panneau.',
+    description: 'Montre ou cache la moitiÃ© haute du panneau de droite (les cours) ; lâ€™afficher dÃ©plie le panneau.',
     category: 'cours',
     defaultBinding: null,
     allowInEditable: true,

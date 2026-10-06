@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { setPanelCollapsed } from '@suite/shared/shell'
 
-/** La cl� de repli du panneau de droite (`App.tsx`) : activer une pastille le d�plie. */
+/** La clé de repli du panneau de droite (`App.tsx`) : activer une pastille le déplie. */
 export const RIGHT_COLLAPSED_KEY = 'zachart-maths:right-collapsed'
 const COURSES_KEY = 'zachart-maths:courses-visible'
 
@@ -41,7 +41,7 @@ interface CoursesStore {
   /** La moitié basse est-elle là ? (le nom vient de l'époque où elle ne contenait que les notes.) */
   notesVisible: boolean
   bottomTab: BottomTab
-  /** La moiti� haute (les cours) est-elle l� ? */
+  /** La moitié haute (les cours) est-elle là ? */
   coursesVisible: boolean
   select(id: string | null): void
   setSearchOpen(open: boolean): void
@@ -49,7 +49,7 @@ interface CoursesStore {
   setBottomTab(tab: BottomTab): void
   /** Le bouton d'un onglet : l'ouvre ; sur l'onglet déjà affiché, il referme la moitié basse. */
   setCoursesVisible(visible: boolean): void
-  /** Idem pour les cours (la moiti� haute) : l'allumer d�plie le panneau de droite, l'�teindre ne le replie pas. */
+  /** Idem pour les cours (la moitié haute) : l'allumer déplie le panneau de droite, l'éteindre ne le replie pas. */
   toggleCourses(): void
   toggleBottom(tab: BottomTab): void
 }
