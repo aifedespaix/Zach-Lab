@@ -37,12 +37,12 @@ function sortByOrder(names: string[], order: string[]): string[] {
 }
 
 /** Dossiers de la racine (les chapitres) dans l'ordre choisi par l'élève. */
-async function chapterNames(fs: ExerciseFs): Promise<string[]> {
+export async function chapterNames(fs: ExerciseFs): Promise<string[]> {
   const entries = await fs.readDir('')
   return sortByOrder(entries.filter(e => e.isDirectory && !e.name.startsWith('.')).map(e => e.name), await readOrder(fs, ''))
 }
 
-async function exerciseFiles(fs: ExerciseFs, chapter: string): Promise<string[]> {
+export async function exerciseFiles(fs: ExerciseFs, chapter: string): Promise<string[]> {
   const entries = await fs.readDir(chapter)
   const files = entries.filter(e => !e.isDirectory && e.name.endsWith(EXERCISE_EXT) && e.name !== ORDER_FILE)
   return sortByOrder(files.map(e => e.name), await readOrder(fs, chapter))

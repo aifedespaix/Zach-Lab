@@ -17,6 +17,7 @@ import './commands'
 import { CoursePanel } from './cours/CoursePanel'
 import { ExerciseTree } from './exercises/ExerciseTree'
 import { ExerciseWorkspace } from './exercises/ExerciseWorkspace'
+import { AdvancedSearchDialog } from './exercises/AdvancedSearchDialog'
 import { ReviewDialog } from './exercises/ReviewDialog'
 import { useCorrectionView } from './exercises/useCorrectionView'
 import { SheetOutline } from './exercises/SheetOutline'
@@ -175,6 +176,7 @@ export default function App() {
               </BootScreen>
             )}
             <ReviewDialog />
+            <AdvancedSearchDialog />
             <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
             <SettingsDialog
               open={settingsOpen}
