@@ -34,13 +34,13 @@ describe('clic droit sur le panneau des cours', () => {
     expect(useCoursesStore.getState().searchOpen).toBe(true)
   })
 
-  it('« Masquer les notes » / « Afficher les notes » suit l’état', async () => {
+  it('« Masquer le panneau du bas » / « Afficher le panneau du bas » suit l’état', async () => {
     const { user } = await setup()
     fireEvent.contextMenu(screen.getByTestId('cours-vide'))
-    await user.click(await item(/Masquer les notes/))
+    await user.click(await item(/Masquer le panneau du bas/))
     expect(useCoursesStore.getState().notesVisible).toBe(false)
     fireEvent.contextMenu(screen.getByTestId('cours-vide'))
-    expect(await item(/Afficher les notes/)).toBeInTheDocument()
+    expect(await item(/Afficher le panneau du bas/)).toBeInTheDocument()
   })
 
   it('« Ranger le panneau » appelle la commande de rangement', async () => {
@@ -72,11 +72,11 @@ describe('clic droit sur le panneau des cours', () => {
     expect(useCoursesStore.getState().selectedId).not.toBeNull()
   })
 
-  it('dans les notes : le menu de champ, plus « Masquer les notes »', async () => {
+  it('dans les notes : le menu de champ, plus « Masquer le panneau du bas »', async () => {
     await setup()
     fireEvent.contextMenu(screen.getByLabelText('Mes notes'))
     expect(await item(/Copier/)).toBeInTheDocument()
-    expect(screen.getByRole('menuitem', { name: /Masquer les notes/ })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: /Masquer le panneau du bas/ })).toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: /Chercher un cours/ })).toBeNull()
   })
 })

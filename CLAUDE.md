@@ -217,6 +217,11 @@ under `src/`, wired together in `App.tsx`:
   (`toneOf`, `headerToneOf` pour l'en-tête) sur les `<input>` de la colonne ou ligne concernée, avec la teinte de
   `UnitHuesContext` ; `assignExerciseHues` donne une teinte aux unités d'en-tête (même d'une lettre si la garde passe).
   Même bouton que les unités et les termes ; rien dans `packages/shared`, `TableGrid` ne change.
+- **Notes et calculatrice** (moitié basse de la sidebar droite, `cours/CoursePanel.tsx` `BottomSection`, `calc/`) : deux onglets
+  (`useCoursesStore.bottomTab`, clé `zachart-maths:bottom-tab`) qui se partagent la zone ; `notesVisible` veut dire « la moitié basse est
+  là ». `toggleBottom(tab)` : ouvre l'onglet, ou referme si c'est déjà lui. Commandes `notes.toggle` (Mod+Shift+N) et `calculatrice.toggle`
+  (Mod+Shift+M). Le moteur est mathjs (`mathjs/number`, fonctions d'évaluation désactivées) dans `calc/calculate.ts` (`calculate`,
+  `normalize` : × ÷ − , % √ π Rép) ; `Calculator.tsx` n'est que le champ + le clavier ; calcul et historique dans `useCalculatorStore`.
 - **`math/`** — `isMathField` (the toolbar's target check); MathLive itself and `renderMathToHtml` come from `@suite/shared`.
 - **`cours/`** — courses are Markdown files in `cours/contenu/` (front matter `titre`,
   `chapitre`, `mots-cles`), compiled in with `import.meta.glob`; adding a course is adding a

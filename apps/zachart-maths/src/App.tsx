@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BookOpen, ClipboardCheck, Download, ChevronsDownUp, ListChecks, ListFilter, FolderPlus, Highlighter, Keyboard, Minus, Moon, Plus, Rows3, NotebookPen, Search, Settings as SettingsIcon, Shapes } from 'lucide-react'
+import { BookOpen, ClipboardCheck, Download, ChevronsDownUp, ListChecks, ListFilter, FolderPlus, Highlighter, Keyboard, Minus, Moon, Plus, Rows3, NotebookPen, Calculator, Search, Settings as SettingsIcon, Shapes } from 'lucide-react'
 import {
   CommandButton,
   CommandPalette,
@@ -150,6 +150,7 @@ export default function App() {
             <CommandButton command="correction.next" icon={ListChecks} variant="ghost" size="icon-sm" />
             <CommandButton command="review.open" icon={ClipboardCheck} variant="ghost" size="icon-sm" />
             <CommandButton command="notes.toggle" icon={NotebookPen} variant="ghost" size="icon-sm" />
+            <CommandButton command="calculatrice.toggle" icon={Calculator} variant="ghost" size="icon-sm" />
             <CommandButton command="view.toggleUnitColors" icon={Highlighter} variant={unitColors ? 'secondary' : 'ghost'} size="icon-sm" />
             <CommandButton command="view.toggleCompact" icon={Rows3} variant={compact ? 'secondary' : 'ghost'} size="icon-sm" />
             <div role="group" aria-label="Zoom" style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
