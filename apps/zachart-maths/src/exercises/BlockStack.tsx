@@ -11,7 +11,7 @@ import { EquationEditor, type SubBlockContext } from './EquationEditor'
 import { FieldContextMenu } from './FieldContextMenu'
 import { HighlightedTextarea, UnitHuesContext } from './HighlightedTextarea'
 import { borderOf, headerToneOf, toneOf } from './toolbarCatalog'
-import { cellMove } from './tableNav'
+import { cellKeyAction, cellMove, type CellMove } from './tableNav'
 import { tableLayout } from './tableUnits'
 import { spacing, useCompact } from './useCompact'
 import { useUnitColors } from './useUnitColors'
@@ -37,6 +37,15 @@ function TextEditor({ block, onChange }: { block: TextBlock; onChange: (patch: P
 }
 
 /** Les flèches changent de case (voir `cellMove`) ; la case d'arrivée reçoit le focus et le curseur. */
+function focusCell(scope: HTMLElement | null, move: CellMove): boolean {
+  const target = scope?.querySelector<HTMLInputElement>(`input[aria-label="Ligne ${move.row + 1}, colonne ${move.column + 1}"]`)
+  if (target === null || target === undefined) return false
+  target.focus()
+  const caret = move.caret === 'start' ? 0 : target.value.length
+  target.setSelectionRange(caret, caret)
+  return true
+}
+
 function moveBetweenCells(e: KeyboardEvent<HTMLInputElement>, row: number, column: number, rows: number, columns: number) {
   if (e.shiftKey || e.altKey || e.ctrlKey || e.metaKey) return
   const input = e.currentTarget
@@ -44,14 +53,7 @@ function moveBetweenCells(e: KeyboardEvent<HTMLInputElement>, row: number, colum
     start: input.selectionStart ?? 0, end: input.selectionEnd ?? 0, length: input.value.length,
   })
   if (move === null) return
-  const target = input
-    .closest<HTMLElement>('[data-testid="table-scroll"]')
-    ?.querySelector<HTMLInputElement>(`input[aria-label="Ligne ${move.row + 1}, colonne ${move.column + 1}"]`)
-  if (target === null || target === undefined) return
-  e.preventDefault()
-  target.focus()
-  const caret = move.caret === 'start' ? 0 : target.value.length
-  target.setSelectionRange(caret, caret)
+  if (focusCell(input.closest<HTMLElement>('[data-testid="table-scroll"]'), move)) e.preventDefault()
 }
 
 function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: (patch: Partial<TableBlock>) => void; index: number }) {
@@ -74,6 +76,36 @@ function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: 
     return isHeader ? headerToneOf(hue) : toneOf(hue)
   }
   const set = (next: string[][]) => onChange({ cellules: next })
+  const scrollRef = useRef<HTMLDivElement>(null)
+  // La case à focaliser une fois le rendu fait (ligne tout juste ajoutée ou case d'après une suppression).
+  const pendingFocus = useRef<CellMove | null>(null)
+  useEffect(() => {
+    if (pendingFocus.current === null) return
+    const move = pendingFocus.current
+    pendingFocus.current = null
+    focusCell(scrollRef.current, move)
+  }, [cells])
+  const onCellKeyDown = (e: KeyboardEvent<HTMLInputElement>, r: number, c: number) => {
+    moveBetweenCells(e, r, c, cells.length, cells[0].length)
+    if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.nativeEvent.isComposing) return
+    const action = cellKeyAction(e.key, e.shiftKey, e.repeat, r, c, cells, canGrow(cells, 'row'))
+    if (action === null) return
+    e.preventDefault()
+    switch (action.kind) {
+      case 'move': focusCell(scrollRef.current, action.to); break
+      case 'focusAddRow':
+        scrollRef.current?.querySelector<HTMLButtonElement>(`button[aria-label^="Insérer une ligne après la ligne ${cells.length} "]`)?.focus()
+        break
+      case 'addRow':
+        pendingFocus.current = { row: cells.length, column: 0, caret: 'start' }
+        set(addRow(cells))
+        break
+      case 'removeRow':
+        pendingFocus.current = action.to
+        set(removeRow(cells, action.row))
+        break
+    }
+  }
   const addRowAfter = (after: number) => set(addRow(cells, after))
   const addColumnAfter = (after: number) => set(addColumn(cells, after))
   const removeRowAt = (row: number) => set(removeRow(cells, row))
@@ -82,7 +114,7 @@ function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: 
     // `overflow-x: auto` forces `overflow-y: auto`, which would clip the « + »
     // after the last column / row: they straddle the grid's right and bottom
     // edges by 13px (TableGrid's HANDLE_STRADDLE). 14px keeps them inside.
-    <div data-testid="table-scroll" style={{ overflowX: 'auto', paddingRight: 14, paddingBottom: 14 }}>
+    <div ref={scrollRef} data-testid="table-scroll" style={{ overflowX: 'auto', paddingRight: 14, paddingBottom: 14 }}>
       <TableGrid
         tableLabel={String(index + 1)}
         handlesTabbable={false}
@@ -110,7 +142,7 @@ function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: 
               aria-label={`Ligne ${r + 1}, colonne ${c + 1}`}
               value={cells[r][c]}
               onChange={e => set(setCell(cells, r, c, e.target.value))}
-              onKeyDown={e => moveBetweenCells(e, r, c, cells.length, cells[0].length)}
+              onKeyDown={e => onCellKeyDown(e, r, c)}
               className="focus-cell-input w-full bg-background px-2 py-1 text-sm"
               style={{ border: '1px solid var(--border)', background: fillOf(r, c) }}
             />
