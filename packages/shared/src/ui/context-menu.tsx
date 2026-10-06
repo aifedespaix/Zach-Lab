@@ -116,6 +116,17 @@ function ContextMenuSubContent({
   )
 }
 
+/** Le raccourci d'une entrée, à droite de son libellé (`Ctrl + C`). Purement indicatif : il ne lie aucune touche. */
+function ContextMenuShortcut({ className, ...props }: React.ComponentProps<"kbd">) {
+  return (
+    <kbd
+      data-slot="context-menu-shortcut"
+      className={cn("ml-auto whitespace-nowrap pl-4 font-[inherit] text-[11px] font-semibold opacity-60", className)}
+      {...props}
+    />
+  )
+}
+
 export {
   ContextMenu,
   ContextMenuTrigger,
@@ -125,4 +136,5 @@ export {
   ContextMenuSub,
   ContextMenuSubTrigger,
   ContextMenuSubContent,
+  ContextMenuShortcut,
 }

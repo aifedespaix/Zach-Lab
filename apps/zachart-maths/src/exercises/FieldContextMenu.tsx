@@ -1,9 +1,10 @@
 import { useContext, useRef, useState, type ReactNode } from 'react'
 import { ClipboardPaste, Copy, Scissors, Sigma, SpellCheck, TextSelect } from 'lucide-react'
 import {
-  ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuSub,
+  ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuShortcut, ContextMenuSub,
   ContextMenuSubContent, ContextMenuSubTrigger, ContextMenuTrigger,
 } from '@suite/shared/ui'
+import { caretIndexAt } from './caretAt'
 import { insertAtCursor, isTextField } from './insertAtCursor'
 import { isMathField } from '../math/mathFieldElement'
 import { misspellingAt, type Misspelling } from './spell'
@@ -23,11 +24,13 @@ const editableIn = (wrapper: HTMLElement) => wrapper.querySelector<HTMLElement>(
  * Un mot souligné en rouge sous le curseur : ses corrections (dictionnaire français, dans un worker,
  * `spell.ts`) passent en tête du menu. Le webview n'ouvre pas son propre menu : sans cela, rien à cliquer.
  *
- * Version propre à Zach'Math (sans raccourcis affichés, contrairement à celle de Mentale) : les unifier
- * est le sujet du cycle suivant.
+ * Les raccourcis sont affichés à droite (indicatifs : le navigateur gère déjà ces touches).
  */
-export function FieldContextMenu({ kind, extra, children }: {
+export function FieldContextMenu({ kind, extra, selectAllLabel = 'Tout sélectionner', selectAllShortcut = 'Ctrl + A', children }: {
   kind: 'text' | 'math'
+  /** Le libellé de l'entrée qui sélectionne le texte du champ : une case de tableau dit « la case », pour ne pas la confondre avec le tableau. */
+  selectAllLabel?: string
+  selectAllShortcut?: string
   /** Des entrées propres au champ, ajoutées à la fin du menu après un séparateur. */
   extra?: ReactNode
   children: ReactNode
@@ -75,11 +78,13 @@ export function FieldContextMenu({ kind, extra, children }: {
           e.stopPropagation()
           wrapper.current = e.currentTarget
           setMisspelling(null)
-          // Chromium place le curseur au clic droit : c'est le mot qu'il a souligné. Les corrections
-          // arrivent d'un worker, le menu les ajoute en haut dès qu'elles sont là.
+          // Le mot est celui du clic, pas celui du curseur : Chromium ne déplace le curseur qu'à l'action par
+          // défaut de `contextmenu`, que le menu annule. Les corrections arrivent d'un worker, le menu les
+          // ajoute en haut dès qu'elles sont là.
           const target = kind === 'text' ? editableIn(e.currentTarget) : null
           if (target !== null) {
-            void misspellingAt(target).then(setMisspelling).catch(() => setMisspelling(null))
+            const position = caretIndexAt(target, e.clientX, e.clientY) ?? undefined
+            void misspellingAt(target, undefined, position).then(setMisspelling).catch(() => setMisspelling(null))
           }
         }}
       >
@@ -99,11 +104,11 @@ export function FieldContextMenu({ kind, extra, children }: {
             <ContextMenuSeparator />
           </>
         )}
-        <ContextMenuItem onSelect={() => withField(() => document.execCommand('cut'))}><Scissors size={14} />Couper</ContextMenuItem>
-        <ContextMenuItem onSelect={() => withField(() => document.execCommand('copy'))}><Copy size={14} />Copier</ContextMenuItem>
-        <ContextMenuItem onSelect={() => withField(paste)}><ClipboardPaste size={14} />Coller</ContextMenuItem>
+        <ContextMenuItem onSelect={() => withField(() => document.execCommand('cut'))}><Scissors size={14} />Couper<ContextMenuShortcut>Ctrl + X</ContextMenuShortcut></ContextMenuItem>
+        <ContextMenuItem onSelect={() => withField(() => document.execCommand('copy'))}><Copy size={14} />Copier<ContextMenuShortcut>Ctrl + C</ContextMenuShortcut></ContextMenuItem>
+        <ContextMenuItem onSelect={() => withField(paste)}><ClipboardPaste size={14} />Coller<ContextMenuShortcut>Ctrl + V</ContextMenuShortcut></ContextMenuItem>
         <ContextMenuSeparator />
-        <ContextMenuItem onSelect={() => withField(() => document.execCommand('selectAll'))}><TextSelect size={14} />Tout sélectionner</ContextMenuItem>
+        <ContextMenuItem onSelect={() => withField(() => document.execCommand('selectAll'))}><TextSelect size={14} />{selectAllLabel}<ContextMenuShortcut>{selectAllShortcut}</ContextMenuShortcut></ContextMenuItem>
         {kind === 'math' && insertSymbol !== null && structures !== undefined && (
           <>
             <ContextMenuSeparator />

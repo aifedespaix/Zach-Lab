@@ -26,6 +26,11 @@ describe('misspellingAt', () => {
       start: 3, end: 11, word: 'bonjoure', suggestions: ['bonjour', 'bonjours'],
     })
   })
+  it('takes the word at the given position (the right click), not the one at the caret', async () => {
+    const field = input('bonjoure ici', 10)
+    expect(await misspellingAt(field, fake)).toBeNull()
+    expect(await misspellingAt(field, fake, 3)).toMatchObject({ word: 'bonjoure', start: 0, end: 8 })
+  })
   it('says nothing for a right word, a one-letter word or a non-text field', async () => {
     expect(await misspellingAt(input('un bonjour', 6), fake)).toBeNull()
     expect(await misspellingAt(input('x = 2', 0), fake)).toBeNull()

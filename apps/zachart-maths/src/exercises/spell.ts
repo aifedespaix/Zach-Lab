@@ -45,10 +45,13 @@ export function wordAt(text: string, position: number): { start: number; end: nu
   return null
 }
 
-/** Le mot sous le curseur de `field` avec ses corrections s'il est mal écrit ; `null` s'il est juste, d'une lettre ou absent. */
-export async function misspellingAt(field: unknown, check: SpellCheck = appSpellCheck()): Promise<Misspelling | null> {
+/**
+ * Le mot de `field` avec ses corrections s'il est mal écrit ; `null` s'il est juste, d'une lettre ou absent.
+ * Le mot est celui de `position` (l'endroit du clic droit) ; sans elle, celui du curseur.
+ */
+export async function misspellingAt(field: unknown, check: SpellCheck = appSpellCheck(), position?: number): Promise<Misspelling | null> {
   if (!isTextField(field)) return null
-  const target = wordAt(field.value, field.selectionStart ?? 0)
+  const target = wordAt(field.value, position ?? field.selectionStart ?? 0)
   if (target === null || target.word.length < 2) return null
   const suggestions = await check(target.word)
   return suggestions === null ? null : { ...target, suggestions }
