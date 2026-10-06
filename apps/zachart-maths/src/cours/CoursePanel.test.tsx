@@ -5,14 +5,16 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createMemoryFs } from '../exercises/memoryFs'
 import { useExerciseStore } from '../exercises/useExerciseStore'
 import { useOpenExercise } from '../exercises/useOpenExercise'
+import '../commands'
 import { CoursePanel } from './CoursePanel'
-import { useCoursesStore } from './useCoursesStore'
+import { PanelToggles } from './PanelToggles'
+import { RIGHT_COLLAPSED_KEY, useCoursesStore } from './useCoursesStore'
 
 const exo = (titre: string, extra: object = {}) => JSON.stringify({ version: 1, id: titre, titre, ...extra })
 
 async function setup(files: Record<string, string> = {}) {
   const fs = createMemoryFs(files)
-  render(<TooltipProvider><CoursePanel /></TooltipProvider>)
+  render(<TooltipProvider><PanelToggles /><CoursePanel /></TooltipProvider>)
   await act(async () => useExerciseStore.getState().init(fs))
   return { fs, user: userEvent.setup() }
 }
@@ -23,7 +25,7 @@ describe('CoursePanel', () => {
     localStorage.clear()
     useExerciseStore.setState({ fs: null, tree: [], loaded: false, selected: null, error: null })
     useOpenExercise.setState({ path: null, sheet: null, currentId: null, exercise: null, status: 'empty' })
-    useCoursesStore.setState({ selectedId: null, searchOpen: false, notesVisible: true, bottomTab: 'notes' })
+    useCoursesStore.setState({ selectedId: null, searchOpen: false, notesVisible: true, bottomTab: 'notes', coursesVisible: true })
   })
 
   it('sans exercice : pas de suggestion, une invite, des notes désactivées', async () => {
@@ -84,16 +86,16 @@ describe('CoursePanel', () => {
     expect(screen.getByRole('region', { name: 'Notes et calculatrice' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Masquer le panneau du bas' }))
     expect(screen.queryByRole('region', { name: 'Notes et calculatrice' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Notes' })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('button', { name: 'Afficher ou masquer les notes' })).toHaveAttribute('aria-pressed', 'false')
     expect(localStorage.getItem('zachart-maths:notes-visible')).toBe('false')
-    await user.click(screen.getByRole('button', { name: 'Notes' }))
+    await user.click(screen.getByRole('button', { name: 'Afficher ou masquer les notes' }))
     expect(screen.getByRole('region', { name: 'Notes et calculatrice' })).toBeInTheDocument()
   })
 
   it('le bouton calculatrice ouvre la moitié basse sur la calculatrice, à côté des notes', async () => {
     const { user } = await setup()
     await user.click(screen.getByRole('button', { name: 'Masquer le panneau du bas' }))
-    await user.click(screen.getByRole('button', { name: 'Calculatrice' }))
+    await user.click(screen.getByRole('button', { name: 'Afficher ou masquer la calculatrice' }))
     expect(screen.getByRole('tab', { name: 'Calculatrice' })).toHaveAttribute('aria-selected', 'true')
     expect(screen.getByTestId('calculatrice')).toBeInTheDocument()
     expect(screen.queryByLabelText('Mes notes')).not.toBeInTheDocument()
@@ -105,12 +107,31 @@ describe('CoursePanel', () => {
 
   it('le bouton de l\'onglet affiché referme la moitié basse ; celui de l\'autre change d\'onglet', async () => {
     const { user } = await setup()
-    await user.click(screen.getByRole('button', { name: 'Calculatrice' }))
+    await user.click(screen.getByRole('button', { name: 'Afficher ou masquer la calculatrice' }))
     expect(screen.getByTestId('calculatrice')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Notes' }))
+    await user.click(screen.getByRole('button', { name: 'Afficher ou masquer les notes' }))
     expect(screen.getByLabelText('Mes notes')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Notes' }))
+    await user.click(screen.getByRole('button', { name: 'Afficher ou masquer les notes' }))
     expect(screen.queryByRole('region', { name: 'Notes et calculatrice' })).not.toBeInTheDocument()
+  })
+
+  it("allumer une pastille déplie le panneau de droite ; l'éteindre ne le replie pas", async () => {
+    const { user } = await setup()
+    useCoursesStore.setState({ notesVisible: false })
+    localStorage.setItem(RIGHT_COLLAPSED_KEY, '1')
+    await user.click(screen.getByRole('button', { name: 'Afficher ou masquer la calculatrice' }))
+    expect(localStorage.getItem(RIGHT_COLLAPSED_KEY)).toBe('0')
+    localStorage.setItem(RIGHT_COLLAPSED_KEY, '1')
+    await user.click(screen.getByRole('button', { name: 'Afficher ou masquer la calculatrice' }))
+    expect(screen.queryByRole('region', { name: 'Notes et calculatrice' })).not.toBeInTheDocument()
+    expect(localStorage.getItem(RIGHT_COLLAPSED_KEY)).toBe('1')
+  })
+
+  it('la pastille Cours masque la moitié haute, et les notes prennent alors toute la hauteur', async () => {
+    const { user } = await setup()
+    await user.click(screen.getByRole('button', { name: 'Afficher ou masquer la liste des cours' }))
+    expect(screen.queryByRole('region', { name: 'Cours' })).not.toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Notes et calculatrice' })).toBeInTheDocument()
   })
 
   it('les flèches changent d\'onglet', async () => {

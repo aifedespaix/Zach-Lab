@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cellKeyAction, cellMove, clearRect, crossProduct, pasteGrid, rectOf, rectToTsv } from './tableNav'
+import { cellKeyAction, cellMove, clearRect, crossProduct, insertShortcut, pasteGrid, rectOf, rectToTsv } from './tableNav'
 
 const at = (start: number, length = 5, end = start) => ({ start, end, length })
 
@@ -86,5 +86,21 @@ describe('sÃ©lection, collage, produit en croix', () => {
     expect(crossProduct([['10', '20'], ['x', '']], 1, 1)).toBeNull()
     expect(crossProduct([['0', '20'], ['4', '']], 1, 1)).toBeNull()
     expect(crossProduct([['3', '10'], ['', '5']], 1, 0)?.value).toBe('1,5')
+  })
+})
+
+describe('insertShortcut', () => {
+  const key = (name: string, extra = {}) => ({ key: name, ctrlKey: true, metaKey: false, altKey: true, shiftKey: false, ...extra })
+  it('Ctrl+Alt+flèche insère de ce côté de la case', () => {
+    expect(insertShortcut(key('ArrowUp'))).toEqual({ axis: 'row', side: 'before' })
+    expect(insertShortcut(key('ArrowDown'))).toEqual({ axis: 'row', side: 'after' })
+    expect(insertShortcut(key('ArrowLeft'))).toEqual({ axis: 'column', side: 'before' })
+    expect(insertShortcut(key('ArrowRight', { ctrlKey: false, metaKey: true }))).toEqual({ axis: 'column', side: 'after' })
+  })
+  it("ne vole ni Alt seul, ni Ctrl seul, ni Maj, ni une autre touche", () => {
+    expect(insertShortcut(key('ArrowUp', { ctrlKey: false }))).toBeNull()
+    expect(insertShortcut(key('ArrowUp', { altKey: false }))).toBeNull()
+    expect(insertShortcut(key('ArrowUp', { shiftKey: true }))).toBeNull()
+    expect(insertShortcut(key('a'))).toBeNull()
   })
 })

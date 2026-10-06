@@ -16,6 +16,11 @@ interface CollapsedRailProps extends Omit<ComponentProps<'div'>, 'children'> {
    * panel; absent, the rail is a bare strip holding a small unfold button.
    */
   children?: ReactNode
+  /**
+   * Small buttons the folded panel keeps within reach, stacked and centred in the strip; the unfold
+   * button stays at the bottom. Wins over `children`.
+   */
+  actions?: ReactNode
 }
 
 /**
@@ -26,10 +31,24 @@ interface CollapsedRailProps extends Omit<ComponentProps<'div'>, 'children'> {
  * height, its text turned 90° and centred; it stays on one line and only wraps into a second column
  * when the height runs out. Extra props go to the strip, so an app can hang a `data-testid` on it.
  */
-export function CollapsedRail({ side, command, label, children, style, ...rest }: CollapsedRailProps) {
+export function CollapsedRail({ side, command, label, children, actions, style, ...rest }: CollapsedRailProps) {
   const binding = useBinding(command)
   const Icon = side === 'left' ? PanelLeftOpen : PanelRightOpen
   const edge = side === 'left' ? { borderRight: '1px solid var(--border)' } : { borderLeft: '1px solid var(--border)' }
+
+  if (actions !== undefined) {
+    return (
+      <div
+        {...rest}
+        style={{ width: 40, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: 8, ...edge, ...style }}
+      >
+        <div role="group" aria-label={label} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          {actions}
+        </div>
+        <CommandButton command={command} icon={Icon} label={label} variant="ghost" size="icon-sm" />
+      </div>
+    )
+  }
 
   if (children === undefined) {
     return (
@@ -55,7 +74,6 @@ export function CollapsedRail({ side, command, label, children, style, ...rest }
             className="hover:bg-accent focus-visible:bg-accent focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
             style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '8px 0', cursor: 'pointer', transition: 'background-color 120ms ease' }}
           >
-            <Icon size={16} aria-hidden style={{ flexShrink: 0 }} />
             <span
               style={{
                 flex: 1,
@@ -76,6 +94,7 @@ export function CollapsedRail({ side, command, label, children, style, ...rest }
             >
               <span>{children}</span>
             </span>
+            <Icon size={16} aria-hidden style={{ flexShrink: 0 }} />
           </button>
         </TooltipTrigger>
         <TooltipContent side={side === 'left' ? 'right' : 'left'}>

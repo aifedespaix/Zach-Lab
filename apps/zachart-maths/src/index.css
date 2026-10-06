@@ -206,8 +206,34 @@
   background: linear-gradient(135deg,
     hsl(0 85% 78%), hsl(40 90% 74%), hsl(95 65% 72%), hsl(175 65% 70%), hsl(220 85% 78%), hsl(285 70% 78%));
   color: hsl(0 0% 12%);
-  box-shadow: inset 0 0 0 1px hsl(0 0% 0% / 0.15);
+  box-shadow: inset 0 0 0 1px hsl(220 60% 45% / 0.7);
 }
 .rainbow-active:hover {
   filter: brightness(1.06) saturate(1.1);
+}
+
+/* Un réglage allumé : fond et bordure de la même teinte bleue, pour qu'on voie d'un coup d'œil ce qui est actif. */
+.toggle-on {
+  background: color-mix(in oklab, hsl(215 90% 55%) 18%, transparent);
+  color: hsl(215 80% 42%);
+  box-shadow: inset 0 0 0 1px hsl(215 85% 55% / 0.75);
+}
+.toggle-on:hover {
+  background: color-mix(in oklab, hsl(215 90% 55%) 26%, transparent);
+}
+.dark .toggle-on {
+  color: hsl(215 95% 80%);
+}
+
+/* Des boutons qui vont ensemble : un seul cadre autour d'eux. */
+.toggle-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 2px);
+}
+.toggle-group[data-orientation='vertical'] {
+  flex-direction: column;
 }

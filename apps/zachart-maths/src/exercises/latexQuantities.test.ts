@@ -30,7 +30,12 @@ describe('latexQuantityHighlights', () => {
   it('une inconnue seule a sa teinte avec `unknowns`, pas un x collé à une unité ni une lettre de commande', () => {
     const latex = 'x + 2y = \\max(3, z) + x\\,\\mathrm{km/h}'
     expect(latexQuantityHighlights(latex, hues, 'light').map(h => slice(latex, h))).toEqual(['x\\,\\mathrm{km/h}'])
-    expect(latexQuantityHighlights(latex, hues, 'light', true).map(h => slice(latex, h))).toEqual(['x', 'y', 'z', 'x\\,\\mathrm{km/h}'])
+    expect(latexQuantityHighlights(latex, hues, 'light', true).map(h => slice(latex, h))).toEqual(['x', '2y', 'z','x\\,\\mathrm{km/h}'])
+  })
+
+  it("une inconnue est peinte avec son coefficient et son exposant, comme un terme d'�quation", () => {
+    const latex = '3x + 2.5y^2 = 4 + x'
+    expect(latexQuantityHighlights(latex, hues, 'light', true).map(h => slice(latex, h))).toEqual(['3x', '2.5y^2', 'x'])
   })
 
   it("une formule vide n'a rien à peindre", () => {

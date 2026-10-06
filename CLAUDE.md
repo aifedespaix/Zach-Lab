@@ -238,7 +238,7 @@ under `src/`, wired together in `App.tsx`:
 - **Notes et calculatrice** (moitié basse de la sidebar droite, `cours/CoursePanel.tsx` `BottomSection`, `calc/`) : deux onglets
   (`useCoursesStore.bottomTab`, clé `zachart-maths:bottom-tab`) qui se partagent la zone ; `notesVisible` veut dire « la moitié basse est
   là ». `toggleBottom(tab)` : ouvre l'onglet, ou referme si c'est déjà lui. Commandes `notes.toggle` (Mod+Shift+N) et `calculatrice.toggle`
-  (Mod+Shift+M). Le moteur est mathjs (`mathjs/number`, fonctions d'évaluation désactivées) dans `calc/calculate.ts` (`calculate`,
+  (Mod+Shift+M) ; `cours.toggle` montre/cache la moiti� haute (`coursesVisible`). `PanelToggles` r�unit les trois pastilles (barre du haut, pied du panneau d�pli�, rail repli� `railActions`) : allum�e = `.toggle-on` (fond + bordure bleus) ; l'allumer d�plie le panneau (`setPanelCollapsed`, `RIGHT_COLLAPSED_KEY`), l'�teindre ne le replie pas. Le moteur est mathjs (`mathjs/number`, fonctions d'évaluation désactivées) dans `calc/calculate.ts` (`calculate`,
   `normalize` : × ÷ − , % √ π Rép) ; `Calculator.tsx` n'est que le champ + le clavier ; calcul et historique dans `useCalculatorStore`.
 - **`math/`** — `isMathField` (the toolbar's target check); MathLive itself and `renderMathToHtml` come from `@suite/shared`.
 - **`cours/`** — courses are Markdown files in `cours/contenu/` (front matter `titre`,

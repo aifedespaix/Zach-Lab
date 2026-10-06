@@ -1,4 +1,33 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useSyncExternalStore } from 'react'
+
+// Every panel folded state is shared by key: the panel that owns it and an app command that wants to
+// unfold it (a toolbar button) read and write the same value.
+const listeners = new Set<() => void>()
+// Only used when `localStorage` is blocked: the choice then holds for the session.
+const memory = new Map<string, boolean>()
+
+function read(key: string): boolean {
+  try {
+    return localStorage.getItem(key) === '1'
+  } catch {
+    return memory.get(key) ?? false
+  }
+}
+
+/** Fold or unfold a panel from outside it; same storage and same notification as `usePanelCollapsed`. */
+export function setPanelCollapsed(key: string, value: boolean): void {
+  try {
+    localStorage.setItem(key, value ? '1' : '0')
+  } catch {
+    memory.set(key, value) // best-effort: see the contract below
+  }
+  listeners.forEach(listener => listener())
+}
+
+const subscribe = (listener: () => void) => {
+  listeners.add(listener)
+  return () => void listeners.delete(listener)
+}
 
 /**
  * Whether a side panel is folded away, remembered between launches.
@@ -8,28 +37,10 @@ import { useCallback, useState } from 'react'
  * blocked `localStorage` only costs the next launch its remembered state.
  */
 export function usePanelCollapsed(key: string) {
-  const [collapsed, set] = useState(() => {
-    try {
-      return localStorage.getItem(key) === '1'
-    } catch {
-      return false
-    }
-  })
-
+  const collapsed = useSyncExternalStore(subscribe, () => read(key))
   const setCollapsed = useCallback(
-    (next: boolean | ((current: boolean) => boolean)) => {
-      set(current => {
-        const value = typeof next === 'function' ? next(current) : next
-        try {
-          localStorage.setItem(key, value ? '1' : '0')
-        } catch {
-          // Best-effort: see the contract above.
-        }
-        return value
-      })
-    },
+    (next: boolean | ((current: boolean) => boolean)) => setPanelCollapsed(key, typeof next === 'function' ? next(read(key)) : next),
     [key],
   )
-
   return [collapsed, setCollapsed] as const
 }

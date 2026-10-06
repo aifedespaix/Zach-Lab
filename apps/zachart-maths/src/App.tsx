@@ -17,6 +17,8 @@ import { UpdateReadyBanner, UpdateSettingsSection, useAppUpdater } from '@suite/
 import { AnimatedLogo } from './AnimatedLogo'
 import './commands'
 import { CoursePanel } from './cours/CoursePanel'
+import { PanelToggles } from './cours/PanelToggles'
+import { RIGHT_COLLAPSED_KEY } from './cours/useCoursesStore'
 import { ExerciseTree } from './exercises/ExerciseTree'
 import { ExerciseWorkspace } from './exercises/ExerciseWorkspace'
 import { AdvancedSearchDialog } from './exercises/AdvancedSearchDialog'
@@ -109,20 +111,29 @@ export default function App() {
   })
 
   const button = (command: string, icon: LucideIcon, active?: boolean, className?: string) => (
-    <CommandButton command={command} icon={icon} variant={active ? 'secondary' : 'ghost'} size="icon-sm" className={active ? className : undefined} />
+    <CommandButton command={command} icon={icon} variant="ghost" size="icon-sm" pressed={active} className={active ? className : undefined} />
   )
   // De gauche à droite ; `priority` : ce qui reste le plus longtemps quand la barre manque de place.
   const toolbarItems: OverflowItem[] = [
     { id: 'undo', node: button('edit.undo', Undo2), menu: <CommandDropdownItem command="edit.undo" icon={Undo2} />, priority: 9 },
     { id: 'redo', node: button('edit.redo', Redo2), menu: <CommandDropdownItem command="edit.redo" icon={Redo2} />, priority: 9 },
     { id: 'palette', node: button('app.palette', Search), menu: <CommandDropdownItem command="app.palette" icon={Search} />, priority: 8 },
-    { id: 'cours', node: button('cours.search', BookOpen), menu: <CommandDropdownItem command="cours.search" icon={BookOpen} />, priority: 5 },
     { id: 'next', node: button('correction.next', ListChecks), menu: <CommandDropdownItem command="correction.next" icon={ListChecks} />, priority: 4 },
     { id: 'review', node: button('review.open', ClipboardCheck), menu: <CommandDropdownItem command="review.open" icon={ClipboardCheck} />, priority: 3 },
-    { id: 'notes', node: button('notes.toggle', NotebookPen), menu: <CommandDropdownItem command="notes.toggle" icon={NotebookPen} />, priority: 3 },
-    { id: 'calculatrice', node: button('calculatrice.toggle', Calculator), menu: <CommandDropdownItem command="calculatrice.toggle" icon={Calculator} />, priority: 3 },
+    {
+      id: 'panneau',
+      node: <PanelToggles />,
+      menu: (
+        <>
+          <CommandDropdownItem command="notes.toggle" icon={NotebookPen} />
+          <CommandDropdownItem command="calculatrice.toggle" icon={Calculator} />
+          <CommandDropdownItem command="cours.toggle" icon={BookOpen} />
+        </>
+      ),
+      priority: 5,
+    },
     { id: 'colors', node: button('view.toggleUnitColors', Highlighter, unitColors, 'rainbow-active'), menu: <CommandDropdownItem command="view.toggleUnitColors" icon={Highlighter} />, priority: 2 },
-    { id: 'compact', node: button('view.toggleCompact', Rows3, compact), menu: <CommandDropdownItem command="view.toggleCompact" icon={Rows3} />, priority: 2 },
+    { id: 'compact', node: button('view.toggleCompact', Rows3, compact, 'toggle-on'), menu: <CommandDropdownItem command="view.toggleCompact" icon={Rows3} />, priority: 2 },
     {
       id: 'zoom',
       node: (
@@ -184,11 +195,13 @@ export default function App() {
             label="Panneau droit"
             resizeLabel="Redimensionner le panneau de droite"
             storage={rightPanel}
-            collapsedKey="zachart-maths:right-collapsed"
+            collapsedKey={RIGHT_COLLAPSED_KEY}
             toggleCommand="view.toggleCourses"
             foldLabel="Replier le panneau des cours"
             unfoldLabel="Déplier le panneau des cours"
-            railContent="Afficher les cours"
+            railWidth={40}
+            railActions={<PanelToggles orientation="vertical" />}
+            footer={<PanelToggles />}
           >
             <CoursePanel />
           </CollapsiblePanel>

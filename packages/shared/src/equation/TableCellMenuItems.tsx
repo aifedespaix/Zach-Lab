@@ -22,7 +22,15 @@ interface TableCellMenuItemsProps {
   onSelectColumn?: (column: number) => void
   onSelectAll?: () => void
   /** The keys bound to each selection entry by the app, printed on the right (indicative only). */
-  shortcuts?: { row?: string; column?: string; all?: string }
+  shortcuts?: {
+    row?: string
+    column?: string
+    all?: string
+    addRowAbove?: string
+    addRowBelow?: string
+    addColumnLeft?: string
+    addColumnRight?: string
+  }
 }
 
 /**

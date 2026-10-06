@@ -86,7 +86,13 @@ export function latexQuantityHighlights(
     for (const match of plain.text.matchAll(/(?<![\p{L}\\])[xyz](?![\p{L}])/gu)) {
       const index = match.index
       if (covered.some(([start, end]) => index >= start && index < end)) continue
-      highlights.push({ from: plain.start[index], to: plain.end[index], color: background(UNKNOWN_HUES[match[0]], theme, false) })
+      // Le terme entier, comme dans une équation : le coefficient (`3x`) et l'exposant (`x^2`) sont peints avec la lettre.
+      let from = index
+      while (from > 0 && /[\d.,]/.test(plain.text[from - 1]) && !covered.some(([start, end]) => from - 1 >= start && from - 1 < end)) from--
+      if (!/\d/.test(plain.text[from])) from = index
+      const power = /^\^\d/.exec(plain.text.slice(index + 1))
+      const last = power === null ? index : index + power[0].length
+      highlights.push({ from: plain.start[from], to: plain.end[last], color: background(UNKNOWN_HUES[match[0]], theme, false) })
     }
   }
   return highlights.sort((a, b) => a.from - b.from)

@@ -11,7 +11,7 @@ import { EquationEditor, type SubBlockContext } from './EquationEditor'
 import { FieldContextMenu } from './FieldContextMenu'
 import { HighlightedTextarea, UnitHuesContext } from './HighlightedTextarea'
 import { borderOf, headerToneOf, toneOf } from './toolbarCatalog'
-import { cellKeyAction, cellMove, clearRect, crossProduct, inRect, pasteGrid, rectOf, rectToTsv, type CellMove, type CellPoint } from './tableNav'
+import { cellKeyAction, cellMove, clearRect, crossProduct, inRect, insertShortcut, pasteGrid, rectOf, rectToTsv, type CellMove, type CellPoint } from './tableNav'
 import { tableLayout } from './tableUnits'
 import { spacing, useCompact } from './useCompact'
 import { useUnitColors } from './useUnitColors'
@@ -117,6 +117,21 @@ function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: 
   const onCellKeyDown = (e: KeyboardEvent<HTMLInputElement>, r: number, c: number) => {
     const input = e.currentTarget
     if (e.nativeEvent.isComposing) return
+    // Ctrl+Alt+flËche : une ligne ou une colonne de ce cÙtÈ de la case.
+    const insert = insertShortcut(e)
+    if (insert !== null) {
+      e.preventDefault()
+      if (insert.axis === 'row') {
+        if (!canGrow(cells, 'row')) return
+        pendingFocus.current = { row: insert.side === 'before' ? r : r + 1, column: c, caret: 'start' }
+        set(addRow(cells, insert.side === 'before' ? r - 1 : r))
+      } else {
+        if (!canGrow(cells, 'col')) return
+        pendingFocus.current = { row: r, column: insert.side === 'before' ? c : c + 1, caret: 'start' }
+        set(addColumn(cells, insert.side === 'before' ? c - 1 : c))
+      }
+      return
+    }
     // Ctrl+Espace : la colonne ; Ctrl+Maj+Espace : la ligne ; Ctrl+A quand tout le texte de la case est d√©j√† s√©lectionn√© : tout le tableau.
     if ((e.ctrlKey || e.metaKey) && !e.altKey) {
       const at = { row: r, column: c }

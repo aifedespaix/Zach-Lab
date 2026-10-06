@@ -35,9 +35,7 @@ function CourseMenu({ course, onOpen, children }: { course: Course; onOpen: () =
 /** La partie haute de la sidebar droite : les cours, ceux qu'on suggÃ¨re, et leur lecture. */
 function CoursesSection({ courses }: { courses: readonly Course[] }) {
   const selectedId = useCoursesStore(s => s.selectedId)
-  const notesVisible = useCoursesStore(s => s.notesVisible)
-  const bottomTab = useCoursesStore(s => s.bottomTab)
-  const { select, setSearchOpen, toggleBottom } = useCoursesStore.getState()
+  const { select, setSearchOpen } = useCoursesStore.getState()
   const path = useOpenExercise(s => s.path)
   const sheet = useOpenExercise(s => s.sheet)
   const exercise = useOpenExercise(s => s.exercise)
@@ -55,12 +53,6 @@ function CoursesSection({ courses }: { courses: readonly Course[] }) {
       <header style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '8px 12px', borderBottom: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <strong style={{ fontSize: 13, flex: 1 }}>Cours</strong>
-          <Button variant="ghost" size="icon-sm" aria-label="Notes" aria-pressed={notesVisible && bottomTab === 'notes'} onClick={() => toggleBottom('notes')}>
-            <NotebookPen />
-          </Button>
-          <Button variant="ghost" size="icon-sm" aria-label="Calculatrice" aria-pressed={notesVisible && bottomTab === 'calculatrice'} onClick={() => toggleBottom('calculatrice')}>
-            <CalculatorIcon />
-          </Button>
         </div>
         <Button variant="outline" size="xs" style={{ width: '100%' }} onClick={() => setSearchOpen(true)}><Search />Chercher un cours</Button>
       </header>
@@ -133,7 +125,7 @@ function NotesField() {
 }
 
 /** La partie basse : deux onglets, Notes et Calculatrice, qui se partagent la zone. */
-function BottomSection() {
+function BottomSection({ alone }: { alone: boolean }) {
   const tab = useCoursesStore(s => s.bottomTab)
   const { setBottomTab, setNotesVisible } = useCoursesStore.getState()
   const move = (e: React.KeyboardEvent, from: number) => {
@@ -145,7 +137,7 @@ function BottomSection() {
     document.getElementById(`bas-onglet-${next.id}`)?.focus()
   }
   return (
-    <section aria-label="Notes et calculatrice" style={{ display: 'flex', flexDirection: 'column', flex: '0 0 42%', minHeight: 250, borderTop: '1px solid var(--border)' }}>
+    <section aria-label="Notes et calculatrice" style={{ display: 'flex', flexDirection: 'column', ...(alone ? { flex: 1 } : { flex: '0 0 42%', minHeight: 250, borderTop: '1px solid var(--border)' }) }}>
       <header style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '4px 8px' }}>
         <div role="tablist" aria-label="Notes et calculatrice" style={{ display: 'flex', gap: 2, flex: 1 }}>
           {TABS.map(({ id, label, icon: Icon }, i) => (
@@ -177,7 +169,13 @@ function BottomSection() {
 /** Le contenu de la sidebar droite : les cours en haut, les notes en bas â€” ou les cours seuls si elles sont masquÃ©es. */
 export function CoursePanel({ courses = COURSES }: { courses?: readonly Course[] }) {
   const notesVisible = useCoursesStore(s => s.notesVisible)
-  useCommand('cours.search', () => useCoursesStore.getState().setSearchOpen(true))
+  const coursesVisible = useCoursesStore(s => s.coursesVisible)
+  useCommand('cours.toggle', () => useCoursesStore.getState().toggleCourses())
+  useCommand('cours.search', () => {
+    // La recherche vit dans la section des cours : on la remonte si elle était masquée.
+    useCoursesStore.getState().setCoursesVisible(true)
+    useCoursesStore.getState().setSearchOpen(true)
+  })
   useCommand('notes.toggle', () => useCoursesStore.getState().toggleBottom('notes'))
   useCommand('calculatrice.toggle', () => useCoursesStore.getState().toggleBottom('calculatrice'))
   const { setSearchOpen, setNotesVisible, toggleBottom } = useCoursesStore.getState()
@@ -185,8 +183,13 @@ export function CoursePanel({ courses = COURSES }: { courses?: readonly Course[]
     <ContextMenu>
       <ContextMenuTrigger asChild>
         <div data-testid="cours-vide" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0 }}>
-          <CoursesSection courses={courses} />
-          {notesVisible && <BottomSection />}
+          {coursesVisible && <CoursesSection courses={courses} />}
+          {notesVisible && <BottomSection alone={!coursesVisible} />}
+          {!coursesVisible && !notesVisible && (
+            <p style={{ margin: 12, fontSize: 13, color: 'var(--muted-foreground)' }}>
+              Rien d'affiché : allume les notes, la calculatrice ou les cours avec les boutons du bas.
+            </p>
+          )}
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent>

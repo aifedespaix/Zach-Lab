@@ -88,6 +88,14 @@ export const COMMANDS = [
     allowInEditable: true,
   },
   {
+    id: 'cours.toggle',
+    label: 'Afficher ou masquer la liste des cours',
+    description: 'Montre ou cache la moitié haute du panneau de droite (les cours) ; l’afficher déplie le panneau.',
+    category: 'cours',
+    defaultBinding: null,
+    allowInEditable: true,
+  },
+  {
     id: 'notes.toggle',
     label: 'Afficher ou masquer les notes',
     description: 'Ouvre la moitiÃ© basse du panneau de droite sur les notes ; les cours prennent toute la hauteur quand elle est refermÃ©e.',
