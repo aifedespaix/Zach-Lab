@@ -1,5 +1,6 @@
-import { useRef, useState } from 'react'
-import { Delete } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Check, Copy, Delete } from 'lucide-react'
+import { Hint } from '@suite/shared/ui'
 import { calculate } from './calculate'
 import { useCalculatorStore } from './useCalculatorStore'
 
@@ -46,6 +47,10 @@ export function Calculator() {
   const input = useRef<HTMLInputElement>(null)
   /** Un Entrée sur un calcul qui ne passe pas : seulement alors on dit pourquoi (pas à chaque frappe). */
   const [failed, setFailed] = useState(false)
+  /** « Copié » ne reste affiché qu'un instant : le bouton redevient « Copier » de lui-même. */
+  const [copied, setCopied] = useState(false)
+  const copiedTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  useEffect(() => () => clearTimeout(copiedTimer.current), [])
 
   const last = history[0]
   const live = calculate(expression, last?.value ?? 0)
@@ -57,6 +62,20 @@ export function Calculator() {
       if (last?.text === expression.trim()) return // déjà le résultat affiché : rien de neuf à ranger
       push({ expression: expression.trim(), text: live.text, value: live.value })
     } else setFailed(expression.trim() !== '')
+  }
+
+  const copyResult = () => {
+    if (!live.ok) return
+    void navigator.clipboard
+      .writeText(live.text)
+      .then(() => {
+        setCopied(true)
+        clearTimeout(copiedTimer.current)
+        copiedTimer.current = setTimeout(() => setCopied(false), 1500)
+      })
+      .catch(() => {
+        // Presse-papiers inaccessible : le bouton ne change pas, rien n'a été copié.
+      })
   }
 
   const edit = (text: string, from: number, to: number) => {
@@ -124,9 +143,26 @@ export function Calculator() {
           }}
           style={{ width: '100%', background: 'transparent', outline: 'none', textAlign: 'right', fontSize: 18, fontVariantNumeric: 'tabular-nums' }}
         />
-        <output aria-live="polite" style={{ minHeight: 16, textAlign: 'right', fontSize: 12, fontVariantNumeric: 'tabular-nums', color: live.ok ? 'var(--foreground)' : 'var(--muted-foreground)' }}>
-          {message}
-        </output>
+        <div style={{ position: 'relative' }}>
+          <Hint label={copied ? 'Copié !' : 'Copie le résultat dans le presse-papiers'}>
+            {/* Le focus reste dans le champ (`preventDefault`), comme pour les touches du clavier. */}
+            <button
+              type="button"
+              tabIndex={-1}
+              disabled={!live.ok}
+              aria-label={copied ? 'Résultat copié' : 'Copier le résultat'}
+              onMouseDown={e => e.preventDefault()}
+              onClick={copyResult}
+              className="rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40"
+              style={{ position: 'absolute', top: 0, left: 0, display: 'grid', placeItems: 'center', width: 18, height: 18 }}
+            >
+              {copied ? <Check size={12} /> : <Copy size={12} />}
+            </button>
+          </Hint>
+          <output aria-live="polite" style={{ display: 'block', minHeight: 16, textAlign: 'right', fontSize: 12, fontVariantNumeric: 'tabular-nums', color: live.ok ? 'var(--foreground)' : 'var(--muted-foreground)' }}>
+            {message}
+          </output>
+        </div>
       </div>
       <div role="group" aria-label="Clavier de la calculatrice" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gridAutoRows: 'minmax(28px, 1fr)', gap: 4, flex: 1, minHeight: 140 }}>
         {KEYS.map(key => (

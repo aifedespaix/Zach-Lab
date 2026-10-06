@@ -1,11 +1,12 @@
 import { render, screen } from '@testing-library/react'
+import { TooltipProvider } from '@suite/shared/ui'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Calculator } from './Calculator'
 import { useCalculatorStore } from './useCalculatorStore'
 
 const setup = () => {
-  render(<Calculator />)
+  render(<TooltipProvider><Calculator /></TooltipProvider>)
   return { user: userEvent.setup(), field: screen.getByLabelText('Calcul') as HTMLInputElement }
 }
 
@@ -70,5 +71,16 @@ describe('Calculator', () => {
     document.body.innerHTML = ''
     const second = setup()
     expect(second.field).toHaveValue('8+')
+  })
+
+  it('copie le résultat affiché, et se grise tant que le calcul est vide', async () => {
+    const { user, field } = setup()
+    const copy = screen.getByRole('button', { name: 'Copier le résultat' })
+    expect(copy).toBeDisabled()
+    await user.type(field, '12,5×2')
+    const write = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue()
+    await user.click(copy)
+    expect(write).toHaveBeenCalledWith('25')
+    expect(await screen.findByRole('button', { name: 'Résultat copié' })).toBeInTheDocument()
   })
 })
