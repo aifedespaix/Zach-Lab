@@ -187,7 +187,7 @@ under `src/`, wired together in `App.tsx`:
   → « + » de ligne ; Entrée = case suivante (ligne suivante au bout), dernière case → nouvelle ligne ; Maj+Entrée recule ;
   Ctrl/Cmd+Entrée = nouvelle colonne ; Retour arrière dans une case vide recule, et supprime la ligne vide depuis sa première
   case (jamais en répétition de touche). Maj+flèches / Maj+clic = sélection rectangulaire (Suppr vide, Ctrl+C/X copient en TSV) ;
-  coller du TSV agrandit le tableau (12 max) ; `crossProduct` propose le produit en croix d'une case vide (bouton « Remplir »).
+  Ctrl/Cmd+Suppr = supprime les colonnes de la sélection, Ctrl/Cmd+Maj+Suppr ses lignes, Ctrl/Cmd+Alt+Maj+Suppr les deux (`deleteShortcut`, `removeRect`, `canRemoveRect` ; un axe entièrement couvert est laissé, il reste au moins une ligne et une colonne ; mêmes actions dans le clic droit d'une sélection multiple, ajoutées dans `BlockStack` autour de `TableCellMenuItems`) ; coller du TSV agrandit le tableau (12 max) ; `crossProduct` propose le produit en croix d'une case vide (bouton « Remplir »).
 - **Orthographe et flèches** : `FieldContextMenu` met en tête du clic droit les corrections du mot sous le curseur
   (`spell.ts` : `misspellingAt`, dictionnaire Hunspell français `nspell` + `dictionary-fr` chargé dans un worker,
   `spell.worker.ts`/`spellCore.ts` ; l'alias `@dictionary-fr` existe parce que le paquet n'exporte que `index.js`).
@@ -238,7 +238,7 @@ under `src/`, wired together in `App.tsx`:
 - **Notes et calculatrice** (moitié basse de la sidebar droite, `cours/CoursePanel.tsx` `BottomSection`, `calc/`) : deux onglets
   (`useCoursesStore.bottomTab`, clé `zachart-maths:bottom-tab`) qui se partagent la zone ; `notesVisible` veut dire « la moitié basse est
   là ». `toggleBottom(tab)` : ouvre l'onglet, ou referme si c'est déjà lui. Commandes `notes.toggle` (Mod+Shift+N) et `calculatrice.toggle`
-  (Mod+Shift+M) ; `cours.toggle` montre/cache la moiti� haute (`coursesVisible`). `PanelToggles` r�unit les trois pastilles (barre du haut, pied du panneau d�pli�, rail repli� `railActions`) : allum�e = `.toggle-on` (fond + bordure bleus) ; l'allumer d�plie le panneau (`setPanelCollapsed`, `RIGHT_COLLAPSED_KEY`), l'�teindre ne le replie pas. Le moteur est mathjs (`mathjs/number`, fonctions d'évaluation désactivées) dans `calc/calculate.ts` (`calculate`,
+  (Mod+Shift+M) ; `cours.toggle` montre/cache la moitié haute (`coursesVisible`). `PanelToggles` réunit les trois pastilles (barre du haut, pied du panneau déplié, rail replié `railActions`) : allumée = `.toggle-on` (fond + bordure bleus) ; l'allumer déplie le panneau (`setPanelCollapsed`, `RIGHT_COLLAPSED_KEY`) ; l'éteindre ne le replie pas, sauf si plus rien n'est allumé (cours ET notes/calculatrice éteints : `foldWhenEmpty` dans `useCoursesStore` range le panneau). Calculatrice seule (cours masqués) : hauteur plafonnée (`CALCULATOR_MAX_HEIGHT`, 480 px) et centrée verticalement. Le moteur est mathjs (`mathjs/number`, fonctions d'Ã©valuation dÃ©sactivÃ©es) dans `calc/calculate.ts` (`calculate`,
   `normalize` : × ÷ − , % √ π Rép) ; `Calculator.tsx` n'est que le champ + le clavier ; calcul et historique dans `useCalculatorStore`.
 - **`math/`** — `isMathField` (the toolbar's target check); MathLive itself and `renderMathToHtml` come from `@suite/shared`.
 - **`cours/`** — courses are Markdown files in `cours/contenu/` (front matter `titre`,
