@@ -146,6 +146,14 @@ export const COMMANDS = [
     defaultBinding: null,
   },
   {
+    id: 'search.advanced',
+    label: 'Recherche avancée',
+    description: 'Cherche des mots dans tous les exercices et toutes les fiches : énoncés, réponses, notes et travail.',
+    category: 'tree',
+    defaultBinding: 'Mod+Shift+F',
+    allowInEditable: true,
+  },
+  {
     id: 'review.open',
     label: 'Mode révision',
     description: 'Liste les exercices corrigés pour les relire, par chapitre, avec ceux à revoir.',

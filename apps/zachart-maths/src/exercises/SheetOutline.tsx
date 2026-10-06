@@ -1,11 +1,24 @@
 import { useState } from 'react'
-import { ArrowDown, ArrowUp, Check, ChevronDown, Eye, EyeOff, ChevronRight, CornerDownRight, CornerUpRight, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, Check, ChevronDown, Eye, EyeOff, ChevronRight, CornerDownRight, CornerUpRight, Trash2 } from 'lucide-react'
 import {
   ConfirmDialog, ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@suite/shared/ui'
 import { useCorrectionView } from './useCorrectionView'
 import { exerciseStatus } from './sheet'
+import { exerciseLabel, sortedIndices, type SheetSort } from './sheetSort'
+import { useSheetSort } from './useSheetSort'
 import { useOpenExercise } from './useOpenExercise'
+
+const SORT_GROUPS: readonly { title: string; options: readonly { sort: SheetSort; label: string }[] }[] = [
+  { title: 'Ordre', options: [{ sort: 'ordre', label: 'Ordre de la fiche' }] },
+  { title: 'Numéro', options: [{ sort: 'numero-asc', label: '1, 1a, 1b, 2… (croissant)' }, { sort: 'numero-desc', label: '…2, 1b, 1a, 1 (décroissant)' }] },
+  { title: 'Date de création', options: [{ sort: 'date-asc', label: 'Plus anciens d’abord' }, { sort: 'date-desc', label: 'Plus récents d’abord' }] },
+  {
+    title: 'État',
+    options: [{ sort: 'a-corriger', label: 'À corriger d’abord' }, { sort: 'a-revoir', label: 'À revoir d’abord' }, { sort: 'corriges', label: 'Corrigés d’abord' }],
+  },
+]
 
 /** La liste des exercices de la fiche ouverte, sous l'arbre des fichiers de la sidebar gauche. */
 export function SheetOutline() {
@@ -14,6 +27,7 @@ export function SheetOutline() {
   const [open, setOpen] = useState(true)
   const [deleting, setDeleting] = useState<string | null>(null)
   const hideCorrected = useCorrectionView(s => s.hideCorrected)
+  const sort = useSheetSort(s => s.sort)
   if (sheet === null) return null
   const actions = useOpenExercise.getState()
 
@@ -32,6 +46,33 @@ export function SheetOutline() {
           {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           Exercices de la fiche
         </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              aria-label="Trier les exercices"
+              title="Trier les exercices"
+              data-active={sort !== 'ordre' ? 'true' : undefined}
+              style={{ padding: '6px 8px', color: sort !== 'ordre' ? 'var(--primary)' : undefined }}
+            >
+              <ArrowUpDown size={14} />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {SORT_GROUPS.map((group, g) => (
+              <div key={group.title}>
+                {g > 0 && <DropdownMenuSeparator />}
+                <DropdownMenuLabel>{group.title}</DropdownMenuLabel>
+                {group.options.map(option => (
+                  <DropdownMenuItem key={option.sort} onSelect={() => useSheetSort.getState().setSort(option.sort)}>
+                    <span style={{ width: 14 }}>{sort === option.sort && <Check size={14} aria-label="Tri actuel" />}</span>
+                    {option.label}
+                  </DropdownMenuItem>
+                ))}
+              </div>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
         <button
           type="button"
           aria-pressed={hideCorrected}
@@ -45,12 +86,13 @@ export function SheetOutline() {
       </div>
       {open && (
         <ul style={{ margin: 0, padding: '0 0 8px', listStyle: 'none', overflowY: 'auto' }}>
-          {sheet.exercices.map((exercise, i) => {
+          {sortedIndices(sheet.exercices, sort).map(i => {
+            const exercise = sheet.exercices[i]
             // Un exercice corrigé est grisé, ou caché sur demande : jamais celui qu'on est en train de lire.
             const done = exercise.corrige === true
             if (done && hideCorrected && exercise.id !== currentId) return null
             const status = exerciseStatus(exercise)
-            const label = exercise.numero.trim() === '' ? String(i + 1) : exercise.numero
+            const label = exerciseLabel(exercise, i + 1)
             const firstLine = exercise.enonce.split('\n')[0].trim()
             return (
               <li key={exercise.id}>
@@ -78,8 +120,8 @@ export function SheetOutline() {
                   </ContextMenuTrigger>
                   <ContextMenuContent>
                     <ContextMenuItem onSelect={() => actions.goTo(exercise.id)}>Aller à cet exercice</ContextMenuItem>
-                    <ContextMenuItem disabled={i === 0} onSelect={() => actions.reorder(exercise.id, -1)}><ArrowUp /> Monter</ContextMenuItem>
-                    <ContextMenuItem disabled={i === sheet.exercices.length - 1} onSelect={() => actions.reorder(exercise.id, 1)}>
+                    <ContextMenuItem disabled={sort !== 'ordre' || i === 0} onSelect={() => actions.reorder(exercise.id, -1)}><ArrowUp /> Monter</ContextMenuItem>
+                    <ContextMenuItem disabled={sort !== 'ordre' || i === sheet.exercices.length - 1} onSelect={() => actions.reorder(exercise.id, 1)}>
                       <ArrowDown /> Descendre
                     </ContextMenuItem>
                     <ContextMenuSeparator />

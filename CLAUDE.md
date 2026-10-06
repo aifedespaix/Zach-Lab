@@ -160,6 +160,11 @@ under `src/`, wired together in `App.tsx`:
   « À finir » sur l'accueil, commandes `correction.next` (Mod+Shift+J, `jumpToNextToCorrect`, `goToExercise` ouvre une fiche sur un
   exercice), `tree.onlyToCorrect` (filtre de l'arbre), `correction.toggleHide` (le plan grise ou masque les corrigés), `review.open`
   (`ReviewDialog` : tous les corrigés, filtre chapitre / à revoir, cours suggérés pour les ratés). État de vue : `useCorrectionView`.
+- **Tri du plan et recherche avancée** : le plan de la fiche (`SheetOutline`) a un menu de tri (`sheetSort.ts`, `sortedIndices` : ordre de la
+  fiche, numéro naturel 1, 1a, 1b, 2, 10 croissant/décroissant, date de création, état en tête ; `useSheetSort`, clé `zachart-maths:sheet-sort`) ;
+  Monter/Descendre sont désactivés hors « ordre ». À droite de la recherche de l'arbre, `search.advanced` (Mod+Shift+F) ouvre
+  `AdvancedSearchDialog` : `librarySearch.ts` (`loadSearchEntries` relit toute la bibliothèque, `searchEntries` = Orama + extrait surligné) cherche
+  dans fiches ET exercices (énoncé, réponse, notes, blocs), filtrable par type et chapitre.
 - **Blocks** (`blocks.ts`): `texte`, `calcul`, `tableau`, `equation`. A new block type = a
   type in `blocks.ts` (`newBlock`, `parseBlocks`), an editor in `BlockStack.tsx`, an icon and
   hue in `blockMeta.ts`. A block of an unknown type is kept verbatim in the file, never dropped.
