@@ -31,7 +31,7 @@ export const BLOCK_TYPES: readonly { type: BlockType; label: string }[] = [
 
 export const isKnown = (block: Block): block is KnownBlock => BLOCK_TYPES.some(t => t.type === block.type)
 
-const MAX_TABLE = 12
+export const MAX_TABLE = 12
 
 export const newCalcLine = (): CalcLine => ({ id: crypto.randomUUID(), latex: '' })
 

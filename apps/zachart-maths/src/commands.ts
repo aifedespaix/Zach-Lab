@@ -29,6 +29,22 @@ export const COMMANDS = [
     defaultBinding: null,
   },
   {
+    id: 'edit.undo',
+    label: 'Annuler',
+    description: 'Annule la dernière modification de la fiche ouverte (frappes groupées, ajouts, suppressions, déplacements).',
+    category: 'edit',
+    defaultBinding: 'Mod+Z',
+    allowInEditable: true,
+  },
+  {
+    id: 'edit.redo',
+    label: 'Rétablir',
+    description: 'Rétablit la modification qui vient d’être annulée.',
+    category: 'edit',
+    defaultBinding: 'Mod+Shift+Z',
+    allowInEditable: true,
+  },
+  {
     id: 'view.toggleUnitColors',
     label: 'Colorer unités et termes',
     description: 'Colore les grandeurs et leurs unités (16 km, 3 km/h) dans l’énoncé, les textes et la réponse, et les termes semblables d’une équation (3x et 5x) dans l’aide sous le bloc.',
@@ -191,6 +207,7 @@ export type CommandId = (typeof COMMANDS)[number]['id']
 defineCommandCatalog({
   categories: [
     { id: 'app', label: 'Application' },
+    { id: 'edit', label: 'Édition' },
     { id: 'view', label: 'Affichage' },
     { id: 'cours', label: 'Cours et notes' },
     { id: 'tree', label: 'Exercices' },
