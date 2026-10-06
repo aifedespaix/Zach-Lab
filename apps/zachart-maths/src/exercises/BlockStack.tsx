@@ -94,6 +94,22 @@ function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: 
   const columnTotal = cells[0].length
   useEffect(() => setSelection(null), [rowTotal, columnTotal])
 
+  /** La case d'où part un glisser à la souris, tant que le bouton est enfoncé. */
+  const dragFrom = useRef<CellPoint | null>(null)
+  useEffect(() => {
+    const end = () => { dragFrom.current = null }
+    window.addEventListener('mouseup', end)
+    return () => window.removeEventListener('mouseup', end)
+  }, [])
+  /** Sélectionne un rectangle, le curseur restant (ou revenant) dans la case `at` pour que Suppr, Ctrl+C… agissent dessus. */
+  const selectRect = (anchor: CellPoint, head: CellPoint, at: CellPoint) => {
+    setSelection({ anchor, head })
+    setTimeout(() => focusCell(scrollRef.current, { ...at, caret: 'end' }), 0)
+  }
+  const selectRow = (row: number, at: CellPoint = { row, column: 0 }) => selectRect({ row, column: 0 }, { row, column: columnTotal - 1 }, at)
+  const selectColumn = (column: number, at: CellPoint = { row: 0, column }) => selectRect({ row: 0, column }, { row: rowTotal - 1, column }, at)
+  const selectAll = (at: CellPoint = { row: 0, column: 0 }) => selectRect({ row: 0, column: 0 }, { row: rowTotal - 1, column: columnTotal - 1 }, at)
+
   const extendSelection = (from: CellPoint, to: CellPoint) => {
     setSelection({ anchor: selection?.anchor ?? from, head: to })
     focusCell(scrollRef.current, { row: to.row, column: to.column, caret: 'end' })
@@ -101,6 +117,21 @@ function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: 
   const onCellKeyDown = (e: KeyboardEvent<HTMLInputElement>, r: number, c: number) => {
     const input = e.currentTarget
     if (e.nativeEvent.isComposing) return
+    // Ctrl+Espace : la colonne ; Ctrl+Maj+Espace : la ligne ; Ctrl+A quand tout le texte de la case est déjà sélectionné : tout le tableau.
+    if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+      const at = { row: r, column: c }
+      if (e.key === ' ') {
+        e.preventDefault()
+        if (e.shiftKey) selectRow(r, at)
+        else selectColumn(c, at)
+        return
+      }
+      if (e.key.toLowerCase() === 'a' && !e.shiftKey && input.selectionStart === 0 && input.selectionEnd === input.value.length) {
+        e.preventDefault()
+        selectAll(at)
+        return
+      }
+    }
     // Maj+flèches : étendre la sélection. Verticalement toujours ; horizontalement seulement quand le texte ne peut plus s'étendre.
     if (e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey && e.key.startsWith('Arrow')) {
       const head = selection?.head ?? { row: r, column: c }
@@ -191,6 +222,7 @@ function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: 
         renderCell={(r, c) => (
           <FieldContextMenu
             kind="text"
+            selectAllLabel="Sélectionner la case"
             extra={
               <TableCellMenuItems
                 row={r}
@@ -203,6 +235,10 @@ function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: 
                 onAddColumn={addColumnAfter}
                 onRemoveRow={removeRowAt}
                 onRemoveColumn={removeColumnAt}
+                onSelectRow={row => selectRow(row, { row: r, column: c })}
+                onSelectColumn={column => selectColumn(column, { row: r, column: c })}
+                onSelectAll={() => selectAll({ row: r, column: c })}
+                shortcuts={{ row: 'Ctrl + Maj + Espace', column: 'Ctrl + Espace', all: 'Ctrl + A ×2' }}
               />
             }
           >
@@ -216,10 +252,23 @@ function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: 
               onCut={e => onCellCopy(e, true)}
               onFocus={() => setFocusCell({ row: r, column: c })}
               onMouseDown={e => {
+                if (e.button !== 0) return
                 // Maj+clic : sélectionne le rectangle depuis la case qui avait le focus.
-                if (!e.shiftKey || focused === null) return
-                e.preventDefault()
-                setSelection({ anchor: selection?.anchor ?? focused, head: { row: r, column: c } })
+                if (e.shiftKey && focused !== null) {
+                  e.preventDefault()
+                  setSelection({ anchor: selection?.anchor ?? focused, head: { row: r, column: c } })
+                  return
+                }
+                // Un clic simple lâche la sélection ; s'il glisse sur une autre case, `onMouseEnter` en fait une.
+                if (!e.shiftKey) {
+                  dragFrom.current = { row: r, column: c }
+                  setSelection(null)
+                }
+              }}
+              onMouseEnter={e => {
+                const from = dragFrom.current
+                if (from === null || e.buttons !== 1) return
+                setSelection({ anchor: from, head: { row: r, column: c } })
               }}
               className="focus-cell-input w-full bg-background px-2 py-1 text-sm"
               style={{

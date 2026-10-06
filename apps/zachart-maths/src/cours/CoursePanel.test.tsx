@@ -1,5 +1,6 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { TooltipProvider } from '@suite/shared/ui'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createMemoryFs } from '../exercises/memoryFs'
 import { useExerciseStore } from '../exercises/useExerciseStore'
@@ -11,7 +12,7 @@ const exo = (titre: string, extra: object = {}) => JSON.stringify({ version: 1, 
 
 async function setup(files: Record<string, string> = {}) {
   const fs = createMemoryFs(files)
-  render(<CoursePanel />)
+  render(<TooltipProvider><CoursePanel /></TooltipProvider>)
   await act(async () => useExerciseStore.getState().init(fs))
   return { fs, user: userEvent.setup() }
 }

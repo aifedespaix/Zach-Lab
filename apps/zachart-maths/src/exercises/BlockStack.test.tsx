@@ -180,15 +180,22 @@ describe('BlockStack — halo', () => {
     const cells = (): string[][] => (current as { cellules: string[][] }[])[0].cellules
     const rightClick = (user: ReturnType<typeof userEvent.setup>, label: string) =>
       user.pointer({ keys: '[MouseRight]', target: screen.getByLabelText(label) })
+    // Les gestes sont rangés dans les sous-menus Ligne et Colonne ; Radix ne les ouvre pas au clic sous jsdom, mais à la flèche droite.
+    const inSubmenu = async (user: ReturnType<typeof userEvent.setup>, submenu: string, name: string) => {
+      const trigger = await screen.findByRole('menuitem', { name: submenu })
+      trigger.focus()
+      await user.keyboard('{ArrowRight}')
+      return screen.findByRole('menuitem', { name })
+    }
 
     it('insère une ligne au-dessus ou en dessous de la case', async () => {
       const user = userEvent.setup()
       render(<Harness initial={[{ id: 'c', type: 'tableau', cellules: [['a', 'b'], ['c', 'd']] }]} />)
       await rightClick(user, 'Ligne 2, colonne 1')
-      await user.click(await screen.findByRole('menuitem', { name: 'Insérer une ligne au-dessus' }))
+      await user.click(await inSubmenu(user, 'Ligne', 'Insérer une ligne au-dessus'))
       expect(cells()).toEqual([['a', 'b'], ['', ''], ['c', 'd']])
       await rightClick(user, 'Ligne 1, colonne 2')
-      await user.click(await screen.findByRole('menuitem', { name: 'Insérer une ligne en dessous' }))
+      await user.click(await inSubmenu(user, 'Ligne', 'Insérer une ligne en dessous'))
       expect(cells()).toEqual([['a', 'b'], ['', ''], ['', ''], ['c', 'd']])
     })
 
@@ -196,10 +203,10 @@ describe('BlockStack — halo', () => {
       const user = userEvent.setup()
       render(<Harness initial={[{ id: 'c', type: 'tableau', cellules: [['a', 'b'], ['c', 'd']] }]} />)
       await rightClick(user, 'Ligne 1, colonne 1')
-      await user.click(await screen.findByRole('menuitem', { name: 'Insérer une colonne à gauche' }))
+      await user.click(await inSubmenu(user, 'Colonne', 'Insérer une colonne à gauche'))
       expect(cells()).toEqual([['', 'a', 'b'], ['', 'c', 'd']])
       await rightClick(user, 'Ligne 2, colonne 3')
-      await user.click(await screen.findByRole('menuitem', { name: 'Insérer une colonne à droite' }))
+      await user.click(await inSubmenu(user, 'Colonne', 'Insérer une colonne à droite'))
       expect(cells()).toEqual([['', 'a', 'b', ''], ['', 'c', 'd', '']])
     })
 
@@ -207,14 +214,15 @@ describe('BlockStack — halo', () => {
       const user = userEvent.setup()
       render(<Harness initial={[{ id: 'c', type: 'tableau', cellules: [['a', 'b'], ['c', 'd']] }]} />)
       await rightClick(user, 'Ligne 1, colonne 2')
-      await user.click(await screen.findByRole('menuitem', { name: 'Supprimer la colonne' }))
+      await user.click(await inSubmenu(user, 'Colonne', 'Supprimer la colonne'))
       expect(cells()).toEqual([['a'], ['c']])
       await rightClick(user, 'Ligne 2, colonne 1')
-      await user.click(await screen.findByRole('menuitem', { name: 'Supprimer la ligne' }))
+      await user.click(await inSubmenu(user, 'Ligne', 'Supprimer la ligne'))
       expect(cells()).toEqual([['a']])
       await rightClick(user, 'Ligne 1, colonne 1')
-      expect(await screen.findByRole('menuitem', { name: 'Supprimer la ligne' })).toHaveAttribute('aria-disabled', 'true')
-      expect(screen.getByRole('menuitem', { name: 'Supprimer la colonne' })).toHaveAttribute('aria-disabled', 'true')
+      expect(await inSubmenu(user, 'Ligne', 'Supprimer la ligne')).toHaveAttribute('aria-disabled', 'true')
+      await user.keyboard('{ArrowLeft}')
+      expect(await inSubmenu(user, 'Colonne', 'Supprimer la colonne')).toHaveAttribute('aria-disabled', 'true')
     })
 
     it('garde les gestes de champ (copier, coller) dans le même menu', async () => {
@@ -222,7 +230,9 @@ describe('BlockStack — halo', () => {
       render(<Harness initial={[{ id: 'c', type: 'tableau', cellules: [['a']] }]} />)
       await rightClick(user, 'Ligne 1, colonne 1')
       expect(await screen.findByRole('menuitem', { name: /Copier/ })).toBeInTheDocument()
-      expect(screen.getByRole('menuitem', { name: 'Insérer une ligne au-dessus' })).toBeInTheDocument()
+      expect(screen.getByRole('menuitem', { name: 'Ligne' })).toBeInTheDocument()
+      expect(screen.getByRole('menuitem', { name: 'Colonne' })).toBeInTheDocument()
+      expect(screen.getByRole('menuitem', { name: 'Sélection' })).toBeInTheDocument()
     })
   })
 })

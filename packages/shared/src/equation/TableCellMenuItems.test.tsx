@@ -17,72 +17,84 @@ function setup(over: Partial<React.ComponentProps<typeof TableCellMenuItems>> = 
   return handlers
 }
 const open = () => userEvent.pointer({ keys: '[MouseRight]', target: screen.getByText('cellule') })
+/** Les sous-menus Radix ne s'ouvrent pas au clic sous jsdom, mais à la flèche droite : c'est aussi le chemin clavier. */
+async function item(submenu: string, name: string | RegExp) {
+  const trigger = await screen.findByRole('menuitem', { name: submenu })
+  trigger.focus()
+  await userEvent.keyboard('{ArrowRight}')
+  return screen.findByRole('menuitem', { name })
+}
+const choose = async (submenu: string, name: string | RegExp) => {
+  await open()
+  await userEvent.click(await item(submenu, name))
+}
 
 describe('TableCellMenuItems', () => {
-  it('propose les six gestes du clic droit sur une case', async () => {
+  it('range les gestes dans les sous-menus Ligne et Colonne, sans sélection tant que l\'app n\'en fournit pas', async () => {
     setup()
     await open()
-    for (const name of [
-      'Insérer une ligne au-dessus',
-      'Insérer une ligne en dessous',
-      'Insérer une colonne à gauche',
-      'Insérer une colonne à droite',
-      'Supprimer la ligne',
-      'Supprimer la colonne',
-    ]) {
-      expect(await screen.findByRole('menuitem', { name })).toBeInTheDocument()
-    }
+    expect(await screen.findByRole('menuitem', { name: 'Ligne' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Colonne' })).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Sélection' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Supprimer la ligne' })).not.toBeInTheDocument()
   })
 
   it('au-dessus / en dessous insèrent juste avant / juste après la ligne de la case (index -1 = avant la première)', async () => {
     const h = setup({ row: 1 })
-    await open()
-    await userEvent.click(await screen.findByRole('menuitem', { name: 'Insérer une ligne au-dessus' }))
+    await choose('Ligne', 'Insérer une ligne au-dessus')
     expect(h.onAddRow).toHaveBeenLastCalledWith(0)
-    await open()
-    await userEvent.click(await screen.findByRole('menuitem', { name: 'Insérer une ligne en dessous' }))
+    await choose('Ligne', 'Insérer une ligne en dessous')
     expect(h.onAddRow).toHaveBeenLastCalledWith(1)
   })
 
   it('à gauche / à droite insèrent juste avant / juste après la colonne de la case', async () => {
     const h = setup({ column: 0 })
-    await open()
-    await userEvent.click(await screen.findByRole('menuitem', { name: 'Insérer une colonne à gauche' }))
+    await choose('Colonne', 'Insérer une colonne à gauche')
     expect(h.onAddColumn).toHaveBeenLastCalledWith(-1)
-    await open()
-    await userEvent.click(await screen.findByRole('menuitem', { name: 'Insérer une colonne à droite' }))
+    await choose('Colonne', 'Insérer une colonne à droite')
     expect(h.onAddColumn).toHaveBeenLastCalledWith(0)
   })
 
   it('supprime la ligne et la colonne de la case', async () => {
     const h = setup({ row: 2, column: 3 })
-    await open()
-    await userEvent.click(await screen.findByRole('menuitem', { name: 'Supprimer la ligne' }))
+    await choose('Ligne', 'Supprimer la ligne')
     expect(h.onRemoveRow).toHaveBeenCalledWith(2)
-    await open()
-    await userEvent.click(await screen.findByRole('menuitem', { name: 'Supprimer la colonne' }))
+    await choose('Colonne', 'Supprimer la colonne')
     expect(h.onRemoveColumn).toHaveBeenCalledWith(3)
   })
 
   it('il reste une seule ligne / colonne : on ne peut plus la supprimer', async () => {
     const h = setup({ rowCount: 1, columnCount: 1 })
     await open()
-    const row = await screen.findByRole('menuitem', { name: 'Supprimer la ligne' })
-    const col = screen.getByRole('menuitem', { name: 'Supprimer la colonne' })
+    const row = await item('Ligne', 'Supprimer la ligne')
     expect(row).toHaveAttribute('aria-disabled', 'true')
-    expect(col).toHaveAttribute('aria-disabled', 'true')
     await userEvent.click(row)
     expect(h.onRemoveRow).not.toHaveBeenCalled()
   })
 
   it('au plafond, les insertions de cet axe sont grisées, pas les suppressions', async () => {
-    const h = setup({ canAddRow: false, canAddColumn: false })
+    const h = setup({ canAddRow: false })
     await open()
-    const above = await screen.findByRole('menuitem', { name: 'Insérer une ligne au-dessus' })
+    const above = await item('Ligne', 'Insérer une ligne au-dessus')
     expect(above).toHaveAttribute('aria-disabled', 'true')
-    expect(screen.getByRole('menuitem', { name: 'Insérer une colonne à droite' })).toHaveAttribute('aria-disabled', 'true')
     expect(screen.getByRole('menuitem', { name: 'Supprimer la ligne' })).not.toHaveAttribute('aria-disabled', 'true')
     await userEvent.click(above)
     expect(h.onAddRow).not.toHaveBeenCalled()
+  })
+
+  it('« Sélection » : la ligne, la colonne et tout le tableau, avec leurs raccourcis', async () => {
+    const onSelectRow = vi.fn()
+    const onSelectColumn = vi.fn()
+    const onSelectAll = vi.fn()
+    setup({ row: 1, column: 2, onSelectRow, onSelectColumn, onSelectAll, shortcuts: { column: 'Ctrl + Espace' } })
+    await choose('Sélection', 'Sélectionner la ligne')
+    expect(onSelectRow).toHaveBeenCalledWith(1)
+    await choose('Sélection', /Sélectionner la colonne/)
+    expect(onSelectColumn).toHaveBeenCalledWith(2)
+    await open()
+    expect(await item('Sélection', /Sélectionner la colonne/)).toHaveTextContent('Ctrl + Espace')
+    await userEvent.keyboard('{Escape}{Escape}')
+    await choose('Sélection', 'Sélectionner tout le tableau')
+    expect(onSelectAll).toHaveBeenCalledOnce()
   })
 })
