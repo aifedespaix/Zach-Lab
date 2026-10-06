@@ -54,6 +54,11 @@ interface CoursesStore {
   toggleBottom(tab: BottomTab): void
 }
 
+/** Plus rien d'allumé (ni cours, ni notes, ni calculatrice) : la sidebar droite n'a rien à montrer, on la range. */
+const foldWhenEmpty = (state: { notesVisible: boolean; coursesVisible: boolean }) => {
+  if (!state.notesVisible && !state.coursesVisible) setPanelCollapsed(RIGHT_COLLAPSED_KEY, true)
+}
+
 export const useCoursesStore = create<CoursesStore>((set, get) => ({
   selectedId: null,
   searchOpen: false,
@@ -64,6 +69,7 @@ export const useCoursesStore = create<CoursesStore>((set, get) => ({
   setSearchOpen: open => set({ searchOpen: open }),
   setNotesVisible(visible) {
     set({ notesVisible: visible })
+    foldWhenEmpty(get())
     try {
       localStorage.setItem(NOTES_KEY, String(visible))
     } catch {
@@ -80,6 +86,7 @@ export const useCoursesStore = create<CoursesStore>((set, get) => ({
   },
   setCoursesVisible(visible) {
     set({ coursesVisible: visible })
+    foldWhenEmpty(get())
     try {
       localStorage.setItem(COURSES_KEY, String(visible))
     } catch {

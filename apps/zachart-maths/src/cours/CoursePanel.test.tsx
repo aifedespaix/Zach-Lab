@@ -127,6 +127,23 @@ describe('CoursePanel', () => {
     expect(localStorage.getItem(RIGHT_COLLAPSED_KEY)).toBe('1')
   })
 
+  it("quand plus rien n'est allumé, le panneau de droite se replie ; tant qu'une pastille l'est, non", async () => {
+    const { user } = await setup()
+    localStorage.setItem(RIGHT_COLLAPSED_KEY, '0')
+    await user.click(screen.getByRole('button', { name: 'Afficher ou masquer la liste des cours' }))
+    expect(localStorage.getItem(RIGHT_COLLAPSED_KEY)).toBe('0')
+    await user.click(screen.getByRole('button', { name: 'Afficher ou masquer les notes' }))
+    expect(localStorage.getItem(RIGHT_COLLAPSED_KEY)).toBe('1')
+  })
+
+  it('la calculatrice seule a une hauteur plafonnée et est centrée verticalement', async () => {
+    await setup()
+    useCoursesStore.setState({ coursesVisible: false, notesVisible: true, bottomTab: 'calculatrice' })
+    const panel = await screen.findByRole('tabpanel')
+    expect(panel).toHaveStyle({ justifyContent: 'center' })
+    expect((screen.getByTestId('calculatrice').parentElement as HTMLElement).style.flex).toContain('480px')
+  })
+
   it('la pastille Cours masque la moitié haute, et les notes prennent alors toute la hauteur', async () => {
     const { user } = await setup()
     await user.click(screen.getByRole('button', { name: 'Afficher ou masquer la liste des cours' }))

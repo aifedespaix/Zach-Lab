@@ -124,6 +124,9 @@ function NotesField() {
   )
 }
 
+/** La hauteur maximale de la calculatrice quand elle occupe seule la sidebar. */
+const CALCULATOR_MAX_HEIGHT = 480
+
 /** La partie basse : deux onglets, Notes et Calculatrice, qui se partagent la zone. */
 function BottomSection({ alone }: { alone: boolean }) {
   const tab = useCoursesStore(s => s.bottomTab)
@@ -159,8 +162,12 @@ function BottomSection({ alone }: { alone: boolean }) {
         </div>
         <Button variant="ghost" size="icon-sm" aria-label="Masquer le panneau du bas" onClick={() => setNotesVisible(false)}><EyeOff /></Button>
       </header>
-      <div id="bas-panneau" role="tabpanel" aria-labelledby={`bas-onglet-${tab}`} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-        {tab === 'notes' ? <NotesField /> : <Calculator />}
+      <div
+        id="bas-panneau" role="tabpanel" aria-labelledby={`bas-onglet-${tab}`}
+        // Seule dans la sidebar, la calculatrice ne s'étire pas sur toute la hauteur : plafonnée, et centrée.
+        style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, justifyContent: alone && tab === 'calculatrice' ? 'center' : undefined }}
+      >
+        {tab === 'notes' ? <NotesField /> : alone ? <div style={{ display: 'flex', flexDirection: 'column', flex: `0 1 ${CALCULATOR_MAX_HEIGHT}px`, minHeight: 0 }}><Calculator /></div> : <Calculator />}
       </div>
     </section>
   )
