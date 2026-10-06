@@ -85,6 +85,7 @@ function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: 
     <div data-testid="table-scroll" style={{ overflowX: 'auto', paddingRight: 14, paddingBottom: 14 }}>
       <TableGrid
         tableLabel={String(index + 1)}
+        handlesTabbable={false}
         rowCount={cells.length}
         columnCount={cells[0].length}
         renderCell={(r, c) => (
