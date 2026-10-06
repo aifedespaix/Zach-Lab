@@ -101,6 +101,13 @@ export interface MathFieldEditorProps {
   tabExits?: boolean
   /** « = » tapé (sans Ctrl/Cmd/Alt) : la touche est avalée, le parent décide (équation : membre gauche → membre droit). */
   onEquals?: () => void
+  /**
+   * Les morceaux du LaTeX à colorer DANS le champ (fond). Appelée avec la valeur nue, après chaque
+   * frappe ; elle doit renvoyer des indices dans cette valeur. Rien n'est écrit dans la valeur
+   * enregistrée : `onChange` reçoit toujours le LaTeX de l'élève. Absente = aucune coloration.
+   * Passer une fonction stable (`useMemo`) : un nouveau `highlight` repeint le champ.
+   */
+  highlight?: (latex: string) => readonly LatexHighlight[]
   ref?: React.Ref<MathFieldHandle>
 }
 
@@ -123,9 +130,55 @@ export type MathfieldElement = HTMLElement & {
   /** `false` while a range is selected; `undefined` on an element that predates this API. */
   selectionIsCollapsed?: boolean
   /** MathLive's `getValue(start, end)` — the LaTeX between two offsets, for splitting a line at the caret. */
-  getValue?: (start?: number, end?: number) => string
+  getValue?: (startOrFormat?: number | string, end?: number, format?: string) => string
   /** MathLive's `hasFocus()`: true right after `focus()`, before the DOM focus follows (~60 ms later). */
   hasFocus?: () => boolean
+}
+
+/**
+ * Un morceau du LaTeX (indices dans la valeur SANS style) à peindre d'une couleur de fond — la
+ * coloration se fait dans le champ lui-même, sans changer la valeur enregistrée.
+ */
+export interface LatexHighlight {
+  from: number
+  to: number
+  color: string
+}
+
+// Les champs sur lesquels une coloration a été posée : leur `value` contient alors des
+// `\colorbox`, donc toute lecture passe par le format `latex-unstyled` (la valeur de l'élève, nue).
+const styledFields = new WeakSet<MathfieldElement>()
+
+/** La valeur du champ telle que l'élève l'a écrite, sans la coloration. */
+function plainValue(field: MathfieldElement): string {
+  return styledFields.has(field) && typeof field.getValue === 'function' ? field.getValue('latex-unstyled') : field.value
+}
+
+/**
+ * Peint `highlights` dans le champ vivant, silencieusement (aucun `input`, donc aucune boucle).
+ * MathLive adresse ses atomes par décalage, pas par indice de LaTeX : on convertit en cherchant
+ * le décalage dont le préfixe sans style atteint l'indice voulu. Tout est d'abord effacé : un
+ * atome tapé à côté d'un terme coloré hérite de sa couleur.
+ */
+function paintHighlights(field: MathfieldElement, highlights: readonly LatexHighlight[]): void {
+  const apply = (field as unknown as { applyStyle?: (style: object, options: object) => void }).applyStyle
+  const last = field.lastOffset
+  if (typeof apply !== 'function' || typeof last !== 'number' || typeof field.getValue !== 'function') return
+  if (highlights.length === 0 && !styledFields.has(field)) return
+  styledFields.add(field)
+  const silent = { silenceNotifications: true }
+  apply.call(field, { backgroundColor: 'none' }, { range: [0, last], ...silent })
+  if (highlights.length === 0) return
+  const lengths: number[] = []
+  for (let offset = 0; offset <= last; offset++) lengths.push(field.getValue(0, offset, 'latex-unstyled').length)
+  const offsetOf = (index: number) => {
+    const found = lengths.findIndex(length => length >= index)
+    return found === -1 ? last : found
+  }
+  for (const { from, to, color } of highlights) {
+    const range: [number, number] = [offsetOf(from), offsetOf(to)]
+    if (range[0] < range[1]) apply.call(field, { backgroundColor: color }, { range, ...silent })
+  }
 }
 
 /** `move-out` parle en sens de lecture ; la description, en côtés. */
@@ -166,9 +219,10 @@ function caretAtEnd(field: MathfieldElement): boolean {
 function splitAtCaret(field: MathfieldElement): { before: string; after: string } {
   if (typeof field.position === 'number' && typeof field.getValue === 'function') {
     const last = typeof field.lastOffset === 'number' ? field.lastOffset : field.position
-    return { before: field.getValue(0, field.position), after: field.getValue(field.position, last) }
+    const format = styledFields.has(field) ? 'latex-unstyled' : undefined
+    return { before: field.getValue(0, field.position, format), after: field.getValue(field.position, last, format) }
   }
-  return { before: field.value, after: '' }
+  return { before: plainValue(field), after: '' }
 }
 
 /**
@@ -281,6 +335,7 @@ export function MathFieldEditor({
   onExit,
   tabExits,
   onEquals,
+  highlight,
   ref,
 }: MathFieldEditorProps) {
   // Which editor this block shows. It starts on the caller's field whenever
@@ -315,6 +370,9 @@ export function MathFieldEditor({
   // not close over the formula as it was at mount.
   const latexRef = useRef(latex)
   latexRef.current = latex
+  const paintedRef = useRef(new WeakMap<MathfieldElement, string>())
+  const highlightRef = useRef(highlight)
+  highlightRef.current = highlight
 
   useImperativeHandle(
     ref,
@@ -332,7 +390,7 @@ export function MathFieldEditor({
         field.insert(rich, { focus: true })
         // MathLive's `insert()` mutates the field without necessarily emitting
         // `input`, so the change is pushed out here rather than waited for.
-        onChangeRef.current(field.value)
+        onChangeRef.current(plainValue(field))
       },
       focusEnd() {
         const field = fieldRef.current
@@ -451,7 +509,17 @@ export function MathFieldEditor({
     field.style.width = '100%'
     field.style.overscrollBehaviorX = 'contain'
     field.value = latex
-    field.addEventListener('input', () => onChangeRef.current(field.value))
+    field.addEventListener('input', () => {
+      onChangeRef.current(plainValue(field))
+      // Repeindre tout de suite : le nouvel atome a hérité de la couleur de son voisin.
+      const paint = highlightRef.current
+      if (paint !== undefined) {
+        const now = plainValue(field)
+        const list = paint(now)
+        paintedRef.current.set(field, `${now}\u0000${JSON.stringify(list)}`)
+        paintHighlights(field, list)
+      }
+    })
     // Capture, pas bulle : MathLive écoute lui-même `keydown` en phase de
     // capture sur un élément INTERNE à son shadow DOM (`.ML__keyboard-sink`,
     // voir `delegateKeyboardEvents` dans la lib) et y traite déjà la touche —
@@ -487,14 +555,14 @@ export function MathFieldEditor({
           event.preventDefault()
           if (event.repeat) return
           latchEdgeKey('Backspace')
-          onBackspaceAtStartRef.current(field.value)
+          onBackspaceAtStartRef.current(plainValue(field))
           return
         }
         if (event.key === 'Delete' && caretAtEnd(field) && onDeleteAtEndRef.current !== undefined) {
           event.preventDefault()
           if (event.repeat) return
           latchEdgeKey('Delete')
-          onDeleteAtEndRef.current(field.value)
+          onDeleteAtEndRef.current(plainValue(field))
           return
         }
         // MathLive tape « * » en \cdot ; ici c'est la multiplication, \times.
@@ -586,8 +654,15 @@ export function MathFieldEditor({
     const field = fieldRef.current
     // Only when the value really diverged — writing back what the user just
     // typed would move their caret to the end mid-formula.
-    if (field !== null && field.value !== latex) field.value = latex
-  }, [latex])
+    if (field !== null && plainValue(field) !== latex) field.value = latex
+    if (field === null) return
+    // `highlight` est souvent recréée à chaque rendu du parent : on ne repeint que si le résultat a changé.
+    const list = highlight === undefined ? [] : highlight(latex)
+    const key = `${latex}\u0000${JSON.stringify(list)}`
+    if (key === paintedRef.current.get(field)) return
+    paintedRef.current.set(field, key)
+    paintHighlights(field, list)
+  }, [latex, highlight, showMathField])
 
   return (
     <div

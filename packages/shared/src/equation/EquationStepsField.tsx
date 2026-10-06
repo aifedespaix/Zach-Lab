@@ -2,7 +2,7 @@ import { useEffect, useImperativeHandle, useRef, useState, type CSSProperties } 
 import { Plus } from 'lucide-react'
 import { equationStepIsSolved, navigate, operationVisible, readingOrder, renderMathToHtml, type EqColumn, type EqField, type EqPos } from '../math'
 import { AddLineButton } from './AddLineButton'
-import { MathFieldEditor, type MathFieldHandle } from './MathFieldEditor'
+import { MathFieldEditor, type LatexHighlight, type MathFieldHandle } from './MathFieldEditor'
 import { latchEdgeKey, rawFieldKeyDown, type BlockEdgeHandle, type BlockPlace, type ExitDirection, type ExitVia } from './fieldIntents'
 
 /** Une étape d'équation, sans identité : le moteur ne connaît que ses trois champs. */
@@ -128,6 +128,7 @@ function EquationTermField({
   onEquals,
   side,
   style,
+  highlight,
 }: {
   value: string
   onChangeValue: (next: string) => void
@@ -146,6 +147,8 @@ function EquationTermField({
   /** Lequel des deux membres — pilote (via `index.css`) l'alignement du texte vers le « = » et le nettoyage du chrome MathLive (fond, menu ≡), voir `[data-equation-side]`. */
   side: 'left' | 'right'
   style?: CSSProperties
+  /** La coloration de CE membre, dans le champ (voir `MathFieldEditorProps.highlight`). */
+  highlight?: (latex: string) => readonly LatexHighlight[]
 }) {
   return (
     <div data-equation-side={side} data-focus-cell="" onFocus={onFocusHandle} style={style}>
@@ -160,6 +163,7 @@ function EquationTermField({
         onDeleteAtEnd={onDeleteAtEnd}
         onExit={onExit}
         onEquals={onEquals}
+        highlight={highlight}
         tabExits
         fallback={
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -415,6 +419,12 @@ export interface EquationStepsFieldProps {
   onExitBlock: (side: 'before' | 'after') => void
   /** Le champ vivant du membre focalisé, pour les touches du bandeau de symboles. */
   onFieldChange: (handle: MathFieldHandle | null) => void
+  /**
+   * Colore des morceaux d'un membre DANS son champ (les termes semblables, par exemple), sans toucher
+   * à la valeur. `step`/`side` disent quel membre ; le LaTeX est sa valeur nue. À mémoïser : une
+   * nouvelle fonction repeint les champs.
+   */
+  highlight?: (latex: string, where: { step: number; side: 'left' | 'right' }) => readonly LatexHighlight[]
   ref?: React.Ref<BlockEdgeHandle>
 }
 
@@ -437,6 +447,7 @@ export function EquationStepsField({
   onDeleteForward,
   onExitBlock,
   onFieldChange,
+  highlight,
   ref,
 }: EquationStepsFieldProps) {
   // Un bloc équation a toujours au moins une étape à l'écran, même si son
@@ -612,6 +623,7 @@ export function EquationStepsField({
                   onFieldChange(handles.current.get(fieldKey(stepIndex, 'left')) ?? null)
                 }}
                 side="left"
+                highlight={highlight && (latex => highlight(latex, { step: stepIndex, side: 'left' }))}
                 style={solved ? SOLVED_TERM : LEFT_BOX}
               />
               <div
@@ -640,6 +652,7 @@ export function EquationStepsField({
                   onFieldChange(handles.current.get(fieldKey(stepIndex, 'right')) ?? null)
                 }}
                 side="right"
+                highlight={highlight && (latex => highlight(latex, { step: stepIndex, side: 'right' }))}
                 style={solved ? SOLVED_TERM : RIGHT_BOX}
               />
             </div>
