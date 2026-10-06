@@ -170,6 +170,11 @@ under `src/`, wired together in `App.tsx`:
   under `prefers-reduced-motion`. Right-click has two levels, each stopping propagation to the
   next: `BlockContextMenu` (a card) and `EmptyAreaContextMenu` (blank space of a zone); text fields
   keep `FieldContextMenu`, formula fields have none.
+- **Orthographe et flèches** : `FieldContextMenu` met en tête du clic droit les corrections du mot sous le curseur
+  (`spell.ts` : `misspellingAt`, dictionnaire Hunspell français `nspell` + `dictionary-fr` chargé dans un worker,
+  `spell.worker.ts`/`spellCore.ts` ; l'alias `@dictionary-fr` existe parce que le paquet n'exporte que `index.js`).
+  Dans un tableau, `tableNav.ts` (`cellMove`) : haut/bas = même colonne, gauche/droite = case voisine seulement
+  quand le curseur n'a plus de caractère à franchir.
 - **Toolbar** (`toolbarCatalog.ts`): symbols are data, one hue per family. A symbol has a
   `glyph` (plain fields), a `latex` (MathLive; `#0`/`#?` placeholders) and an optional `plain`.
   Text fields are filled with `insertAtCursor` (`setRangeText`, not `value =`: React and
