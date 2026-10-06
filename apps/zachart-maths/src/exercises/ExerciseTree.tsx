@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { ToCorrectBadge, ToReviewBadge } from './ToCorrectBadge'
 import { useCorrectionView } from './useCorrectionView'
 import {
-  ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, CopyPlus, FilePlus, FileText, FileWarning, FolderPlus, PanelLeftClose,
+  ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, CopyPlus, FilePlus, FileText, FileWarning, FolderPlus, PanelLeftClose, TextSearch,
 } from 'lucide-react'
 import { runCommand, useCommand } from '@suite/shared/commands'
 import { PanelSearch } from '@suite/shared/shell'
@@ -11,6 +11,7 @@ import {
   ConfirmDialog, ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuSub,
   ContextMenuSubContent, ContextMenuSubTrigger, ContextMenuTrigger,
 } from '@suite/shared/ui'
+import { useAdvancedSearch } from './AdvancedSearchDialog'
 import { splitPath } from './names'
 import { filterChapters } from './treeSearch'
 import { useExerciseStore } from './useExerciseStore'
@@ -130,6 +131,7 @@ export function ExerciseTree() {
     }),
   )
 
+  useCommand('search.advanced', () => useAdvancedSearch.getState().setOpen(true))
   const onlyToCorrect = useCorrectionView(s => s.onlyToCorrect)
   useCommand('tree.onlyToCorrect', () => useCorrectionView.getState().toggleOnlyToCorrect())
 
@@ -152,7 +154,19 @@ export function ExerciseTree() {
         <strong style={{ fontSize: 13 }}>Mes exercices</strong>
       </div>
       <div style={{ padding: '0 12px 8px' }}>
-        <PanelSearch value={search} onChange={setSearch} ariaLabel="Rechercher un exercice" placeholder="Rechercher un exercice…" />
+        <PanelSearch value={search} onChange={setSearch} ariaLabel="Rechercher un exercice" placeholder="Rechercher un exercice…"
+          trailing={
+            <button
+              type="button"
+              aria-label="Recherche avancée"
+              title="Recherche avancée dans tous les exercices et fiches"
+              onClick={() => runCommand('search.advanced')}
+              className="inline-flex size-7 shrink-0 items-center justify-center rounded-md border hover:bg-accent"
+            >
+              <TextSearch size={14} />
+            </button>
+          }
+        />
       </div>
 
       {error !== null && (

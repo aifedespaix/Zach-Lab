@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react'
-import { BookOpen, ClipboardCheck, Download, ChevronsDownUp, ListChecks, ListFilter, FolderPlus, Highlighter, Keyboard, Minus, Moon, Plus, Rows3, NotebookPen, Calculator, Search, Settings as SettingsIcon, Shapes } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import { BookOpen, ClipboardCheck, Download, ChevronsDownUp, Redo2, Undo2, ListChecks, ListFilter, FolderPlus, Highlighter, Keyboard, Minus, Moon, Plus, Rows3, NotebookPen, Calculator, Search, Settings as SettingsIcon, Shapes } from 'lucide-react'
 import {
   CommandButton,
+  CommandDropdownItem,
   CommandPalette,
   useCommand,
   useGlobalShortcuts,
   useShortcutSettingsStore,
 } from '@suite/shared/commands'
 import { SettingsDialog, ShortcutSettingsPanel } from '@suite/shared/settings'
-import { AppShell, BootScreen, CollapsiblePanel, createPanelWidthStorage } from '@suite/shared/shell'
+import { AppShell, BootScreen, CollapsiblePanel, OverflowToolbar, createPanelWidthStorage, type OverflowItem } from '@suite/shared/shell'
 import { startCircularThemeTransition, useResolvedTheme, useThemeDomSync, useThemeStore } from '@suite/shared/theme'
 import { TooltipProvider } from '@suite/shared/ui'
 import { UpdateReadyBanner, UpdateSettingsSection, useAppUpdater } from '@suite/shared/update'
@@ -17,6 +19,7 @@ import './commands'
 import { CoursePanel } from './cours/CoursePanel'
 import { ExerciseTree } from './exercises/ExerciseTree'
 import { ExerciseWorkspace } from './exercises/ExerciseWorkspace'
+import { AdvancedSearchDialog } from './exercises/AdvancedSearchDialog'
 import { ReviewDialog } from './exercises/ReviewDialog'
 import { useCorrectionView } from './exercises/useCorrectionView'
 import { SheetOutline } from './exercises/SheetOutline'
@@ -26,7 +29,7 @@ import { useCompact } from './exercises/useCompact'
 import { useZoom } from './exercises/useZoom'
 import { useUnitColors } from './exercises/useUnitColors'
 import { useToolbarFamilies } from './exercises/useToolbarFamilies'
-import './exercises/useOpenExercise'
+import { useOpenExercise } from './exercises/useOpenExercise'
 import { createTauriFs, defaultExercisesRoot } from './exercises/tauriFs'
 import { useExerciseStore } from './exercises/useExerciseStore'
 
@@ -88,6 +91,10 @@ export default function App() {
     // en bas, zoomé on dépasse la fenêtre et la page défile.
     root.style.setProperty('--app-height', `calc(100vh / ${zoom / 100})`)
   }, [zoom])
+  const canUndo = useOpenExercise(state => state.undoDepth > 0)
+  const canRedo = useOpenExercise(state => state.redoDepth > 0)
+  useCommand('edit.undo', () => useOpenExercise.getState().undo(), canUndo)
+  useCommand('edit.redo', () => useOpenExercise.getState().redo(), canRedo)
   useCommand('view.toggleCompact', () => useCompact.getState().toggle())
   useCommand('view.zoomOut', () => useZoom.getState().zoomOut())
   useCommand('view.zoomIn', () => useZoom.getState().zoomIn())
@@ -100,6 +107,49 @@ export default function App() {
       apply: () => useThemeStore.getState().setMode(resolvedTheme === 'dark' ? 'light' : 'dark'),
     })
   })
+
+  const button = (command: string, icon: LucideIcon, active?: boolean) => (
+    <CommandButton command={command} icon={icon} variant={active ? 'secondary' : 'ghost'} size="icon-sm" />
+  )
+  // De gauche à droite ; `priority` : ce qui reste le plus longtemps quand la barre manque de place.
+  const toolbarItems: OverflowItem[] = [
+    { id: 'undo', node: button('edit.undo', Undo2), menu: <CommandDropdownItem command="edit.undo" icon={Undo2} />, priority: 9 },
+    { id: 'redo', node: button('edit.redo', Redo2), menu: <CommandDropdownItem command="edit.redo" icon={Redo2} />, priority: 9 },
+    { id: 'palette', node: button('app.palette', Search), menu: <CommandDropdownItem command="app.palette" icon={Search} />, priority: 8 },
+    { id: 'cours', node: button('cours.search', BookOpen), menu: <CommandDropdownItem command="cours.search" icon={BookOpen} />, priority: 5 },
+    { id: 'next', node: button('correction.next', ListChecks), menu: <CommandDropdownItem command="correction.next" icon={ListChecks} />, priority: 4 },
+    { id: 'review', node: button('review.open', ClipboardCheck), menu: <CommandDropdownItem command="review.open" icon={ClipboardCheck} />, priority: 3 },
+    { id: 'notes', node: button('notes.toggle', NotebookPen), menu: <CommandDropdownItem command="notes.toggle" icon={NotebookPen} />, priority: 3 },
+    { id: 'calculatrice', node: button('calculatrice.toggle', Calculator), menu: <CommandDropdownItem command="calculatrice.toggle" icon={Calculator} />, priority: 3 },
+    { id: 'colors', node: button('view.toggleUnitColors', Highlighter, unitColors), menu: <CommandDropdownItem command="view.toggleUnitColors" icon={Highlighter} />, priority: 2 },
+    { id: 'compact', node: button('view.toggleCompact', Rows3, compact), menu: <CommandDropdownItem command="view.toggleCompact" icon={Rows3} />, priority: 2 },
+    {
+      id: 'zoom',
+      node: (
+        <div role="group" aria-label="Zoom" style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <CommandButton command="view.zoomOut" icon={Minus} variant="ghost" size="icon-sm" />
+          <button
+            type="button"
+            aria-label="Zoom à 100 %"
+            title="Remettre le zoom à 100 %"
+            onClick={() => useZoom.getState().reset()}
+            style={{ minWidth: 44, fontSize: 12, fontVariantNumeric: 'tabular-nums' }}
+          >{zoom} %</button>
+          <CommandButton command="view.zoomIn" icon={Plus} variant="ghost" size="icon-sm" />
+        </div>
+      ),
+      menu: (
+        <>
+          <CommandDropdownItem command="view.zoomOut" icon={Minus} />
+          <CommandDropdownItem command="view.zoomIn" icon={Plus} />
+          <CommandDropdownItem command="view.zoomReset" />
+        </>
+      ),
+      priority: 1,
+    },
+    { id: 'theme', node: button('app.toggleTheme', Moon), menu: <CommandDropdownItem command="app.toggleTheme" icon={Moon} />, priority: 6 },
+    { id: 'settings', node: button('app.settings', SettingsIcon), menu: <CommandDropdownItem command="app.settings" icon={SettingsIcon} />, priority: 7 },
+  ]
 
   return (
     <TooltipProvider>
@@ -143,31 +193,7 @@ export default function App() {
             <CoursePanel />
           </CollapsiblePanel>
         }
-        toolbar={
-          <>
-            <CommandButton command="app.palette" icon={Search} variant="ghost" size="icon-sm" />
-            <CommandButton command="cours.search" icon={BookOpen} variant="ghost" size="icon-sm" />
-            <CommandButton command="correction.next" icon={ListChecks} variant="ghost" size="icon-sm" />
-            <CommandButton command="review.open" icon={ClipboardCheck} variant="ghost" size="icon-sm" />
-            <CommandButton command="notes.toggle" icon={NotebookPen} variant="ghost" size="icon-sm" />
-            <CommandButton command="calculatrice.toggle" icon={Calculator} variant="ghost" size="icon-sm" />
-            <CommandButton command="view.toggleUnitColors" icon={Highlighter} variant={unitColors ? 'secondary' : 'ghost'} size="icon-sm" />
-            <CommandButton command="view.toggleCompact" icon={Rows3} variant={compact ? 'secondary' : 'ghost'} size="icon-sm" />
-            <div role="group" aria-label="Zoom" style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <CommandButton command="view.zoomOut" icon={Minus} variant="ghost" size="icon-sm" />
-              <button
-                type="button"
-                aria-label="Zoom à 100 %"
-                title="Remettre le zoom à 100 %"
-                onClick={() => useZoom.getState().reset()}
-                style={{ minWidth: 44, fontSize: 12, fontVariantNumeric: 'tabular-nums' }}
-              >{zoom} %</button>
-              <CommandButton command="view.zoomIn" icon={Plus} variant="ghost" size="icon-sm" />
-            </div>
-            <CommandButton command="app.toggleTheme" icon={Moon} variant="ghost" size="icon-sm" />
-            <CommandButton command="app.settings" icon={SettingsIcon} variant="ghost" size="icon-sm" />
-          </>
-        }
+        toolbar={<OverflowToolbar items={toolbarItems} />}
         overlays={
           <>
             {(!exercisesLoaded || !bootFloorElapsed) && (
@@ -176,6 +202,7 @@ export default function App() {
               </BootScreen>
             )}
             <ReviewDialog />
+            <AdvancedSearchDialog />
             <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
             <SettingsDialog
               open={settingsOpen}

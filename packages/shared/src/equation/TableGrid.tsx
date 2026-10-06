@@ -1,6 +1,8 @@
-import { useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { createContext, useContext, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import { Hint } from '../ui'
+
+const HandlesTabbable = createContext(true)
 
 export interface TableGridProps {
   /** Identifies the table in accessible names (« …du tableau 2 »). */
@@ -21,6 +23,11 @@ export interface TableGridProps {
   canAddColumn?: boolean
   /** Why adding is disabled, shown as the handle's hint (« 12 lignes au maximum »). */
   addDisabledReason?: { row?: string; column?: string }
+  /**
+   * False: the « + » and bins are skipped by Tab (still clickable), so Tab walks the
+   * cells only — from the last cell of a row straight to the first of the next. Default true.
+   */
+  handlesTabbable?: boolean
   /** Put on the grid's root element (tests find the table by it). */
   'data-testid'?: string
 }
@@ -51,6 +58,7 @@ export function TableGrid({
   canAddRow = true,
   canAddColumn = true,
   addDisabledReason,
+  handlesTabbable = true,
   'data-testid': testId,
 }: TableGridProps) {
   const rowOff = canAddRow ? undefined : (addDisabledReason?.row ?? 'Limite atteinte')
@@ -99,6 +107,7 @@ export function TableGrid({
   const rows = Array.from({ length: rowCount }, (_, r) => r)
 
   return (
+    <HandlesTabbable.Provider value={handlesTabbable}>
       <div
         ref={gridRef}
         data-testid={testId}
@@ -211,6 +220,7 @@ export function TableGrid({
           />
         ))}
       </div>
+    </HandlesTabbable.Provider>
   )
 }
 
@@ -344,6 +354,7 @@ function TableHandle({
    */
   straddle?: 'col' | 'row' | 'row-start'
 }) {
+  const tabbable = useContext(HandlesTabbable)
   const straddleStyle: CSSProperties | undefined =
     straddle === 'col'
       ? { transform: `translateX(${HANDLE_STRADDLE}px)` }
@@ -358,6 +369,7 @@ function TableHandle({
     <Hint label={disabledReason ?? label}>
       <button
         type="button"
+        tabIndex={tabbable ? undefined : -1}
         aria-label={label}
         aria-disabled={disabledReason !== undefined ? true : undefined}
         onClick={disabledReason !== undefined ? undefined : onActivate}

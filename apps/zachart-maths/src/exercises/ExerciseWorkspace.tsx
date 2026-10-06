@@ -18,6 +18,7 @@ import { insertAtCursor, isTextField, type TextField } from './insertAtCursor'
 import { isMathField, type MathfieldElement } from '../math/mathFieldElement'
 import { splitPath } from './names'
 import { exerciseStatus, isBlank, type Status } from './sheet'
+import { moveBlock, parseBlocks } from './blocks'
 import { Toolbar, type InsertTarget } from './Toolbar'
 import type { SymbolEntry } from './toolbarCatalog'
 import { useExerciseStore } from './useExerciseStore'
@@ -127,6 +128,41 @@ export function ExerciseWorkspace() {
   useCommand('exercise.next', () => advance(1), ready && !(at === total && blankNow))
   useCommand('exercise.toggleSplit', toggleSplit, ready)
   useCommand('exercise.delete', () => setConfirming(true), ready && total > 1)
+
+  /** Le bloc où se trouve le curseur, et la zone qui le porte (`null` si le curseur est ailleurs). */
+  const focusedBlock = (): { id: string; zone: Zone } | null => {
+    const current = useOpenExercise.getState().exercise
+    const id = document.activeElement?.closest<HTMLElement>('[data-block-id]')?.dataset.blockId
+    if (current === null || id === undefined) return null
+    const inZone = (zone: unknown[]) => parseBlocks(zone).some(b => b.id === id)
+    if (inZone(current.blocs)) return { id, zone: 'a' }
+    if (current.blocsB !== undefined && inZone(current.blocsB)) return { id, zone: 'b' }
+    return null
+  }
+  const refocusBlock = (id: string) => requestAnimationFrame(() => {
+    document.querySelector<HTMLElement>(`[data-block-id="${id}"]`)?.querySelector<HTMLElement>('textarea, input, math-field')?.focus()
+  })
+  const moveFocusedBlock = (delta: -1 | 1) => {
+    const found = focusedBlock()
+    const current = useOpenExercise.getState().exercise
+    if (found === null || current === null) return
+    if (found.zone === 'a') edit({ blocs: moveBlock(parseBlocks(current.blocs), found.id, delta) })
+    else edit({ blocsB: moveBlock(parseBlocks(current.blocsB ?? []), found.id, delta) })
+    refocusBlock(found.id)
+  }
+  const sendFocusedBlock = (to: Zone) => {
+    const found = focusedBlock()
+    const current = useOpenExercise.getState().exercise
+    if (found === null || current === null || found.zone === to) return
+    const patch = sendBlock(current, found.id, found.zone)
+    if (patch === null) return
+    edit(patch)
+    setArrived({ zone: to, id: found.id })
+  }
+  useCommand('block.moveUp', () => moveFocusedBlock(-1), ready)
+  useCommand('block.moveDown', () => moveFocusedBlock(1), ready)
+  useCommand('block.moveLeft', () => sendFocusedBlock('a'), ready)
+  useCommand('block.moveRight', () => sendFocusedBlock('b'), ready)
 
   // Un autre exercice, d'autres champs : l'ancien champ ne doit plus recevoir de signes, et le
   // « bloc arrivé » de l'ancien n'a plus de sens.
@@ -256,12 +292,7 @@ export function ExerciseWorkspace() {
               style={{ width: 'calc(3ch + 1.25rem)' }}
             />
           </label>
-          <div role="group" aria-label="Navigation dans la fiche" style={{ display: 'flex', alignItems: 'center', gap: 2, marginLeft: 'auto' }}>
-            <CommandButton command="exercise.previous" icon={ChevronLeft} variant="ghost" size="icon-sm" tooltipDetail={position === 1 && blank ? "Écris dans cet exercice avant d'en ajouter un avant" : undefined} />
-            <span aria-live="polite" style={{ fontSize: 13, minWidth: 44, textAlign: 'center' }}>{position} / {count}</span>
-            <CommandButton command="exercise.next" icon={ChevronRight} variant="ghost" size="icon-sm" tooltipDetail={position === count && blank ? "Écris dans cet exercice avant d'en ajouter un après" : undefined} />
-            <CommandButton command="exercise.delete" icon={Trash2} label="Supprimer l'exercice" variant="ghost" size="icon-sm" />
-          </div>
+          <CommandButton command="exercise.delete" icon={Trash2} label="Supprimer l'exercice" variant="ghost" size="icon-sm" className="ml-auto" />
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
           <FieldContextMenu kind="text">
@@ -297,7 +328,7 @@ export function ExerciseWorkspace() {
             <BlockStack
               value={exercise.blocs}
               onChange={blocs => edit({ blocs })}
-              onSend={split ? id => send('a', id) : undefined}
+              onSend={id => send('a', id)}
               sendTo="right"
               split={split}
               onToggleSplit={toggleSplit}
@@ -354,13 +385,18 @@ export function ExerciseWorkspace() {
             className={`${field} hue-field w-full`}
           />
         </FieldContextMenu>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 4 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 8, marginTop: 4 }}>
           <p
             role={status === 'failed' ? 'alert' : 'status'}
             style={{ margin: 0, fontSize: 11, color: status === 'failed' ? 'var(--destructive)' : 'var(--muted-foreground)' }}
           >
             {status in STATUS_TEXT ? STATUS_TEXT[status as keyof typeof STATUS_TEXT] : ''}
           </p>
+          <div role="group" aria-label="Navigation dans la fiche" style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <CommandButton command="exercise.previous" icon={ChevronLeft} variant="ghost" size="icon-sm" tooltipDetail={position === 1 && blank ? "Écris dans cet exercice avant d'en ajouter un avant" : undefined} />
+            <span aria-live="polite" style={{ fontSize: 13, minWidth: 44, textAlign: 'center' }}>{position} / {count}</span>
+            <CommandButton command="exercise.next" icon={position < count ? ChevronRight : Plus} variant="ghost" size="icon-sm" tooltipDetail={position === count && blank ? "Écris dans cet exercice avant d'en ajouter un après" : undefined} />
+          </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 6 }}>
           {/* « À revoir » apparaît en tête de liste : la rangée est alignée à droite, rien ne se décale. */}
           {corrected && (
@@ -382,11 +418,6 @@ export function ExerciseWorkspace() {
             label="Prochain exercice à corriger"
             tooltipLabel={nextToCorrect ? undefined : 'Aucun exercice à corriger'}
             className="text-blue-600 hover:bg-blue-500/15 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-400"
-          />
-          <CommandButton
-            command="exercise.next" icon={position < count ? ChevronRight : Plus} variant="ghost" size="icon-sm"
-            label={position < count ? "Passer à l'exercice suivant" : 'Nouvel exercice'}
-            tooltipDetail={position === count && blank ? "Écris dans cet exercice avant d'en ajouter un après" : undefined}
           />
           </div>
         </div>

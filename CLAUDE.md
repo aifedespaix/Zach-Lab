@@ -87,6 +87,10 @@ ranking.
   passthrough; headerless tables work). Data stays the app's; the app provides the `TooltipProvider`.
   Mentale's `TableField` is an adapter around it; Maths' `TableEditor` uses it directly.
   `RecentFilesList` / `formatRelativeTime` are in `@suite/shared/shell` (slots `adornment`, `wrap`).
+  `OverflowToolbar` (`@suite/shared/shell`) is the top bar that never overflows: items `{ id, node, menu, priority }`;
+  what does not fit (lowest priority, then the later ones) moves into a « … » dropdown (`CommandDropdownItem`s). Every item
+  stays rendered (hidden, absolute) so its width stays measurable; unmeasured (jsdom) = all shown. `visibleIds` is the pure rule.
+  `TableGrid`'s `handlesTabbable={false}` takes the « + » and bins out of the Tab order (Maths).
 
 A tauri app's `src-tauri/Cargo.toml` must declare **directly** every plugin its
 capability names (`fs`, `updater`…): `tauri-build` reads plugin permissions from
@@ -156,6 +160,11 @@ under `src/`, wired together in `App.tsx`:
   « À finir » sur l'accueil, commandes `correction.next` (Mod+Shift+J, `jumpToNextToCorrect`, `goToExercise` ouvre une fiche sur un
   exercice), `tree.onlyToCorrect` (filtre de l'arbre), `correction.toggleHide` (le plan grise ou masque les corrigés), `review.open`
   (`ReviewDialog` : tous les corrigés, filtre chapitre / à revoir, cours suggérés pour les ratés). État de vue : `useCorrectionView`.
+- **Tri du plan et recherche avancée** : le plan de la fiche (`SheetOutline`) a un menu de tri (`sheetSort.ts`, `sortedIndices` : ordre de la
+  fiche, numéro naturel 1, 1a, 1b, 2, 10 croissant/décroissant, date de création, état en tête ; `useSheetSort`, clé `zachart-maths:sheet-sort`) ;
+  Monter/Descendre sont désactivés hors « ordre ». À droite de la recherche de l'arbre, `search.advanced` (Mod+Shift+F) ouvre
+  `AdvancedSearchDialog` : `librarySearch.ts` (`loadSearchEntries` relit toute la bibliothèque, `searchEntries` = Orama + extrait surligné) cherche
+  dans fiches ET exercices (énoncé, réponse, notes, blocs), filtrable par type et chapitre.
 - **Blocks** (`blocks.ts`): `texte`, `calcul`, `tableau`, `equation`. A new block type = a
   type in `blocks.ts` (`newBlock`, `parseBlocks`), an editor in `BlockStack.tsx`, an icon and
   hue in `blockMeta.ts`. A block of an unknown type is kept verbatim in the file, never dropped.
@@ -170,6 +179,15 @@ under `src/`, wired together in `App.tsx`:
   under `prefers-reduced-motion`. Right-click has two levels, each stopping propagation to the
   next: `BlockContextMenu` (a card) and `EmptyAreaContextMenu` (blank space of a zone); text fields
   keep `FieldContextMenu`, formula fields have none.
+- **Annuler / rétablir** (`useOpenExercise`: `undo`, `redo`, `undoDepth`, `redoDepth`; commandes `edit.undo` Mod+Z /
+  `edit.redo` Mod+Shift+Z, `allowInEditable`, boutons en tête de la barre du haut) : historique de clichés de la FICHE
+  entière, remis à zéro à chaque ouverture ; les `edit` sur les mêmes champs du même exercice à moins de `UNDO_GROUP_MS`
+  (700 ms) ne font qu'un pas ; toute nouvelle modification vide le rétablissement ; 200 pas max.
+- **Tableaux au clavier** (`tableNav.ts`, `cellKeyAction`, branché dans `TableEditor`) : Tab = case suivante, dernière case
+  → « + » de ligne ; Entrée = case suivante (ligne suivante au bout), dernière case → nouvelle ligne ; Maj+Entrée recule ;
+  Ctrl/Cmd+Entrée = nouvelle colonne ; Retour arrière dans une case vide recule, et supprime la ligne vide depuis sa première
+  case (jamais en répétition de touche). Maj+flèches / Maj+clic = sélection rectangulaire (Suppr vide, Ctrl+C/X copient en TSV) ;
+  coller du TSV agrandit le tableau (12 max) ; `crossProduct` propose le produit en croix d'une case vide (bouton « Remplir »).
 - **Orthographe et flèches** : `FieldContextMenu` met en tête du clic droit les corrections du mot sous le curseur
   (`spell.ts` : `misspellingAt`, dictionnaire Hunspell français `nspell` + `dictionary-fr` chargé dans un worker,
   `spell.worker.ts`/`spellCore.ts` ; l'alias `@dictionary-fr` existe parce que le paquet n'exporte que `index.js`).

@@ -1,5 +1,6 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { runCommand } from '@suite/shared/commands'
 import { TooltipProvider } from '@suite/shared/ui'
 import '../commands'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -152,14 +153,14 @@ describe('ExerciseWorkspace', () => {
     expect(screen.getByRole('button', { name: 'Exercice suivant' })).toBeEnabled()
   })
 
-  it("« Nouvel exercice », dans la zone de réponse du dernier exercice, ajoute à la fin et s'y place", async () => {
+  it("« Exercice suivant », au pied du dernier exercice, ajoute à la fin et s'y place", async () => {
     await setup({ 'A/a.json': sheetFile('Fiche', [ex('1'), ex('2', { enonce: 'Q2' })]) })
     await open('A/a.json')
     const user = userEvent.setup()
-    // Avant le dernier, le bouton du bas passe à l'exercice suivant : il ne crée rien.
-    expect(screen.queryByRole('button', { name: 'Nouvel exercice' })).toBeNull()
-    await user.click(screen.getByRole('button', { name: "Passer à l'exercice suivant" }))
-    await user.click(screen.getByRole('button', { name: 'Nouvel exercice' }))
+    // Avant le dernier, le bouton passe à l'exercice suivant ; au dernier, il en crée un.
+    await user.click(screen.getByRole('button', { name: 'Exercice suivant' }))
+    expect(screen.getByText('2 / 2')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Exercice suivant' }))
     expect(screen.getByText('3 / 3')).toBeInTheDocument()
   })
 
@@ -402,25 +403,53 @@ describe('ExerciseWorkspace', () => {
       expect(useOpenExercise.getState().exercise!.blocs).toHaveLength(1)
     })
 
-    it("le bouton du bas passe au suivant, puis crée un exercice au dernier, curseur dans l'énoncé", async () => {
+    it("le bouton de navigation passe au suivant, puis crée un exercice au dernier, curseur dans l'énoncé", async () => {
       const user = userEvent.setup()
       await setup(twoExercises())
       await open('Ch/f.json')
-      await user.click(await screen.findByRole('button', { name: "Passer à l'exercice suivant" }))
+      await user.click(await screen.findByRole('button', { name: 'Exercice suivant' }))
       expect(useOpenExercise.getState().currentId).toBe('e2')
       // e2 est vierge au dernier rang : rien à créer par-dessus, le bouton est désactivé
-      expect(screen.getByRole('button', { name: 'Nouvel exercice' })).toBeDisabled()
+      expect(screen.getByRole('button', { name: 'Exercice suivant' })).toBeDisabled()
       await user.type(screen.getByLabelText("Énoncé de l'exercice"), 'Q2')
-      await user.click(screen.getByRole('button', { name: 'Nouvel exercice' }))
+      await user.click(screen.getByRole('button', { name: 'Exercice suivant' }))
       expect(useOpenExercise.getState().sheet!.exercices).toHaveLength(3)
       await waitFor(() => expect(screen.getByLabelText("Énoncé de l'exercice")).toHaveFocus())
     })
 
-    it("le bouton « Nouvel exercice » n'est plus dans l'en-tête", async () => {
+    it("« Envoyer à droite » est possible sans scission et scinde la zone", async () => {
+      const user = userEvent.setup()
       await setup(twoExercises())
       await open('Ch/f.json')
-      await screen.findByRole('button', { name: 'Exercice suivant' })
-      expect(within(document.querySelector('header')!).queryByRole('button', { name: 'Nouvel exercice' })).toBeNull()
+      await user.click(await screen.findByRole('button', { name: 'Ajouter un bloc Texte' }))
+      expect(useOpenExercise.getState().exercise!.blocsB).toBeUndefined()
+      const before = useOpenExercise.getState().exercise!.blocs.length
+      await user.click(screen.getAllByRole('button', { name: /^Actions du bloc/ }).slice(-1)[0])
+      await user.click(await screen.findByRole('menuitem', { name: 'Envoyer à droite' }))
+      const e = useOpenExercise.getState().exercise!
+      expect(e.blocs).toHaveLength(before - 1)
+      expect(e.blocsB).toHaveLength(1)
+    })
+
+    it('la commande « déplacer vers la droite » envoie le bloc sous le curseur dans la zone de droite (et scinde)', async () => {
+      const user = userEvent.setup()
+      await setup(twoExercises())
+      await open('Ch/f.json')
+      await user.click(await screen.findByRole('button', { name: 'Ajouter un bloc Texte' }))
+      const before = useOpenExercise.getState().exercise!.blocs.length
+      act(() => runCommand('block.moveRight'))
+      const e = useOpenExercise.getState().exercise!
+      expect(e.blocs).toHaveLength(before - 1)
+      expect(e.blocsB).toHaveLength(1)
+    })
+
+    it("la navigation est au centre de la zone de réponse, pas dans l'en-tête, sans bouton « suivant » en double", async () => {
+      await setup(twoExercises())
+      await open('Ch/f.json')
+      const footer = await screen.findByRole('contentinfo', { name: 'Zone de réponse' })
+      expect(within(footer).getByRole('group', { name: 'Navigation dans la fiche' })).toBeInTheDocument()
+      expect(within(document.querySelector('header')!).queryByRole('group', { name: 'Navigation dans la fiche' })).toBeNull()
+      expect(screen.getAllByRole('button', { name: 'Exercice suivant' })).toHaveLength(1)
     })
   })
 })

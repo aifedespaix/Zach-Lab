@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { SheetOutline } from './SheetOutline'
 import { newExercise, type Sheet } from './types'
 import { useOpenExercise } from './useOpenExercise'
+import { useSheetSort } from './useSheetSort'
 
 const sheet: Sheet = {
   version: 2, id: 'f', titre: 'Fractions p.45',
@@ -55,5 +56,30 @@ describe('SheetOutline', () => {
     expect(screen.queryAllByRole('button', { name: /^Exercice / })).toHaveLength(0)
     await user.click(toggle)
     expect(screen.getAllByRole('button', { name: /^Exercice / })).toHaveLength(2)
+  })
+})
+
+describe('SheetOutline — tri', () => {
+  const many: Sheet = {
+    version: 2, id: 'g', titre: 'Tri',
+    exercices: ['10', '2', '1b', '1a'].map((numero, i) => ({ ...newExercise(), id: String(i), numero, enonce: `E${numero}` })),
+  }
+  beforeEach(() => {
+    localStorage.clear()
+    useSheetSort.setState({ sort: 'ordre' })
+    useOpenExercise.setState({ path: 'A/a.json', sheet: many, currentId: '0', exercise: many.exercices[0], status: 'saved' })
+  })
+
+  it('trie par numéro croissant puis décroissant depuis le menu', async () => {
+    render(<SheetOutline />)
+    const user = userEvent.setup()
+    const order = () => screen.getAllByRole('button', { name: /^Exercice / }).map(b => b.getAttribute('aria-label'))
+    expect(order()).toEqual(['Exercice 10', 'Exercice 2', 'Exercice 1b', 'Exercice 1a'])
+    await user.click(screen.getByRole('button', { name: 'Trier les exercices' }))
+    await user.click(await screen.findByRole('menuitem', { name: /\(croissant\)/ }))
+    expect(order()).toEqual(['Exercice 1a', 'Exercice 1b', 'Exercice 2', 'Exercice 10'])
+    await user.click(screen.getByRole('button', { name: 'Trier les exercices' }))
+    await user.click(await screen.findByRole('menuitem', { name: /\(décroissant\)/ }))
+    expect(order()).toEqual(['Exercice 10', 'Exercice 2', 'Exercice 1b', 'Exercice 1a'])
   })
 })

@@ -5,6 +5,9 @@ import type { Exercise, Sheet } from './types'
 import { useExerciseStore } from './useExerciseStore'
 
 export const AUTOSAVE_DELAY_MS = 600
+/** Des frappes séparées de moins que ça sur les mêmes champs ne font qu'un pas d'annulation. */
+export const UNDO_GROUP_MS = 700
+const HISTORY_LIMIT = 200
 
 type Status = 'empty' | 'loading' | 'unreadable' | 'saved' | 'dirty' | 'saving' | 'failed'
 
@@ -20,6 +23,11 @@ interface OpenExerciseStore {
   /** L'exercice affiché, dérivé de `sheet` et `currentId` et gardé à jour pour ses lecteurs. */
   exercise: Exercise | null
   status: Status
+  /** Combien de pas on peut annuler / rétablir (pour griser les boutons). */
+  undoDepth: number
+  redoDepth: number
+  undo(): void
+  redo(): void
   edit(patch: ExerciseEdit): void
   editTitle(titre: string): void
   /** Affiche un autre exercice de la fiche ; sans effet si `id` n'y est pas. */
@@ -46,6 +54,15 @@ let generation = 0
 /** L'exercice à afficher quand la fiche en cours d'ouverture sera lue (un saut depuis une autre fiche). */
 let pendingId: string | null = null
 
+interface Snapshot { sheet: Sheet; currentId: string }
+/** L'historique de la fiche ouverte : il n'a de sens que pour elle, et repart de zéro à chaque ouverture. */
+let past: Snapshot[] = []
+let future: Snapshot[] = []
+/** La dernière frappe groupable : quand et sur quels champs de quel exercice. */
+let lastTyping: { at: number; key: string } | null = null
+const resetHistory = () => { past = []; future = []; lastTyping = null }
+const depths = () => ({ undoDepth: past.length, redoDepth: future.length })
+
 const show = (sheet: Sheet, currentId: string) => ({
   sheet,
   currentId,
@@ -70,10 +87,37 @@ export const useOpenExercise = create<OpenExerciseStore>((set, get) => {
   }
 
   /** Une modification de la fiche : à l'écran tout de suite, sur le disque après le délai. */
-  function change(sheet: Sheet, currentId: string) {
-    set({ ...show(sheet, currentId), status: 'dirty' })
+  function change(sheet: Sheet, currentId: string, groupKey?: string) {
+    const before = get()
+    if (before.sheet !== null && before.currentId !== null) {
+      const now = Date.now()
+      const grouped = groupKey !== undefined && lastTyping !== null && lastTyping.key === groupKey && now - lastTyping.at < UNDO_GROUP_MS
+      // Une frappe groupée garde le cliché d'avant la première frappe du groupe.
+      if (!grouped) {
+        past.push({ sheet: before.sheet, currentId: before.currentId })
+        if (past.length > HISTORY_LIMIT) past.shift()
+      }
+      lastTyping = groupKey === undefined ? null : { at: now, key: groupKey }
+      future = []
+    }
+    set({ ...show(sheet, currentId), ...depths(), status: 'dirty' })
+    schedule()
+  }
+
+  function schedule() {
     clearTimeout(timer)
     timer = setTimeout(() => void write(), AUTOSAVE_DELAY_MS)
+  }
+
+  /** Revient à un cliché de l'historique, sans toucher à ce qu'il contient d'autre. */
+  function travel(from: Snapshot[], to: Snapshot[]) {
+    const { sheet, currentId } = get()
+    const target = from.pop()
+    if (target === undefined || sheet === null || currentId === null) return
+    to.push({ sheet, currentId })
+    lastTyping = null
+    set({ ...show(target.sheet, target.sheet.exercices.some(e => e.id === target.currentId) ? target.currentId : target.sheet.exercices[0].id), ...depths(), status: 'dirty' })
+    schedule()
   }
 
   return {
@@ -82,16 +126,20 @@ export const useOpenExercise = create<OpenExerciseStore>((set, get) => {
     currentId: null,
     exercise: null,
     status: 'empty',
+    undoDepth: 0,
+    redoDepth: 0,
 
+    undo() { travel(past, future) },
+    redo() { travel(future, past) },
     edit(patch) {
       const { sheet, currentId } = get()
       if (sheet === null || currentId === null) return
-      change(patchExercise(sheet, currentId, patch), currentId)
+      change(patchExercise(sheet, currentId, patch), currentId, `${currentId}:${Object.keys(patch).sort().join(',')}`)
     },
     editTitle(titre) {
       const { sheet, currentId } = get()
       if (sheet === null || currentId === null) return
-      change({ ...sheet, titre }, currentId)
+      change({ ...sheet, titre }, currentId, 'titre')
     },
     goTo(id) {
       const { sheet } = get()
@@ -143,16 +191,20 @@ export const useOpenExercise = create<OpenExerciseStore>((set, get) => {
   }
 })
 
-const closed = { path: null, sheet: null, currentId: null, exercise: null, status: 'empty' } as const
+const closed = { path: null, sheet: null, currentId: null, exercise: null, status: 'empty', undoDepth: 0, redoDepth: 0 } as const
 
 /** Ouvre `path` (ou ferme si `null`) après avoir écrit la fiche précédente. */
 async function open(path: string | null) {
   const mine = ++generation
   await useOpenExercise.getState().flush()
   if (mine !== generation) return
-  if (path === null) return void useOpenExercise.setState(closed)
+  if (path === null) {
+    resetHistory()
+    return void useOpenExercise.setState(closed)
+  }
 
-  useOpenExercise.setState({ path, sheet: null, currentId: null, exercise: null, status: 'loading' })
+  resetHistory()
+  useOpenExercise.setState({ path, sheet: null, currentId: null, exercise: null, status: 'loading', undoDepth: 0, redoDepth: 0 })
   const fs = useExerciseStore.getState().fs
   const sheet = fs === null ? null : await readSheet(fs, path)
   if (mine !== generation) return
