@@ -40,9 +40,11 @@ describe('App base', () => {
     render(<App />)
     await user.click(screen.getByRole('button', { name: /Colorer unités et termes/ }))
     expect(useUnitColors.getState().enabled).toBe(false)
+    expect(screen.getByRole('button', { name: /Colorer unités et termes/ })).not.toHaveClass('rainbow-active')
     expect(localStorage.getItem('zachart-maths:unit-colors')).toBe('off')
     await user.click(screen.getByRole('button', { name: /Colorer unités et termes/ }))
     expect(useUnitColors.getState().enabled).toBe(true)
+    expect(screen.getByRole('button', { name: /Colorer unités et termes/ })).toHaveClass('rainbow-active')
     await act(async () => {})
   })
 

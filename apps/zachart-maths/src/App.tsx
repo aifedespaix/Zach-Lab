@@ -108,8 +108,8 @@ export default function App() {
     })
   })
 
-  const button = (command: string, icon: LucideIcon, active?: boolean) => (
-    <CommandButton command={command} icon={icon} variant={active ? 'secondary' : 'ghost'} size="icon-sm" />
+  const button = (command: string, icon: LucideIcon, active?: boolean, className?: string) => (
+    <CommandButton command={command} icon={icon} variant={active ? 'secondary' : 'ghost'} size="icon-sm" className={active ? className : undefined} />
   )
   // De gauche à droite ; `priority` : ce qui reste le plus longtemps quand la barre manque de place.
   const toolbarItems: OverflowItem[] = [
@@ -121,7 +121,7 @@ export default function App() {
     { id: 'review', node: button('review.open', ClipboardCheck), menu: <CommandDropdownItem command="review.open" icon={ClipboardCheck} />, priority: 3 },
     { id: 'notes', node: button('notes.toggle', NotebookPen), menu: <CommandDropdownItem command="notes.toggle" icon={NotebookPen} />, priority: 3 },
     { id: 'calculatrice', node: button('calculatrice.toggle', Calculator), menu: <CommandDropdownItem command="calculatrice.toggle" icon={Calculator} />, priority: 3 },
-    { id: 'colors', node: button('view.toggleUnitColors', Highlighter, unitColors), menu: <CommandDropdownItem command="view.toggleUnitColors" icon={Highlighter} />, priority: 2 },
+    { id: 'colors', node: button('view.toggleUnitColors', Highlighter, unitColors, 'rainbow-active'), menu: <CommandDropdownItem command="view.toggleUnitColors" icon={Highlighter} />, priority: 2 },
     { id: 'compact', node: button('view.toggleCompact', Rows3, compact), menu: <CommandDropdownItem command="view.toggleCompact" icon={Rows3} />, priority: 2 },
     {
       id: 'zoom',
