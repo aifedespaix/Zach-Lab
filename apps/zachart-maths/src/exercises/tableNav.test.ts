@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cellKeyAction, cellMove, clearRect, crossProduct, insertShortcut, pasteGrid, rectOf, rectToTsv } from './tableNav'
+import { canRemoveRect, cellKeyAction, cellMove, clearRect, crossProduct, deleteShortcut, insertShortcut, removeRect, pasteGrid, rectOf, rectToTsv } from './tableNav'
 
 const at = (start: number, length = 5, end = start) => ({ start, end, length })
 
@@ -102,5 +102,38 @@ describe('insertShortcut', () => {
     expect(insertShortcut(key('ArrowUp', { altKey: false }))).toBeNull()
     expect(insertShortcut(key('ArrowUp', { shiftKey: true }))).toBeNull()
     expect(insertShortcut(key('a'))).toBeNull()
+  })
+})
+
+describe('removeRect', () => {
+  const grid = [['a', 'b', 'c'], ['d', 'e', 'f'], ['g', 'h', 'i']]
+  const rect = { top: 0, bottom: 1, left: 1, right: 1 }
+  it('retire les lignes couvertes', () => {
+    expect(removeRect(grid, rect, { rows: true, columns: false })).toEqual([['g', 'h', 'i']])
+  })
+  it('retire les colonnes couvertes', () => {
+    expect(removeRect(grid, rect, { rows: false, columns: true })).toEqual([['a', 'c'], ['d', 'f'], ['g', 'i']])
+  })
+  it('retire les deux', () => {
+    expect(removeRect(grid, rect, { rows: true, columns: true })).toEqual([['g', 'i']])
+  })
+  it('garde un axe entièrement couvert', () => {
+    const all = { top: 0, bottom: 2, left: 0, right: 0 }
+    expect(removeRect(grid, all, { rows: true, columns: true })).toEqual([['b', 'c'], ['e', 'f'], ['h', 'i']])
+    expect(canRemoveRect(grid, all)).toEqual({ rows: false, columns: true })
+  })
+})
+
+describe('deleteShortcut', () => {
+  const key = (k: string, o: object = {}) => ({ key: k, ctrlKey: true, metaKey: false, altKey: false, shiftKey: false, ...o })
+  it('Ctrl+Suppr : colonnes ; Ctrl+Maj+Suppr : lignes ; avec Alt+Maj : les deux', () => {
+    expect(deleteShortcut(key('Delete'))).toEqual({ rows: false, columns: true })
+    expect(deleteShortcut(key('Delete', { shiftKey: true }))).toEqual({ rows: true, columns: false })
+    expect(deleteShortcut(key('Delete', { shiftKey: true, altKey: true }))).toEqual({ rows: true, columns: true })
+  })
+  it('ignore Suppr seul et Ctrl+Alt+Suppr', () => {
+    expect(deleteShortcut(key('Delete', { ctrlKey: false }))).toBeNull()
+    expect(deleteShortcut(key('Delete', { altKey: true }))).toBeNull()
+    expect(deleteShortcut(key('a'))).toBeNull()
   })
 })

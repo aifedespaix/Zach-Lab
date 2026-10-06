@@ -131,4 +131,43 @@ describe('tableau : clavier', () => {
     await user.click(screen.getByRole('menuitem', { name: /Sélectionner la ligne/ }))
     expect(selected([2, 1], [2, 2])).toBe(true)
   })
+
+  describe('supprimer des lignes / colonnes sélectionnées', () => {
+    const grid = () => [['a', 'b', 'c'], ['d', 'e', 'f'], ['g', 'h', 'i']]
+
+    it('Ctrl+Suppr retire les colonnes, Ctrl+Maj+Suppr les lignes, avec Alt les deux', async () => {
+      const user = userEvent.setup()
+      const { unmount } = render(<Harness initial={grid()} />)
+      cell(1, 2).focus()
+      await user.keyboard('{Shift>}{ArrowDown}{/Shift}')
+      await user.keyboard('{Control>}{Delete}{/Control}')
+      expect(cells).toEqual([['a', 'c'], ['d', 'f'], ['g', 'i']])
+      unmount()
+
+      render(<Harness initial={grid()} />)
+      cell(1, 2).focus()
+      await user.keyboard('{Shift>}{ArrowDown}{/Shift}')
+      await user.keyboard('{Control>}{Shift>}{Delete}{/Shift}{/Control}')
+      expect(cells).toEqual([['g', 'h', 'i']])
+    })
+
+    it('le clic droit propose les trois suppressions sur une sélection multiple, et pas sur une seule case', async () => {
+      const user = userEvent.setup()
+      render(<Harness initial={grid()} />)
+      cell(1, 2).focus()
+      await user.keyboard('{Shift>}{ArrowDown}{/Shift}')
+      fireEvent.contextMenu(cell(1, 2))
+      expect(await screen.findByRole('menuitem', { name: /Supprimer les lignes/ })).toHaveTextContent('Ctrl + Maj + Suppr')
+      expect(screen.getByRole('menuitem', { name: /^Supprimer les colonnes(?! et)/ })).toHaveTextContent('Ctrl + Suppr')
+      await user.click(screen.getByRole('menuitem', { name: /Supprimer les colonnes et les lignes/ }))
+      expect(cells).toEqual([['g', 'i']])
+    })
+
+    it('rien à proposer sans sélection multiple', async () => {
+      render(<Harness initial={grid()} />)
+      fireEvent.contextMenu(cell(2, 2))
+      await screen.findByRole('menuitem', { name: /Couper/ })
+      expect(screen.queryByRole('menuitem', { name: /Supprimer les lignes/ })).toBeNull()
+    })
+  })
 })

@@ -99,6 +99,35 @@ export const inRect = (rect: CellRect, row: number, column: number) =>
 export const clearRect = (cells: readonly (readonly string[])[], rect: CellRect): string[][] =>
   cells.map((line, r) => line.map((cell, c) => (inRect(rect, r, c) ? '' : cell)))
 
+/** Les lignes et/ou colonnes que le rectangle couvre, retirées. Un axe qui couvrirait tout le tableau est laissé tel quel : il garde au moins une ligne et une colonne. */
+export function removeRect(
+  cells: readonly (readonly string[])[], rect: CellRect, what: { rows: boolean; columns: boolean },
+): string[][] {
+  const dropRows = what.rows && rect.bottom - rect.top + 1 < cells.length
+  const dropColumns = what.columns && rect.right - rect.left + 1 < cells[0].length
+  return cells
+    .filter((_, r) => !(dropRows && r >= rect.top && r <= rect.bottom))
+    .map(line => line.filter((_, c) => !(dropColumns && c >= rect.left && c <= rect.right)))
+}
+
+/** Ce que retire une suppression de lignes/colonnes sur le rectangle : `false` quand l'axe est entièrement couvert (il en reste au moins une). */
+export const canRemoveRect = (cells: readonly (readonly string[])[], rect: CellRect) => ({
+  rows: rect.bottom - rect.top + 1 < cells.length,
+  columns: rect.right - rect.left + 1 < cells[0].length,
+})
+
+export type DeleteShortcut = { rows: boolean; columns: boolean }
+
+/**
+ * Ctrl/Cmd+Suppr : les colonnes de la sélection ; Ctrl/Cmd+Maj+Suppr : ses lignes ; Ctrl/Cmd+Alt+Maj+Suppr : les deux
+ * (sans Maj, Ctrl+Alt+Suppr est pris par Windows). Retour arrière compte comme Suppr.
+ */
+export function deleteShortcut(e: { key: string; ctrlKey: boolean; metaKey: boolean; altKey: boolean; shiftKey: boolean }): DeleteShortcut | null {
+  if (!(e.ctrlKey || e.metaKey) || (e.key !== 'Delete' && e.key !== 'Backspace')) return null
+  if (e.altKey) return e.shiftKey ? { rows: true, columns: true } : null
+  return e.shiftKey ? { rows: true, columns: false } : { rows: false, columns: true }
+}
+
 /** Le rectangle en texte tabulé, comme un tableur le copie. */
 export const rectToTsv = (cells: readonly (readonly string[])[], rect: CellRect): string =>
   cells.slice(rect.top, rect.bottom + 1).map(line => line.slice(rect.left, rect.right + 1).join('\t')).join('\n')

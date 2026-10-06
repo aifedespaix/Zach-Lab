@@ -1,7 +1,8 @@
 import { useContext, useEffect, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react'
 import { TableCellMenuItems, TableGrid, type BlockEdgeHandle } from '@suite/shared/equation'
 import { motion, useReducedMotion } from 'motion/react'
-import { Button } from '@suite/shared/ui'
+import { Button, ContextMenuItem, ContextMenuSeparator, ContextMenuShortcut } from '@suite/shared/ui'
+import { Columns3, Grid2x2X, Rows3 } from 'lucide-react'
 import { BlockCard } from './BlockCard'
 import { BLOCK_META } from './blockMeta'
 import { BlockContextMenu } from './BlockContextMenu'
@@ -11,7 +12,7 @@ import { EquationEditor, type SubBlockContext } from './EquationEditor'
 import { FieldContextMenu } from './FieldContextMenu'
 import { HighlightedTextarea, UnitHuesContext } from './HighlightedTextarea'
 import { borderOf, headerToneOf, toneOf } from './toolbarCatalog'
-import { cellKeyAction, cellMove, clearRect, crossProduct, inRect, insertShortcut, pasteGrid, rectOf, rectToTsv, type CellMove, type CellPoint } from './tableNav'
+import { canRemoveRect, cellKeyAction, cellMove, clearRect, crossProduct, deleteShortcut, inRect, insertShortcut, pasteGrid, rectOf, rectToTsv, removeRect, type CellMove, type CellPoint } from './tableNav'
 import { tableLayout } from './tableUnits'
 import { spacing, useCompact } from './useCompact'
 import { useUnitColors } from './useUnitColors'
@@ -114,6 +115,21 @@ function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: 
     setSelection({ anchor: selection?.anchor ?? from, head: to })
     focusCell(scrollRef.current, { row: to.row, column: to.column, caret: 'end' })
   }
+  /** Retire les lignes et/ou colonnes que la sélection couvre ; le curseur revient sur la case qui prend leur place. */
+  const removeSelected = (what: { rows: boolean; columns: boolean }) => {
+    if (rect === null) return
+    const can = canRemoveRect(cells, rect)
+    const rows = what.rows && can.rows
+    const columns = what.columns && can.columns
+    if (!rows && !columns) return
+    const next = removeRect(cells, rect, { rows, columns })
+    pendingFocus.current = {
+      row: Math.min(rows ? rect.top : (focused?.row ?? rect.top), next.length - 1),
+      column: Math.min(columns ? rect.left : (focused?.column ?? rect.left), next[0].length - 1),
+      caret: 'start',
+    }
+    set(next)
+  }
   const onCellKeyDown = (e: KeyboardEvent<HTMLInputElement>, r: number, c: number) => {
     const input = e.currentTarget
     if (e.nativeEvent.isComposing) return
@@ -130,6 +146,13 @@ function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: 
         pendingFocus.current = { row: r, column: insert.side === 'before' ? c : c + 1, caret: 'start' }
         set(addColumn(cells, insert.side === 'before' ? c - 1 : c))
       }
+      return
+    }
+    // Ctrl+Suppr : les colonnes de la sélection ; Ctrl+Maj+Suppr : ses lignes ; Ctrl+Alt+Maj+Suppr : les deux.
+    const removal = multi ? deleteShortcut(e) : null
+    if (removal !== null) {
+      e.preventDefault()
+      removeSelected(removal)
       return
     }
     // Ctrl+Espace : la colonne ; Ctrl+Maj+Espace : la ligne ; Ctrl+A quand tout le texte de la case est déjà sélectionné : tout le tableau.
@@ -239,6 +262,25 @@ function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: 
             kind="text"
             selectAllLabel="Sélectionner la case"
             extra={
+              <>
+              {multi && rect !== null && inRect(rect, r, c) && (
+                <>
+                  <ContextMenuItem variant="destructive" disabled={!canRemoveRect(cells, rect).rows} onSelect={() => removeSelected({ rows: true, columns: false })}>
+                    <Rows3 size={14} />Supprimer les lignes<ContextMenuShortcut>Ctrl + Maj + Suppr</ContextMenuShortcut>
+                  </ContextMenuItem>
+                  <ContextMenuItem variant="destructive" disabled={!canRemoveRect(cells, rect).columns} onSelect={() => removeSelected({ rows: false, columns: true })}>
+                    <Columns3 size={14} />Supprimer les colonnes<ContextMenuShortcut>Ctrl + Suppr</ContextMenuShortcut>
+                  </ContextMenuItem>
+                  <ContextMenuItem
+                    variant="destructive"
+                    disabled={!canRemoveRect(cells, rect).rows || !canRemoveRect(cells, rect).columns}
+                    onSelect={() => removeSelected({ rows: true, columns: true })}
+                  >
+                    <Grid2x2X size={14} />Supprimer les colonnes et les lignes<ContextMenuShortcut>Ctrl + Alt + Maj + Suppr</ContextMenuShortcut>
+                  </ContextMenuItem>
+                  <ContextMenuSeparator />
+                </>
+              )}
               <TableCellMenuItems
                 row={r}
                 column={c}
@@ -255,6 +297,7 @@ function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: 
                 onSelectAll={() => selectAll({ row: r, column: c })}
                 shortcuts={{ row: 'Ctrl + Maj + Espace', column: 'Ctrl + Espace', all: 'Ctrl + A ×2' }}
               />
+              </>
             }
           >
             <input
