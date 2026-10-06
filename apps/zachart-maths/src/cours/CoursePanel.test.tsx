@@ -22,7 +22,7 @@ describe('CoursePanel', () => {
     localStorage.clear()
     useExerciseStore.setState({ fs: null, tree: [], loaded: false, selected: null, error: null })
     useOpenExercise.setState({ path: null, sheet: null, currentId: null, exercise: null, status: 'empty' })
-    useCoursesStore.setState({ selectedId: null, searchOpen: false, notesVisible: true })
+    useCoursesStore.setState({ selectedId: null, searchOpen: false, notesVisible: true, bottomTab: 'notes' })
   })
 
   it('sans exercice : pas de suggestion, une invite, des notes désactivées', async () => {
@@ -80,12 +80,42 @@ describe('CoursePanel', () => {
 
   it('masquer les notes donne toute la place aux cours, et le choix est retenu', async () => {
     const { user } = await setup()
-    expect(screen.getByRole('region', { name: 'Notes' })).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Masquer les notes' }))
-    expect(screen.queryByRole('region', { name: 'Notes' })).not.toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Notes et calculatrice' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Masquer le panneau du bas' }))
+    expect(screen.queryByRole('region', { name: 'Notes et calculatrice' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Notes' })).toHaveAttribute('aria-pressed', 'false')
     expect(localStorage.getItem('zachart-maths:notes-visible')).toBe('false')
     await user.click(screen.getByRole('button', { name: 'Notes' }))
-    expect(screen.getByRole('region', { name: 'Notes' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Notes et calculatrice' })).toBeInTheDocument()
+  })
+
+  it('le bouton calculatrice ouvre la moitié basse sur la calculatrice, à côté des notes', async () => {
+    const { user } = await setup()
+    await user.click(screen.getByRole('button', { name: 'Masquer le panneau du bas' }))
+    await user.click(screen.getByRole('button', { name: 'Calculatrice' }))
+    expect(screen.getByRole('tab', { name: 'Calculatrice' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByTestId('calculatrice')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Mes notes')).not.toBeInTheDocument()
+    // Notes et calculatrice se partagent la zone : un onglet, puis l'autre, sans la refermer.
+    await user.click(screen.getByRole('tab', { name: 'Notes' }))
+    expect(screen.getByLabelText('Mes notes')).toBeInTheDocument()
+    expect(localStorage.getItem('zachart-maths:bottom-tab')).toBe('notes')
+  })
+
+  it('le bouton de l\'onglet affiché referme la moitié basse ; celui de l\'autre change d\'onglet', async () => {
+    const { user } = await setup()
+    await user.click(screen.getByRole('button', { name: 'Calculatrice' }))
+    expect(screen.getByTestId('calculatrice')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Notes' }))
+    expect(screen.getByLabelText('Mes notes')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Notes' }))
+    expect(screen.queryByRole('region', { name: 'Notes et calculatrice' })).not.toBeInTheDocument()
+  })
+
+  it('les flèches changent d\'onglet', async () => {
+    const { user } = await setup()
+    screen.getByRole('tab', { name: 'Notes' }).focus()
+    await user.keyboard('{ArrowRight}')
+    expect(screen.getByRole('tab', { name: 'Calculatrice' })).toHaveAttribute('aria-selected', 'true')
   })
 })

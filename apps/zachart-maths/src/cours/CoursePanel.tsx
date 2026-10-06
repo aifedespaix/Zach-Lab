@@ -1,9 +1,10 @@
 import { useDeferredValue, useMemo, type ReactNode } from 'react'
-import { Copy, ExternalLink, Eye, EyeOff, NotebookPen, PanelRightClose, Search } from 'lucide-react'
+import { Calculator as CalculatorIcon, Copy, ExternalLink, Eye, EyeOff, NotebookPen, PanelRightClose, Search } from 'lucide-react'
 import {
   Button, ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger,
 } from '@suite/shared/ui'
 import { runCommand, useCommand } from '@suite/shared/commands'
+import { Calculator } from '../calc/Calculator'
 import { FieldContextMenu } from '../exercises/FieldContextMenu'
 import { useOpenExercise } from '../exercises/useOpenExercise'
 import { CourseSearchDialog } from './CourseSearchDialog'
@@ -12,7 +13,7 @@ import { indexCourses } from './courseSearch'
 import { contextOf } from './exerciseContext'
 import { Markdown } from './markdown'
 import { suggestCourses } from './suggest'
-import { useCoursesStore } from './useCoursesStore'
+import { useCoursesStore, type BottomTab } from './useCoursesStore'
 
 const RAISON = { chapitre: 'même chapitre', 'mots-cles': 'mots-clés' } as const
 
@@ -35,7 +36,8 @@ function CourseMenu({ course, onOpen, children }: { course: Course; onOpen: () =
 function CoursesSection({ courses }: { courses: readonly Course[] }) {
   const selectedId = useCoursesStore(s => s.selectedId)
   const notesVisible = useCoursesStore(s => s.notesVisible)
-  const { select, setSearchOpen, setNotesVisible } = useCoursesStore.getState()
+  const bottomTab = useCoursesStore(s => s.bottomTab)
+  const { select, setSearchOpen, toggleBottom } = useCoursesStore.getState()
   const path = useOpenExercise(s => s.path)
   const sheet = useOpenExercise(s => s.sheet)
   const exercise = useOpenExercise(s => s.exercise)
@@ -53,8 +55,11 @@ function CoursesSection({ courses }: { courses: readonly Course[] }) {
       <header style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '8px 12px', borderBottom: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <strong style={{ fontSize: 13, flex: 1 }}>Cours</strong>
-          <Button variant="ghost" size="icon-sm" aria-label="Notes" aria-pressed={notesVisible} onClick={() => setNotesVisible(!notesVisible)}>
+          <Button variant="ghost" size="icon-sm" aria-label="Notes" aria-pressed={notesVisible && bottomTab === 'notes'} onClick={() => toggleBottom('notes')}>
             <NotebookPen />
+          </Button>
+          <Button variant="ghost" size="icon-sm" aria-label="Calculatrice" aria-pressed={notesVisible && bottomTab === 'calculatrice'} onClick={() => toggleBottom('calculatrice')}>
+            <CalculatorIcon />
           </Button>
         </div>
         <Button variant="outline" size="xs" style={{ width: '100%' }} onClick={() => setSearchOpen(true)}><Search />Chercher un cours</Button>
@@ -100,30 +105,71 @@ function CoursesSection({ courses }: { courses: readonly Course[] }) {
   )
 }
 
-/** La partie basse : des notes libres, rangées avec l'exercice ouvert. */
-function NotesSection() {
+const TABS: { id: BottomTab; label: string; icon: typeof NotebookPen }[] = [
+  { id: 'notes', label: 'Notes', icon: NotebookPen },
+  { id: 'calculatrice', label: 'Calculatrice', icon: CalculatorIcon },
+]
+
+/** Les notes libres, rangées avec l'exercice ouvert. */
+function NotesField() {
   const exercise = useOpenExercise(s => s.exercise)
   const edit = useOpenExercise(s => s.edit)
   const setNotesVisible = useCoursesStore(s => s.setNotesVisible)
   return (
-    <section aria-label="Notes" style={{ display: 'flex', flexDirection: 'column', flex: '0 0 38%', minHeight: 120, borderTop: '1px solid var(--border)' }}>
-      <header style={{ display: 'flex', alignItems: 'center', padding: '6px 12px' }}>
-        <strong style={{ fontSize: 13, flex: 1 }}>Notes</strong>
-        <Button variant="ghost" size="icon-sm" aria-label="Masquer les notes" onClick={() => setNotesVisible(false)}><EyeOff /></Button>
+    <FieldContextMenu
+      kind="text"
+      extra={<ContextMenuItem onSelect={() => setNotesVisible(false)}><EyeOff size={14} />Masquer le panneau du bas</ContextMenuItem>}
+    >
+      <textarea
+        aria-label="Mes notes"
+        placeholder={exercise === null ? "Ouvre un exercice pour prendre des notes à côté." : 'Écris ce que tu veux retenir…'}
+        disabled={exercise === null}
+        value={exercise?.notes ?? ''}
+        onChange={e => edit({ notes: e.target.value })}
+        className="m-2 mt-0 flex-1 resize-none rounded border bg-background px-2 py-1 text-sm"
+      />
+    </FieldContextMenu>
+  )
+}
+
+/** La partie basse : deux onglets, Notes et Calculatrice, qui se partagent la zone. */
+function BottomSection() {
+  const tab = useCoursesStore(s => s.bottomTab)
+  const { setBottomTab, setNotesVisible } = useCoursesStore.getState()
+  const move = (e: React.KeyboardEvent, from: number) => {
+    const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0
+    if (step === 0) return
+    e.preventDefault()
+    const next = TABS[(from + step + TABS.length) % TABS.length]
+    setBottomTab(next.id)
+    document.getElementById(`bas-onglet-${next.id}`)?.focus()
+  }
+  return (
+    <section aria-label="Notes et calculatrice" style={{ display: 'flex', flexDirection: 'column', flex: '0 0 42%', minHeight: 250, borderTop: '1px solid var(--border)' }}>
+      <header style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '4px 8px' }}>
+        <div role="tablist" aria-label="Notes et calculatrice" style={{ display: 'flex', gap: 2, flex: 1 }}>
+          {TABS.map(({ id, label, icon: Icon }, i) => (
+            <button
+              key={id}
+              id={`bas-onglet-${id}`}
+              type="button"
+              role="tab"
+              aria-selected={tab === id}
+              aria-controls="bas-panneau"
+              tabIndex={tab === id ? 0 : -1}
+              onClick={() => setBottomTab(id)}
+              onKeyDown={e => move(e, i)}
+              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[13px] font-semibold text-muted-foreground hover:bg-muted aria-selected:bg-secondary aria-selected:text-secondary-foreground"
+            >
+              <Icon size={13} aria-hidden />{label}
+            </button>
+          ))}
+        </div>
+        <Button variant="ghost" size="icon-sm" aria-label="Masquer le panneau du bas" onClick={() => setNotesVisible(false)}><EyeOff /></Button>
       </header>
-      <FieldContextMenu
-        kind="text"
-        extra={<ContextMenuItem onSelect={() => setNotesVisible(false)}><EyeOff size={14} />Masquer les notes</ContextMenuItem>}
-      >
-        <textarea
-          aria-label="Mes notes"
-          placeholder={exercise === null ? "Ouvre un exercice pour prendre des notes à côté." : 'Écris ce que tu veux retenir…'}
-          disabled={exercise === null}
-          value={exercise?.notes ?? ''}
-          onChange={e => edit({ notes: e.target.value })}
-          className="m-2 mt-0 flex-1 resize-none rounded border bg-background px-2 py-1 text-sm"
-        />
-      </FieldContextMenu>
+      <div id="bas-panneau" role="tabpanel" aria-labelledby={`bas-onglet-${tab}`} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+        {tab === 'notes' ? <NotesField /> : <Calculator />}
+      </div>
     </section>
   )
 }
@@ -132,22 +178,24 @@ function NotesSection() {
 export function CoursePanel({ courses = COURSES }: { courses?: readonly Course[] }) {
   const notesVisible = useCoursesStore(s => s.notesVisible)
   useCommand('cours.search', () => useCoursesStore.getState().setSearchOpen(true))
-  useCommand('notes.toggle', () => useCoursesStore.getState().setNotesVisible(!useCoursesStore.getState().notesVisible))
-  const { setSearchOpen, setNotesVisible } = useCoursesStore.getState()
+  useCommand('notes.toggle', () => useCoursesStore.getState().toggleBottom('notes'))
+  useCommand('calculatrice.toggle', () => useCoursesStore.getState().toggleBottom('calculatrice'))
+  const { setSearchOpen, setNotesVisible, toggleBottom } = useCoursesStore.getState()
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
         <div data-testid="cours-vide" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0 }}>
           <CoursesSection courses={courses} />
-          {notesVisible && <NotesSection />}
+          {notesVisible && <BottomSection />}
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent>
         <ContextMenuItem onSelect={() => setSearchOpen(true)}><Search size={14} />Chercher un cours</ContextMenuItem>
         <ContextMenuItem onSelect={() => setNotesVisible(!notesVisible)}>
           {notesVisible ? <EyeOff size={14} /> : <Eye size={14} />}
-          {notesVisible ? 'Masquer les notes' : 'Afficher les notes'}
+          {notesVisible ? 'Masquer le panneau du bas' : 'Afficher le panneau du bas'}
         </ContextMenuItem>
+        <ContextMenuItem onSelect={() => toggleBottom('calculatrice')}><CalculatorIcon size={14} />Calculatrice</ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem onSelect={() => void runCommand('view.toggleCourses')}><PanelRightClose size={14} />Ranger le panneau</ContextMenuItem>
       </ContextMenuContent>

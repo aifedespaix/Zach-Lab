@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
-import { BookOpen, ClipboardCheck, Download, ChevronsDownUp, Redo2, Undo2, ListChecks, ListFilter, FolderPlus, Highlighter, Keyboard, Minus, Moon, Plus, Rows3, NotebookPen, Search, Settings as SettingsIcon, Shapes } from 'lucide-react'
+import { BookOpen, ClipboardCheck, Download, ChevronsDownUp, Redo2, Undo2, ListChecks, ListFilter, FolderPlus, Highlighter, Keyboard, Minus, Moon, Plus, Rows3, NotebookPen, Calculator, Search, Settings as SettingsIcon, Shapes } from 'lucide-react'
 import {
   CommandButton,
   CommandDropdownItem,
@@ -120,6 +120,7 @@ export default function App() {
     { id: 'next', node: button('correction.next', ListChecks), menu: <CommandDropdownItem command="correction.next" icon={ListChecks} />, priority: 4 },
     { id: 'review', node: button('review.open', ClipboardCheck), menu: <CommandDropdownItem command="review.open" icon={ClipboardCheck} />, priority: 3 },
     { id: 'notes', node: button('notes.toggle', NotebookPen), menu: <CommandDropdownItem command="notes.toggle" icon={NotebookPen} />, priority: 3 },
+    { id: 'calculatrice', node: button('calculatrice.toggle', Calculator), menu: <CommandDropdownItem command="calculatrice.toggle" icon={Calculator} />, priority: 3 },
     { id: 'colors', node: button('view.toggleUnitColors', Highlighter, unitColors), menu: <CommandDropdownItem command="view.toggleUnitColors" icon={Highlighter} />, priority: 2 },
     { id: 'compact', node: button('view.toggleCompact', Rows3, compact), menu: <CommandDropdownItem command="view.toggleCompact" icon={Rows3} />, priority: 2 },
     {

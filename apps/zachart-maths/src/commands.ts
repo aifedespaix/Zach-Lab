@@ -90,9 +90,17 @@ export const COMMANDS = [
   {
     id: 'notes.toggle',
     label: 'Afficher ou masquer les notes',
-    description: 'Les cours prennent toute la hauteur quand les notes sont masquées.',
+    description: 'Ouvre la moitié basse du panneau de droite sur les notes ; les cours prennent toute la hauteur quand elle est refermée.',
     category: 'cours',
     defaultBinding: 'Mod+Shift+N',
+    allowInEditable: true,
+  },
+  {
+    id: 'calculatrice.toggle',
+    label: 'Afficher ou masquer la calculatrice',
+    description: 'Ouvre la moitié basse du panneau de droite sur la calculatrice, à côté des notes.',
+    category: 'cours',
+    defaultBinding: 'Mod+Shift+M',
     allowInEditable: true,
   },
   {
@@ -249,7 +257,7 @@ defineCommandCatalog({
     { id: 'app', label: 'Application' },
     { id: 'edit', label: 'Édition' },
     { id: 'view', label: 'Affichage' },
-    { id: 'cours', label: 'Cours et notes' },
+    { id: 'cours', label: 'Cours, notes et calculatrice' },
     { id: 'tree', label: 'Exercices' },
   ],
   commands: COMMANDS,
