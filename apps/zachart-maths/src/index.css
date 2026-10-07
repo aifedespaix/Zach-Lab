@@ -237,3 +237,16 @@
 .toggle-group[data-orientation='vertical'] {
   flex-direction: column;
 }
+
+/*
+ * Infobulles, menus et autres popovers Radix sous le `zoom` de <html> (`App.tsx`). Radix lit la position du bouton
+ * visé en pixels d'écran puis la pose en `transform: translate(…)` ; or `zoom` remultiplie ce `translate`, donc
+ * dézoomé le popover glisse vers le haut et la gauche, zoomé vers le bas et la droite. L'enveloppe annule le zoom
+ * pour que le `translate` soit lu tel quel, et son contenu le rétablit : le popover garde la taille de l'interface.
+ */
+[data-radix-popper-content-wrapper] {
+  zoom: calc(1 / var(--app-zoom, 1));
+}
+[data-radix-popper-content-wrapper] > * {
+  zoom: var(--app-zoom, 1);
+}

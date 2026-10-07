@@ -12,7 +12,7 @@ import {
 import { SettingsDialog, ShortcutSettingsPanel } from '@suite/shared/settings'
 import { AppShell, BootScreen, CollapsiblePanel, OverflowToolbar, createPanelWidthStorage, type OverflowItem } from '@suite/shared/shell'
 import { startCircularThemeTransition, useResolvedTheme, useThemeDomSync, useThemeStore } from '@suite/shared/theme'
-import { TooltipProvider } from '@suite/shared/ui'
+import { Hint, TooltipProvider } from '@suite/shared/ui'
 import { UpdateReadyBanner, UpdateSettingsSection, useAppUpdater } from '@suite/shared/update'
 import { AnimatedLogo } from './AnimatedLogo'
 import './commands'
@@ -89,6 +89,8 @@ export default function App() {
   useEffect(() => {
     const root = document.documentElement
     root.style.zoom = zoom === 100 ? '' : `${zoom}%`
+    // Lu par `index.css` : Radix place ses popovers avec des coordonnées d'écran, que `zoom` multiplierait une seconde fois.
+    root.style.setProperty('--app-zoom', String(zoom / 100))
     // `vh` n'est pas mis à l'échelle par `zoom` : sans cette division, dézoomé on laisse une bande vide
     // en bas, zoomé on dépasse la fenêtre et la page défile.
     root.style.setProperty('--app-height', `calc(100vh / ${zoom / 100})`)
@@ -139,13 +141,14 @@ export default function App() {
       node: (
         <div role="group" aria-label="Zoom" style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <CommandButton command="view.zoomOut" icon={Minus} variant="ghost" size="icon-sm" />
-          <button
-            type="button"
-            aria-label="Zoom à 100 %"
-            title="Remettre le zoom à 100 %"
-            onClick={() => useZoom.getState().reset()}
-            style={{ minWidth: 44, fontSize: 12, fontVariantNumeric: 'tabular-nums' }}
-          >{zoom} %</button>
+          <Hint label="Remettre le zoom à 100 %">
+            <button
+              type="button"
+              aria-label="Zoom à 100 %"
+              onClick={() => useZoom.getState().reset()}
+              style={{ minWidth: 44, fontSize: 12, fontVariantNumeric: 'tabular-nums' }}
+            >{zoom} %</button>
+          </Hint>
           <CommandButton command="view.zoomIn" icon={Plus} variant="ghost" size="icon-sm" />
         </div>
       ),
