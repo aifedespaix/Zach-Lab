@@ -1,7 +1,7 @@
 import { spacing, useCompact } from './useCompact'
 import type { ReactNode } from 'react'
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, HelpCircle, Trash2 } from 'lucide-react'
-import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@suite/shared/ui'
+import { Button, Hint, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@suite/shared/ui'
 import { isKnown, type Block } from './blocks'
 import { BLOCK_META } from './blockMeta'
 import { borderOf, toneOf } from './toolbarCatalog'
@@ -46,9 +46,11 @@ export function BlockCard({ block, index, count, onMove, onRemove, onSend, sendT
         style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: 4, background: toneOf(hue), borderRight: `2px solid ${borderOf(hue)}` }}
       >
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon-sm" aria-label={`Actions du bloc ${label}`} title={`${label} — actions`}><Icon /></Button>
-          </DropdownMenuTrigger>
+          <Hint label={`${label} — actions`}>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon-sm" aria-label={`Actions du bloc ${label}`}><Icon /></Button>
+            </DropdownMenuTrigger>
+          </Hint>
           <DropdownMenuContent align="start">
             <DropdownMenuItem disabled={index === 0} onSelect={() => onMove(-1)}><ArrowUp size={14} />Monter</DropdownMenuItem>
             <DropdownMenuItem disabled={index === count - 1} onSelect={() => onMove(1)}><ArrowDown size={14} />Descendre</DropdownMenuItem>

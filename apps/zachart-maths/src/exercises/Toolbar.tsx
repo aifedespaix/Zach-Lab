@@ -1,4 +1,4 @@
-import { Button } from '@suite/shared/ui'
+import { Button, Hint } from '@suite/shared/ui'
 import { SYMBOL_FAMILIES, borderOf, toneOf, type SymbolEntry } from './toolbarCatalog'
 import { useToolbarFamilies } from './useToolbarFamilies'
 
@@ -27,19 +27,22 @@ export function Toolbar({ target, onSymbol }: ToolbarProps) {
       {SYMBOL_FAMILIES.filter(family => !hidden.includes(family.name)).map(family => (
         <div key={family.name} role="group" aria-label={family.name} style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', justifyItems: 'center', gap: 2, padding: 3, borderRadius: 6, background: toneOf(family.hue) }}>
           {family.symbols.map(symbol => (
-            <Button
-              key={symbol.glyph}
-              variant="outline"
-              size="icon-sm"
-              aria-label={symbol.label}
-              title={symbol.label}
-              disabled={target === 'none' || (target === 'text' && symbol.mathOnly === true)}
-              onMouseDown={keepFocus}
-              onClick={() => onSymbol(symbol)}
-              style={{ borderColor: borderOf(family.hue), width: 26, height: 26, fontSize: 13 }}
-            >
-              {symbol.glyph}
-            </Button>
+            <Hint key={symbol.glyph} label={symbol.label}>
+              {/* Un bouton désactivé ne reçoit aucun événement de pointeur : l'enveloppe porte l'infobulle. */}
+              <span style={{ display: 'inline-flex' }}>
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  aria-label={symbol.label}
+                  disabled={target === 'none' || (target === 'text' && symbol.mathOnly === true)}
+                  onMouseDown={keepFocus}
+                  onClick={() => onSymbol(symbol)}
+                  style={{ borderColor: borderOf(family.hue), width: 26, height: 26, fontSize: 13 }}
+                >
+                  {symbol.glyph}
+                </Button>
+              </span>
+            </Hint>
           ))}
         </div>
       ))}

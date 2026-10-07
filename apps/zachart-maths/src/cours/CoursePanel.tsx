@@ -2,6 +2,7 @@ import { useDeferredValue, useMemo, type ReactNode } from 'react'
 import { Calculator as CalculatorIcon, Copy, ExternalLink, Eye, EyeOff, NotebookPen, PanelRightClose, Search } from 'lucide-react'
 import {
   Button, ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger,
+  Hint,
 } from '@suite/shared/ui'
 import { runCommand, useCommand } from '@suite/shared/commands'
 import { Calculator } from '../calc/Calculator'
@@ -160,7 +161,9 @@ function BottomSection({ alone }: { alone: boolean }) {
             </button>
           ))}
         </div>
-        <Button variant="ghost" size="icon-sm" aria-label="Masquer le panneau du bas" onClick={() => setNotesVisible(false)}><EyeOff /></Button>
+        <Hint label="Masquer le panneau du bas">
+          <Button variant="ghost" size="icon-sm" aria-label="Masquer le panneau du bas" onClick={() => setNotesVisible(false)}><EyeOff /></Button>
+        </Hint>
       </header>
       <div
         id="bas-panneau" role="tabpanel" aria-labelledby={`bas-onglet-${tab}`}

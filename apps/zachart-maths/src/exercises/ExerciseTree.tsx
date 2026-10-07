@@ -10,6 +10,7 @@ import { beginTreeDrag, consumeSwallowedClick, TreeDragGhost, useTreeDragStore }
 import {
   ConfirmDialog, ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuSub,
   ContextMenuSubContent, ContextMenuSubTrigger, ContextMenuTrigger,
+  Hint,
 } from '@suite/shared/ui'
 import { useAdvancedSearch } from './AdvancedSearchDialog'
 import { splitPath } from './names'
@@ -156,15 +157,16 @@ export function ExerciseTree() {
       <div style={{ padding: '0 12px 8px' }}>
         <PanelSearch value={search} onChange={setSearch} ariaLabel="Rechercher un exercice" placeholder="Rechercher un exercice…"
           trailing={
-            <button
-              type="button"
-              aria-label="Recherche avancée"
-              title="Recherche avancée dans tous les exercices et fiches"
-              onClick={() => runCommand('search.advanced')}
-              className="inline-flex size-7 shrink-0 items-center justify-center rounded-md border hover:bg-accent"
-            >
-              <TextSearch size={14} />
-            </button>
+            <Hint label="Recherche avancée dans tous les exercices et fiches">
+              <button
+                type="button"
+                aria-label="Recherche avancée"
+                onClick={() => runCommand('search.advanced')}
+                className="inline-flex size-7 shrink-0 items-center justify-center rounded-md border hover:bg-accent"
+              >
+                <TextSearch size={14} />
+              </button>
+            </Hint>
           }
         />
       </div>
@@ -267,6 +269,7 @@ export function ExerciseTree() {
                         </div>
                       ) : (
                         <ContextMenu>
+                          <Hint label={exo.corrompu ? 'Fichier illisible : il peut être supprimé ou déplacé, pas ouvert.' : undefined}>
                           <ContextMenuTrigger asChild onContextMenu={e => e.stopPropagation()}>
                             <button
                               type="button"
@@ -279,7 +282,6 @@ export function ExerciseTree() {
                                 if (consumeSwallowedClick()) return
                                 if (!exo.corrompu) store.select(exo.path)
                               }}
-                              title={exo.corrompu ? 'Fichier illisible : il peut être supprimé ou déplacé, pas ouvert.' : undefined}
                               style={{
                                 display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '4px 8px 4px 24px',
                                 fontSize: 13, textAlign: 'left',
@@ -296,6 +298,7 @@ export function ExerciseTree() {
                               <ToReviewBadge count={exo.aRevoir} />
                             </button>
                           </ContextMenuTrigger>
+                          </Hint>
                           <ContextMenuContent onCloseAutoFocus={keepNameFocus}>
                             <ContextMenuItem disabled={exo.corrompu} onSelect={() => setNaming({ kind: 'rename-exercise', path: exo.path })}>Renommer</ContextMenuItem>
                             <ContextMenuItem disabled={realEi === 0} onSelect={() => void store.shiftExercise(exo.path, -1)}>Monter</ContextMenuItem>

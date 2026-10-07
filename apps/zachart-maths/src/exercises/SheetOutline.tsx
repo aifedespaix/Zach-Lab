@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ArrowDown, ArrowUp, ArrowUpDown, Check, ChevronDown, Eye, EyeOff, ChevronRight, CornerDownRight, CornerUpRight, Trash2 } from 'lucide-react'
 import {
-  ConfirmDialog, ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger,
+  ConfirmDialog, Hint, ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger,
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@suite/shared/ui'
 import { useCorrectionView } from './useCorrectionView'
@@ -47,17 +47,18 @@ export function SheetOutline() {
           Exercices de la fiche
         </button>
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              aria-label="Trier les exercices"
-              title="Trier les exercices"
-              data-active={sort !== 'ordre' ? 'true' : undefined}
-              style={{ padding: '6px 8px', color: sort !== 'ordre' ? 'var(--primary)' : undefined }}
-            >
-              <ArrowUpDown size={14} />
-            </button>
-          </DropdownMenuTrigger>
+          <Hint label="Trier les exercices">
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label="Trier les exercices"
+                data-active={sort !== 'ordre' ? 'true' : undefined}
+                style={{ padding: '6px 8px', color: sort !== 'ordre' ? 'var(--primary)' : undefined }}
+              >
+                <ArrowUpDown size={14} />
+              </button>
+            </DropdownMenuTrigger>
+          </Hint>
           <DropdownMenuContent align="end">
             {SORT_GROUPS.map((group, g) => (
               <div key={group.title}>
@@ -73,16 +74,17 @@ export function SheetOutline() {
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-        <button
-          type="button"
-          aria-pressed={hideCorrected}
-          aria-label="Masquer les exercices corrigés"
-          title={hideCorrected ? 'Afficher les exercices corrigés' : 'Masquer les exercices corrigés'}
-          onClick={() => useCorrectionView.getState().toggleHideCorrected()}
-          style={{ padding: '6px 8px' }}
-        >
-          {hideCorrected ? <EyeOff size={14} /> : <Eye size={14} />}
-        </button>
+        <Hint label={hideCorrected ? 'Afficher les exercices corrigés' : 'Masquer les exercices corrigés'}>
+          <button
+            type="button"
+            aria-pressed={hideCorrected}
+            aria-label="Masquer les exercices corrigés"
+            onClick={() => useCorrectionView.getState().toggleHideCorrected()}
+            style={{ padding: '6px 8px' }}
+          >
+            {hideCorrected ? <EyeOff size={14} /> : <Eye size={14} />}
+          </button>
+        </Hint>
       </div>
       {open && (
         <ul style={{ margin: 0, padding: '0 0 8px', listStyle: 'none', overflowY: 'auto' }}>

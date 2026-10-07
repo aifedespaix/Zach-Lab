@@ -109,16 +109,18 @@ export function Calculator() {
   return (
     <div data-testid="calculatrice" style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '0 8px 8px', flex: 1, minHeight: 0, overflowY: 'auto' }}>
       <div className="rounded border bg-background px-2 py-1" style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}>
-        <button
-          type="button"
-          tabIndex={-1}
-          disabled={last === undefined}
-          aria-label={last === undefined ? 'Aucun calcul précédent' : `Reprendre ${last.expression}`}
-          onClick={() => last !== undefined && edit(last.expression, 0, expression.length)}
-          style={{ minHeight: 16, textAlign: 'right', fontSize: 11, color: 'var(--muted-foreground)', fontVariantNumeric: 'tabular-nums', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-        >
-          {last === undefined ? '' : `${last.expression} = ${last.text}`}
-        </button>
+        <Hint label={last === undefined ? 'Aucun calcul précédent' : 'Reprendre ce calcul dans le champ'}>
+          <button
+            type="button"
+            tabIndex={-1}
+            disabled={last === undefined}
+            aria-label={last === undefined ? 'Aucun calcul précédent' : `Reprendre ${last.expression}`}
+            onClick={() => last !== undefined && edit(last.expression, 0, expression.length)}
+            style={{ minHeight: 16, textAlign: 'right', fontSize: 11, color: 'var(--muted-foreground)', fontVariantNumeric: 'tabular-nums', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+          >
+            {last === undefined ? '' : `${last.expression} = ${last.text}`}
+          </button>
+        </Hint>
         <input
           ref={input}
           aria-label="Calcul"
@@ -166,17 +168,18 @@ export function Calculator() {
       </div>
       <div role="group" aria-label="Clavier de la calculatrice" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gridAutoRows: 'minmax(28px, 1fr)', gap: 4, flex: 1, minHeight: 140 }}>
         {KEYS.map(key => (
-          <button
-            key={key.label}
-            type="button"
-            tabIndex={-1}
-            aria-label={key.name ?? key.label}
-            onMouseDown={e => e.preventDefault() /* le champ garde le focus et son curseur */}
-            onClick={() => press(key)}
-            className={`rounded-md border text-sm font-medium transition-colors active:translate-y-px ${TONE[key.kind ?? 'digit']}`}
-          >
-            {key === BACK ? <Delete size={15} style={{ margin: 'auto' }} /> : key.label}
-          </button>
+          <Hint key={key.label} label={key.name}>
+            <button
+              type="button"
+              tabIndex={-1}
+              aria-label={key.name ?? key.label}
+              onMouseDown={e => e.preventDefault() /* le champ garde le focus et son curseur */}
+              onClick={() => press(key)}
+              className={`rounded-md border text-sm font-medium transition-colors active:translate-y-px ${TONE[key.kind ?? 'digit']}`}
+            >
+              {key === BACK ? <Delete size={15} style={{ margin: 'auto' }} /> : key.label}
+            </button>
+          </Hint>
         ))}
       </div>
     </div>
