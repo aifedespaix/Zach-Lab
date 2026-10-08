@@ -133,6 +133,13 @@ export const COMMANDS = [
     defaultBinding: null,
   },
   {
+    id: 'sheet.new',
+    label: 'Nouvelle fiche',
+    description: 'Ouvre la fenêtre de création d’une fiche : son nom et son chapitre.',
+    category: 'tree',
+    defaultBinding: null,
+  },
+  {
     id: 'sheet.close',
     label: 'Fermer la fiche',
     description: 'Ferme la fiche ouverte et revient au menu principal (la liste des fiches récentes).',
