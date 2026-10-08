@@ -43,8 +43,15 @@ const TONE: Record<NonNullable<Key['kind']>, string> = {
 export function Calculator() {
   const expression = useCalculatorStore(s => s.expression)
   const history = useCalculatorStore(s => s.history)
-  const { setExpression, push } = useCalculatorStore.getState()
+  const focusPending = useCalculatorStore(s => s.focusPending)
+  const { setExpression, push, clearFocusRequest } = useCalculatorStore.getState()
   const input = useRef<HTMLInputElement>(null)
+  // Activée depuis un bouton : le champ prend le focus, prêt à recevoir le calcul.
+  useEffect(() => {
+    if (!focusPending) return
+    input.current?.focus()
+    clearFocusRequest()
+  }, [focusPending, clearFocusRequest])
   /** Un Entrée sur un calcul qui ne passe pas : seulement alors on dit pourquoi (pas à chaque frappe). */
   const [failed, setFailed] = useState(false)
   /** « Copié » ne reste affiché qu'un instant : le bouton redevient « Copier » de lui-même. */

@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { setPanelCollapsed } from '@suite/shared/shell'
+import { useCalculatorStore } from '../calc/useCalculatorStore'
 
 /** La clé de repli du panneau de droite (`App.tsx`) : activer une pastille le déplie. */
 export const RIGHT_COLLAPSED_KEY = 'zachart-maths:right-collapsed'
@@ -99,6 +100,7 @@ export const useCoursesStore = create<CoursesStore>((set, get) => ({
     setBottomTab(tab)
     setNotesVisible(true)
     setPanelCollapsed(RIGHT_COLLAPSED_KEY, false)
+    if (tab === 'calculatrice') useCalculatorStore.getState().requestFocus()
   },
   toggleCourses() {
     const { coursesVisible, setCoursesVisible } = get()

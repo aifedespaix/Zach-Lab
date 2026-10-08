@@ -157,4 +157,20 @@ describe('CoursePanel', () => {
     await user.keyboard('{ArrowRight}')
     expect(screen.getByRole('tab', { name: 'Calculatrice' })).toHaveAttribute('aria-selected', 'true')
   })
+
+  it('activer la calculatrice met le focus sur son champ', async () => {
+    const { user } = await setup()
+    await user.click(screen.getByRole('button', { name: 'Afficher ou masquer la calculatrice' }))
+    await waitFor(() => expect(screen.getByLabelText('Calcul')).toHaveFocus())
+  })
+
+  it('un cours ouvert avec les notes : les suggestions se cachent ; sans les notes, elles restent', async () => {
+    const { user } = await setup({ 'Fractions/a.json': exo('Calculs') })
+    await open('Fractions/a.json')
+    const group = await screen.findByRole('group', { name: 'Cours suggérés' })
+    await user.click(within(group).getByRole('button', { name: /Additionner/ }))
+    expect(screen.queryByRole('group', { name: 'Cours suggérés' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Masquer le panneau du bas' }))
+    expect(screen.getByRole('group', { name: 'Cours suggérés' })).toBeInTheDocument()
+  })
 })

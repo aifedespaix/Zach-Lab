@@ -36,6 +36,7 @@ function CourseMenu({ course, onOpen, children }: { course: Course; onOpen: () =
 /** La partie haute de la sidebar droite : les cours, ceux qu'on suggère, et leur lecture. */
 function CoursesSection({ courses }: { courses: readonly Course[] }) {
   const selectedId = useCoursesStore(s => s.selectedId)
+  const notesVisible = useCoursesStore(s => s.notesVisible)
   const { select, setSearchOpen } = useCoursesStore.getState()
   const path = useOpenExercise(s => s.path)
   const sheet = useOpenExercise(s => s.sheet)
@@ -48,6 +49,8 @@ function CoursesSection({ courses }: { courses: readonly Course[] }) {
   )
   const suggestions = useMemo(() => (context === null ? [] : suggestCourses(index, courses, context)), [index, courses, context])
   const selected = courses.find(c => c.id === selectedId) ?? null
+  // Un cours ouvert avec les notes ou la calculatrice en dessous : la place manque, les suggestions se cachent.
+  const showSuggestions = suggestions.length > 0 && !(selected !== null && notesVisible)
 
   return (
     <section aria-label="Cours" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
@@ -58,7 +61,7 @@ function CoursesSection({ courses }: { courses: readonly Course[] }) {
         <Button variant="outline" size="xs" style={{ width: '100%' }} onClick={() => setSearchOpen(true)}><Search />Chercher un cours</Button>
       </header>
 
-      {suggestions.length > 0 && (
+      {showSuggestions && (
         <div role="group" aria-label="Cours suggérés" style={{ padding: '6px 12px', borderBottom: '1px solid var(--border)' }}>
           <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 600, color: 'var(--muted-foreground)' }}>Suggérés pour cet exercice</p>
           <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
