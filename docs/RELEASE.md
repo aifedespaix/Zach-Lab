@@ -117,7 +117,7 @@ découlent :
    `updater-<préfixe>` (par exemple `updater-zachart`), créée et réécrite par le
    workflow à chaque publication. Son `latest.json` a une adresse stable qui ne
    dépend d'aucune autre app :
-   `https://github.com/aifedespaix/Zachar-t-Mentale/releases/download/updater-zachart/latest.json`.
+   `https://github.com/aifedespaix/Zach-Lab/releases/download/updater-zachart/latest.json`.
    Ne pas la supprimer.
 
 ### Migration de l’endpoint de Zachar’t Mentale

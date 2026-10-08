@@ -18,11 +18,11 @@ Les deux logiciels sont disponibles pour **Windows**. Les liens pointent toujour
 
 | Logiciel | Pour quoi faire | Télécharger |
 |---|---|---|
-| **Zachar't Mentale** | Construire et réviser ses cartes mentales | [Zachart-Mentale-setup.exe](https://github.com/aifedespaix/Zachar-t-Mentale/releases/download/updater-zachart/Zachart-Mentale-setup.exe) |
-| **Zach'Math** | Travailler les fiches et exercices de mathématiques | [Zachart-Maths-setup.exe](https://github.com/aifedespaix/Zachar-t-Mentale/releases/download/updater-zachart-maths/Zachart-Maths-setup.exe) |
+| **Zachar't Mentale** | Construire et réviser ses cartes mentales | [Zachart-Mentale-setup.exe](https://github.com/aifedespaix/Zach-Lab/releases/download/updater-zachart/Zachart-Mentale-setup.exe) |
+| **Zach'Math** | Travailler les fiches et exercices de mathématiques | [Zachart-Maths-setup.exe](https://github.com/aifedespaix/Zach-Lab/releases/download/updater-zachart-maths/Zachart-Maths-setup.exe) |
 
 Installe, ouvre, c'est prêt. Ensuite, les mises à jour se font toutes seules depuis l'application.
-Toutes les versions publiées sont sur la page [Releases](https://github.com/aifedespaix/Zachar-t-Mentale/releases).
+Toutes les versions publiées sont sur la page [Releases](https://github.com/aifedespaix/Zach-Lab/releases).
 
 ---
 

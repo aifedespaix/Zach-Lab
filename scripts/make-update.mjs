@@ -23,7 +23,7 @@ import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { TAG_PREFIX, bumpVersion } from './bump-version.mjs'
 
-export const REPO = 'aifedespaix/Zachar-t-Mentale'
+export const REPO = 'aifedespaix/Zach-Lab'
 
 /**
  * What this script knows of each app. The signing key is taken from the environment by

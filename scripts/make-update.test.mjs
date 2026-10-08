@@ -146,7 +146,7 @@ describe('generateUpdates', () => {
       platforms: {
         'windows-x86_64': {
           signature: 'SIG-Zachar’t Mentale',
-          url: 'https://github.com/aifedespaix/Zachar-t-Mentale/releases/download/zachart-v1.20.5/zachart-mentale_1.20.5_x64-setup.exe',
+          url: 'https://github.com/aifedespaix/Zach-Lab/releases/download/zachart-v1.20.5/zachart-mentale_1.20.5_x64-setup.exe',
         },
       },
     })

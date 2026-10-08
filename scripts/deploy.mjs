@@ -12,7 +12,7 @@ import { createInterface } from 'node:readline/promises'
 import { fileURLToPath } from 'node:url'
 import { TAG_PREFIX, bumpVersion, listApps, nextVersion } from './bump-version.mjs'
 
-const REPO_URL = 'https://github.com/aifedespaix/Zachar-t-Mentale'
+const REPO_URL = 'https://github.com/aifedespaix/Zach-Lab'
 const BRANCH = 'main'
 
 const tagOf = (app, version) => `${TAG_PREFIX[app] ?? app}-v${version}`

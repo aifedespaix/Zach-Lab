@@ -101,8 +101,8 @@ describe('updater', () => {
     // install remains — docs/RELEASE.md, « Migration de l’endpoint ». Change both
     // this test and that document together.
     expect(updater.endpoints).toEqual([
-      'https://github.com/aifedespaix/Zachar-t-Mentale/releases/download/updater-zachart/latest.json',
-      'https://github.com/aifedespaix/Zachar-t-Mentale/releases/latest/download/latest.json',
+      'https://github.com/aifedespaix/Zach-Lab/releases/download/updater-zachart/latest.json',
+      'https://github.com/aifedespaix/Zach-Lab/releases/latest/download/latest.json',
     ])
   })
 })
