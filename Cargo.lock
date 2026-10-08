@@ -5431,7 +5431,7 @@ dependencies = [
 
 [[package]]
 name = "zachart-mentale"
-version = "3.1.0"
+version = "3.3.0"
 dependencies = [
  "serde",
  "serde_json",
