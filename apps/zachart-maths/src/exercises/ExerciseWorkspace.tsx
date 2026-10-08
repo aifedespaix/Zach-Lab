@@ -1,9 +1,10 @@
 import { spacing, useCompact } from './useCompact'
 import { useEffect, useRef, useState } from 'react'
 import { CommandButton, useCommand } from '@suite/shared/commands'
-import { Check, ChevronLeft, ListChecks, RotateCcw, ChevronRight, Columns2, Plus, Trash2, X } from 'lucide-react'
-import { ConfirmDialog } from '@suite/shared/ui'
+import { Check, ChevronLeft, ListChecks, RotateCcw, ChevronRight, Columns2, Plus, Trash2 } from 'lucide-react'
+import { Button, ConfirmDialog } from '@suite/shared/ui'
 import { RecentFilesList } from '@suite/shared/shell'
+import { useNewSheetDialog } from './NewSheetDialog'
 import { ChapterField } from './ChapterField'
 import { ToCorrectBadge, ToReviewBadge } from './ToCorrectBadge'
 import { CorrectionStatsBar } from './CorrectionStatsBar'
@@ -209,6 +210,7 @@ export function ExerciseWorkspace() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
         <AnimatedLogo mode="draw-pulse" size={140} />
         <CorrectionStatsBar tree={tree} />
+        <Button onClick={() => useNewSheetDialog.getState().openFor()}><Plus /> Nouvelle fiche</Button>
         {items.length === 0
           ? <p style={{ color: 'var(--muted-foreground)', fontSize: 14 }}>Choisis un exercice dans la liste de gauche.</p>
           : (
@@ -264,7 +266,6 @@ export function ExerciseWorkspace() {
         } as React.CSSProperties}
       >
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          <CommandButton command="sheet.close" icon={X} label="Fermer la fiche" variant="ghost" size="icon-sm" />
           <ChapterField key={splitPath(selected)[0]} chapter={splitPath(selected)[0]} className={`${field} hue-field`} />
           <input
             aria-label="Titre de l'exercice"

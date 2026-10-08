@@ -2,14 +2,16 @@ import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { runCommand } from '@suite/shared/commands'
+import { TooltipProvider } from '@suite/shared/ui'
 import '../commands'
 import { ExerciseTree } from './ExerciseTree'
+import { NewSheetDialog } from './NewSheetDialog'
 import { createMemoryFs } from './memoryFs'
 import { useExerciseStore } from './useExerciseStore'
 
 async function setup(files: Record<string, string> = {}) {
   const fs = createMemoryFs(files)
-  render(<ExerciseTree />)
+  render(<TooltipProvider><ExerciseTree /><NewSheetDialog /></TooltipProvider>)
   await act(async () => useExerciseStore.getState().init(fs))
   return { fs, user: userEvent.setup() }
 }
@@ -26,15 +28,41 @@ describe('ExerciseTree', () => {
     const { user } = await setup()
     await act(async () => void runCommand('tree.newChapter'))
     await user.type(screen.getByLabelText('Nom du nouveau chapitre'), 'Fractions{Enter}')
-    expect(await screen.findByRole('button', { name: /Fractions/ })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /^Fractions$/ })).toBeInTheDocument()
 
-    await user.pointer({ keys: '[MouseRight]', target: screen.getByRole('button', { name: /Fractions/ }) })
-    await user.click(await screen.findByRole('menuitem', { name: /Nouvel exercice/ }))
-    await user.type(screen.getByLabelText('Titre du nouvel exercice'), 'Exo 1{Enter}')
+    await user.pointer({ keys: '[MouseRight]', target: screen.getByRole('button', { name: /^Fractions$/ }) })
+    await user.click(await screen.findByRole('menuitem', { name: /Nouvelle fiche/ }))
+    expect(screen.getByRole('combobox', { name: 'Chapitre' })).toHaveValue('Fractions')
+    await user.type(screen.getByLabelText('Nom de la fiche'), 'Exo 1')
+    await user.click(screen.getByRole('button', { name: 'Valider' }))
 
     const exo = await screen.findByRole('button', { name: 'Exo 1' })
     expect(exo).toHaveAttribute('aria-current', 'true')
     expect(useExerciseStore.getState().selected).toBe('Fractions/Exo 1.json')
+  })
+
+  it('le bouton au survol d\'un chapitre ouvre la modale avec ce chapitre, filtrable et annulable', async () => {
+    const { user } = await setup({ 'Algèbre/p.json': JSON.stringify({ version: 1, id: 'a', titre: 'Premier' }), 'Géométrie/g.json': JSON.stringify({ version: 1, id: 'g', titre: 'Second' }) })
+    await user.click(await screen.findByRole('button', { name: 'Nouvelle fiche dans Géométrie' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByRole('combobox', { name: 'Chapitre' })).toHaveValue('Géométrie')
+    const box = within(dialog).getByRole('combobox', { name: 'Chapitre' })
+    await user.clear(box)
+    await user.type(box, 'alg')
+    expect(within(dialog).getByRole('option', { name: 'Algèbre' })).toBeInTheDocument()
+    expect(within(dialog).queryByRole('option', { name: 'Géométrie' })).toBeNull()
+    expect(within(dialog).getByRole('button', { name: 'Valider' })).toBeDisabled()
+    await user.click(within(dialog).getByRole('button', { name: 'Annuler' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  })
+
+  it('la modale crée aussi un nouveau chapitre tapé dans le champ', async () => {
+    const { user } = await setup()
+    await act(async () => void runCommand('sheet.new'))
+    await user.type(await screen.findByLabelText('Nom de la fiche'), 'Fiche 1')
+    await user.type(screen.getByRole('combobox', { name: 'Chapitre' }), 'Équations')
+    await user.click(screen.getByRole('button', { name: 'Valider' }))
+    await waitFor(() => expect(useExerciseStore.getState().selected).toBe('Équations/Fiche 1.json'))
   })
 
   it('met le focus sur le champ de nom dès la création', async () => {
@@ -125,7 +153,7 @@ describe('ExerciseTree', () => {
       await user.type(box, 'pyth')
       expect(screen.getByText('Théorème de Pythagore')).toBeInTheDocument()
       expect(screen.queryByText('Additionner')).toBeNull()
-      expect(screen.queryByRole('button', { name: /Fractions/ })).toBeNull()
+      expect(screen.queryByRole('button', { name: /^Fractions$/ })).toBeNull()
       await user.clear(box)
       expect(screen.getByText('Additionner')).toBeInTheDocument()
       expect(screen.getByText('Théorème de Pythagore')).toBeInTheDocument()
@@ -176,12 +204,13 @@ describe('ExerciseTree', () => {
       await act(async () => void runCommand('tree.newChapter'))
       expect(box).toHaveValue('')
       await user.type(screen.getByLabelText('Nom du nouveau chapitre'), 'Zèbre{Enter}')
-      expect(await screen.findByRole('button', { name: /Zèbre/ })).toBeInTheDocument()
+      expect(await screen.findByRole('button', { name: /^Zèbre$/ })).toBeInTheDocument()
 
       await user.type(box, 'pyth')
-      await user.pointer({ keys: '[MouseRight]', target: screen.getByRole('button', { name: /Géométrie/ }) })
-      await user.click(await screen.findByRole('menuitem', { name: /Nouvel exercice/ }))
-      await user.type(screen.getByLabelText('Titre du nouvel exercice'), 'Nouveau{Enter}')
+      await user.pointer({ keys: '[MouseRight]', target: screen.getByRole('button', { name: /^Géométrie$/ }) })
+      await user.click(await screen.findByRole('menuitem', { name: /Nouvelle fiche/ }))
+      await user.type(screen.getByLabelText('Nom de la fiche'), 'Nouveau')
+      await user.click(screen.getByRole('button', { name: 'Valider' }))
       expect(box).toHaveValue('')
       expect(await screen.findByRole('button', { name: 'Nouveau' })).toBeInTheDocument()
     })

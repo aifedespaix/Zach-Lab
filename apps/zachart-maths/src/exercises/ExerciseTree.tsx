@@ -12,6 +12,7 @@ import {
   ContextMenuSubContent, ContextMenuSubTrigger, ContextMenuTrigger,
   Hint,
 } from '@suite/shared/ui'
+import { useNewSheetDialog } from './NewSheetDialog'
 import { useAdvancedSearch } from './AdvancedSearchDialog'
 import { splitPath } from './names'
 import { filterChapters } from './treeSearch'
@@ -21,7 +22,6 @@ import { useExerciseStore } from './useExerciseStore'
 type Naming =
   | { kind: 'new-chapter' }
   | { kind: 'rename-chapter'; chapter: string }
-  | { kind: 'new-exercise'; chapter: string }
   | { kind: 'rename-exercise'; path: string }
 
 type Deletion = { kind: 'chapter'; chapter: string; count: number } | { kind: 'exercise'; path: string; titre: string; count: number }
@@ -104,11 +104,10 @@ export function ExerciseTree() {
     setNaming(null)
     if (current === null) return
     // Un élément créé pendant une recherche resterait invisible s'il ne correspond pas à la requête.
-    if (current.kind === 'new-chapter' || current.kind === 'new-exercise') setSearch('')
+    if (current.kind === 'new-chapter') setSearch('')
     switch (current.kind) {
       case 'new-chapter': return void store.addChapter(value)
       case 'rename-chapter': return void store.renameChapter(current.chapter, value)
-      case 'new-exercise': return void store.addExercise(current.chapter, value)
       case 'rename-exercise': return void store.renameExercise(current.path, value)
     }
   }
@@ -124,6 +123,9 @@ export function ExerciseTree() {
     setSearch('')
     setNaming({ kind: 'new-chapter' })
   })
+  // Une fiche créée pendant une recherche resterait invisible : l'ouverture de la modale vide la recherche.
+  const newSheetOpen = useNewSheetDialog(s => s.open)
+  useEffect(() => { if (newSheetOpen) setSearch('') }, [newSheetOpen])
   useCommand('tree.toggleAll', () =>
     setFolded(prev => {
       // Seuls les chapitres qui existent comptent : `folded` garde les noms d'anciens chapitres.
@@ -214,7 +216,8 @@ export function ExerciseTree() {
                   <div
                     data-tree-row={chapter.name}
                     data-tree-kind="folder"
-                    style={{ outline: dropTarget === chapter.name ? '2px solid var(--ring)' : undefined }}
+                    className="group/row"
+                    style={{ position: 'relative', outline: dropTarget === chapter.name ? '2px solid var(--ring)' : undefined }}
                   >
                     {naming?.kind === 'rename-chapter' && naming.chapter === chapter.name ? (
                       <NameField
@@ -234,13 +237,25 @@ export function ExerciseTree() {
                         {chapter.name}
                       </button>
                     )}
+                    {!(naming?.kind === 'rename-chapter' && naming.chapter === chapter.name) && (
+                      <Hint label="Nouvelle fiche dans ce chapitre">
+                        <button
+                          type="button"
+                          aria-label={`Nouvelle fiche dans ${chapter.name}`}
+                          onClick={() => useNewSheetDialog.getState().openFor(chapter.name)}
+                          className="absolute right-1 top-1/2 inline-flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-primary opacity-0 hover:bg-primary/10 focus-visible:opacity-100 group-hover/row:opacity-100"
+                        >
+                          <FilePlus size={14} />
+                        </button>
+                      </Hint>
+                    )}
                   </div>
                 </ContextMenuTrigger>
                 <ContextMenuContent onCloseAutoFocus={keepNameFocus}>
                   <ContextMenuItem onSelect={() => toggle(chapter.name)}>{open ? 'Replier' : 'Déplier'}</ContextMenuItem>
                   <ContextMenuSeparator />
-                  <ContextMenuItem onSelect={() => { setFolded(p => { const n = new Set(p); n.delete(chapter.name); return n }); setNaming({ kind: 'new-exercise', chapter: chapter.name }) }}>
-                    <FilePlus /> Nouvel exercice
+                  <ContextMenuItem onSelect={() => useNewSheetDialog.getState().openFor(chapter.name)}>
+                    <FilePlus /> Nouvelle fiche
                   </ContextMenuItem>
                   <ContextMenuItem onSelect={() => setNaming({ kind: 'rename-chapter', chapter: chapter.name })}>Renommer</ContextMenuItem>
                   <ContextMenuItem disabled={realCi === 0} onSelect={() => void store.moveChapter(chapter.name, -1)}>Monter</ContextMenuItem>
@@ -254,11 +269,6 @@ export function ExerciseTree() {
 
               {open && (
                 <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
-                  {naming?.kind === 'new-exercise' && naming.chapter === chapter.name && (
-                    <li style={{ paddingLeft: 16 }}>
-                      <NameField label="Titre du nouvel exercice" onSubmit={finishNaming} onCancel={() => setNaming(null)} />
-                    </li>
-                  )}
                   {chapter.exercises.map(exo => {
                     const realEi = realExercises.findIndex(e => e.path === exo.path)
                     return (
@@ -331,6 +341,7 @@ export function ExerciseTree() {
         </ContextMenuTrigger>
         <ContextMenuContent onCloseAutoFocus={keepNameFocus}>
           <ContextMenuItem onSelect={() => setNaming({ kind: 'new-chapter' })}><FolderPlus /> Nouveau chapitre</ContextMenuItem>
+          <ContextMenuItem onSelect={() => useNewSheetDialog.getState().openFor()}><FilePlus /> Nouvelle fiche</ContextMenuItem>
           <ContextMenuItem disabled={tree.length === 0} onSelect={() => setFolded(new Set(tree.map(c => c.name)))}>
             <ChevronsDownUp /> Tout replier
           </ContextMenuItem>

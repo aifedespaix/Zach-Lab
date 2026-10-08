@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
-import { BookOpen, ClipboardCheck, Download, ChevronsDownUp, Redo2, Undo2, ListChecks, ListFilter, FolderPlus, Highlighter, Keyboard, Minus, Moon, Plus, Rows3, NotebookPen, Calculator, Search, Settings as SettingsIcon, Shapes } from 'lucide-react'
+import { BookOpen, ClipboardCheck, Download, ChevronsDownUp, Redo2, Undo2, ListChecks, ListFilter, FilePlus, FolderPlus, Highlighter, Keyboard, Minus, Moon, Plus, Rows3, NotebookPen, Calculator, Search, Settings as SettingsIcon, Shapes, X } from 'lucide-react'
 import {
   CommandButton,
   CommandDropdownItem,
@@ -22,6 +22,7 @@ import { RIGHT_COLLAPSED_KEY } from './cours/useCoursesStore'
 import { ExerciseTree } from './exercises/ExerciseTree'
 import { ExerciseWorkspace } from './exercises/ExerciseWorkspace'
 import { AdvancedSearchDialog } from './exercises/AdvancedSearchDialog'
+import { NewSheetDialog } from './exercises/NewSheetDialog'
 import { ReviewDialog } from './exercises/ReviewDialog'
 import { useCorrectionView } from './exercises/useCorrectionView'
 import { SheetOutline } from './exercises/SheetOutline'
@@ -95,6 +96,7 @@ export default function App() {
     // en bas, zoomé on dépasse la fenêtre et la page défile.
     root.style.setProperty('--app-height', `calc(100vh / ${zoom / 100})`)
   }, [zoom])
+  const sheetOpen = useExerciseStore(state => state.selected !== null)
   const canUndo = useOpenExercise(state => state.undoDepth > 0)
   const canRedo = useOpenExercise(state => state.redoDepth > 0)
   useCommand('edit.undo', () => useOpenExercise.getState().undo(), canUndo)
@@ -117,6 +119,10 @@ export default function App() {
   )
   // De gauche à droite ; `priority` : ce qui reste le plus longtemps quand la barre manque de place.
   const toolbarItems: OverflowItem[] = [
+    // Les deux se remplacent : fermer quand une fiche est ouverte, créer sinon.
+    sheetOpen
+      ? { id: 'sheet', node: <CommandButton command="sheet.close" icon={X} variant="ghost" size="icon-sm" className="text-destructive hover:bg-destructive/10 hover:text-destructive" />, menu: <CommandDropdownItem command="sheet.close" icon={X} />, priority: 10 }
+      : { id: 'sheet', node: <CommandButton command="sheet.new" icon={FilePlus} variant="ghost" size="icon-sm" className="text-primary hover:bg-primary/10 hover:text-primary" />, menu: <CommandDropdownItem command="sheet.new" icon={FilePlus} />, priority: 10 },
     { id: 'undo', node: button('edit.undo', Undo2), menu: <CommandDropdownItem command="edit.undo" icon={Undo2} />, priority: 9 },
     { id: 'redo', node: button('edit.redo', Redo2), menu: <CommandDropdownItem command="edit.redo" icon={Redo2} />, priority: 9 },
     { id: 'palette', node: button('app.palette', Search), menu: <CommandDropdownItem command="app.palette" icon={Search} />, priority: 8 },
@@ -183,6 +189,7 @@ export default function App() {
             footer={
               <>
                 <CommandButton command="tree.newChapter" icon={FolderPlus} variant="ghost" size="icon-sm" />
+                <CommandButton command="sheet.new" icon={FilePlus} variant="ghost" size="icon-sm" />
                 <CommandButton command="tree.toggleAll" icon={ChevronsDownUp} variant="ghost" size="icon-sm" />
                 <CommandButton command="tree.onlyToCorrect" icon={ListFilter} variant={onlyToCorrect ? 'secondary' : 'ghost'} size="icon-sm" />
               </>
@@ -217,6 +224,7 @@ export default function App() {
                 <AnimatedLogo mode="draw-fade" size={120} />
               </BootScreen>
             )}
+            <NewSheetDialog />
             <ReviewDialog />
             <AdvancedSearchDialog />
             <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />

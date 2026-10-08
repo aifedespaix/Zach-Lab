@@ -54,11 +54,18 @@ describe('ExerciseWorkspace', () => {
     expect(useExerciseStore.getState().selected).toBe('Fractions/exo-1.json')
   })
 
-  it('« Fermer la fiche » revient à l\'accueil, sans perdre les modifications', async () => {
+  it("l'accueil propose « Nouvelle fiche », qui ouvre la modale", async () => {
+    await setup({})
+    await userEvent.click(screen.getByRole('button', { name: /Nouvelle fiche/ }))
+    const { useNewSheetDialog } = await import('./NewSheetDialog')
+    expect(useNewSheetDialog.getState().open).toBe(true)
+    act(() => useNewSheetDialog.getState().close())
+  })
+
+  it('« Fermer la fiche » (commande) revient à l\'accueil, sans perdre les modifications', async () => {
     const fs = await setup({ 'A/a.json': sheetFile('Fiche', [ex('a', { enonce: 'Q1' })]) })
     await open('A/a.json')
-    const user = userEvent.setup()
-    await user.click(screen.getByRole('button', { name: 'Fermer la fiche' }))
+    await act(async () => void runCommand('sheet.close'))
     expect(useExerciseStore.getState().selected).toBeNull()
     expect(screen.queryByRole('textbox', { name: "Titre de l'exercice" })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Fiche/ })).toBeInTheDocument()
