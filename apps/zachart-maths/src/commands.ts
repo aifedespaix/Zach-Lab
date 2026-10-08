@@ -133,6 +133,13 @@ export const COMMANDS = [
     defaultBinding: null,
   },
   {
+    id: 'sheet.close',
+    label: 'Fermer la fiche',
+    description: 'Ferme la fiche ouverte et revient au menu principal (la liste des fiches récentes).',
+    category: 'tree',
+    defaultBinding: null,
+  },
+  {
     id: 'tree.toggleAll',
     label: 'Tout replier ou déplier',
     description: 'Replie tous les chapitres, ou les déplie si tout est déjà replié.',

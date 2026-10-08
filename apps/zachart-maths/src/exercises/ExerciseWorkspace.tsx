@@ -1,7 +1,7 @@
 import { spacing, useCompact } from './useCompact'
 import { useEffect, useRef, useState } from 'react'
 import { CommandButton, useCommand } from '@suite/shared/commands'
-import { Check, ChevronLeft, ListChecks, RotateCcw, ChevronRight, Columns2, Plus, Trash2 } from 'lucide-react'
+import { Check, ChevronLeft, ListChecks, RotateCcw, ChevronRight, Columns2, Plus, Trash2, X } from 'lucide-react'
 import { ConfirmDialog } from '@suite/shared/ui'
 import { RecentFilesList } from '@suite/shared/shell'
 import { ChapterField } from './ChapterField'
@@ -121,6 +121,7 @@ export function ExerciseWorkspace() {
   const toggleSplit = () => {
     if (exercise !== null) edit(isSplit(exercise) ? mergeZones(exercise) : splitZones())
   }
+  useCommand('sheet.close', () => useExerciseStore.getState().select(null), ready)
   useCommand('correction.next', () => { jumpToNextToCorrect() }, nextToCorrect)
   useCommand('exercise.toggleCorrected', () => { if (exercise !== null) edit(toggleCorrected(exercise)) }, ready)
   useCommand('exercise.toggleReview', () => { if (exercise !== null) edit(toggleRate(exercise)) }, ready && exercise.corrige === true)
@@ -263,6 +264,7 @@ export function ExerciseWorkspace() {
         } as React.CSSProperties}
       >
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <CommandButton command="sheet.close" icon={X} label="Fermer la fiche" variant="ghost" size="icon-sm" />
           <ChapterField key={splitPath(selected)[0]} chapter={splitPath(selected)[0]} className={`${field} hue-field`} />
           <input
             aria-label="Titre de l'exercice"

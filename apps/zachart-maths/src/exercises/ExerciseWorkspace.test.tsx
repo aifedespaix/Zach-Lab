@@ -54,6 +54,19 @@ describe('ExerciseWorkspace', () => {
     expect(useExerciseStore.getState().selected).toBe('Fractions/exo-1.json')
   })
 
+  it('« Fermer la fiche » revient à l\'accueil, sans perdre les modifications', async () => {
+    const fs = await setup({ 'A/a.json': sheetFile('Fiche', [ex('a', { enonce: 'Q1' })]) })
+    await open('A/a.json')
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Fermer la fiche' }))
+    expect(useExerciseStore.getState().selected).toBeNull()
+    expect(screen.queryByRole('textbox', { name: "Titre de l'exercice" })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Fiche/ })).toBeInTheDocument()
+    expect(useOpenExercise.getState().path).toBeNull()
+    await act(async () => useOpenExercise.getState().flush())
+    expect(stored(fs, 'A/a.json').exercices[0].enonce).toBe('Q1')
+  })
+
   it('renomme le chapitre depuis le champ, sans recharger la fiche ouverte', async () => {
     const fs = await setup({ 'A/a.json': sheetFile('Fiche', [ex('a', { enonce: 'Q1' })]) })
     await open('A/a.json')
