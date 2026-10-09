@@ -290,6 +290,10 @@ Mentale onto it, **lot by lot**. Start at `chantier/README.md`; the next lot to 
 generic prompts are in `chantier/prompts/`. Until a lot is `terminé`, the sections of this file describing the
 current (duplicated) state remain true. Never rename a command id, a storage key or a file format without an alias.
 
+A second chantier, **« Synchro »** (`chantier/sync/`, start at its `README.md`; progress in `chantier/sync/suivi.md`), plans one
+sync shared by the whole suite (one PocketBase, whole-file sync, conflict = marked duplicate, teacher → per-student copies,
+AI-assisted file creation). It is analysis only so far: until its lots are `terminé`, sync stays Mentale's own.
+
 ## Explore via the knowledge graph first
 
 A graphify knowledge graph exists at `graphify-out/graph.json` (4084 nodes, 206 communities, rebuilt from `git rev-parse HEAD`). For any question about architecture, "what calls X", data flow, or "where does Y live" — run `/graphify query "<question>"` before grepping or reading files raw. This applies to subagents too: if you spawn an Explore/general-purpose agent for a codebase question, tell it to check for `graphify-out/graph.json` and query it first instead of walking the tree cold.
