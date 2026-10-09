@@ -1,7 +1,8 @@
-import { ChevronDown, Copy, FilePlus, FolderOpen, FolderPlus, FolderSearch, Moon, PenLine, Redo2, Save, Search, Settings, Trash2, Undo2, X, type LucideIcon } from 'lucide-react'
+import { ChevronDown, Minus, Plus, Rows3, Copy, FilePlus, FolderOpen, FolderPlus, FolderSearch, Moon, PenLine, Redo2, Save, Search, Settings, Trash2, Undo2, X, type LucideIcon } from 'lucide-react'
 import { Fragment, type ReactNode } from 'react'
 import { CommandButton, CommandDropdownItem, commandById } from '../commands'
 import { ThemeToggle } from '../theme'
+import { DensityToggle, ZoomControls } from '../view'
 import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui'
 import { OverflowToolbar } from './OverflowToolbar'
 import { arrangeToolbar, type ToolbarDefinition, type ToolbarItem } from './toolbarZones'
@@ -153,6 +154,30 @@ function standardItems(file: ToolbarFile | undefined): ToolbarItem[] {
         zone: 'title',
         node: <FileTitle name={file.name} path={file.path} status={file.status} />,
       },
+  )
+  add(
+    has('view.zoomIn') && {
+      id: 'view.zoom',
+      zone: 'view',
+      node: <ZoomControls />,
+      menu: (
+        <>
+          <CommandDropdownItem command="view.zoomOut" icon={Minus} />
+          <CommandDropdownItem command="view.zoomIn" icon={Plus} />
+          <CommandDropdownItem command="view.zoomReset" />
+        </>
+      ),
+      priority: 20,
+    },
+  )
+  add(
+    has('view.toggleDensity') && {
+      id: 'view.density',
+      zone: 'view',
+      node: <DensityToggle />,
+      menu: <CommandDropdownItem command="view.toggleDensity" icon={Rows3} />,
+      priority: 20,
+    },
   )
   add(
     has('app.palette') && {

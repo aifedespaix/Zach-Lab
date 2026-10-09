@@ -1,5 +1,6 @@
-import { Download, Keyboard } from 'lucide-react'
+import { Download, Keyboard, Palette } from 'lucide-react'
 import { useShortcutSettingsStore } from '../commands/useShortcutSettingsStore'
+import { AppearanceSettingsPanel, type ViewOptions } from '../view'
 import { UpdateSettingsSection, type UpdateCheckHandle } from '../update'
 import { ShortcutSettingsPanel } from './ShortcutSettingsPanel'
 import type { SettingsPanelDef, SettingsSource } from './SettingsDialog'
@@ -13,6 +14,8 @@ export interface SettingsParts {
 export interface StandardSettingsOptions {
   /** The « Raccourcis » panel. Default: on. */
   shortcuts?: boolean
+  /** The « Apparence » panel: zoom, density, font — each on unless set to `false`. Left out, no panel. */
+  appearance?: ViewOptions
   /** The « Mises à jour » panel, fed by the app's updater. Left out, no panel. */
   updates?: UpdateCheckHandle
 }
@@ -31,9 +34,9 @@ const shortcutsSource: SettingsSource<ReturnType<ReturnType<typeof useShortcutSe
 
 /**
  * The panels every app of the suite has: « Raccourcis » first and « Mises à jour » last
- * (`mergeSettings` puts the app's own between them). L5 adds « Apparence ».
+ * (`mergeSettings` puts the app's own between them); « Apparence » follows « Raccourcis ».
  */
-export function standardSettings({ shortcuts = true, updates }: StandardSettingsOptions = {}): SettingsParts & {
+export function standardSettings({ shortcuts = true, appearance, updates }: StandardSettingsOptions = {}): SettingsParts & {
   /** Where `mergeSettings` places each standard panel. */
   placement: Readonly<Record<string, 'start' | 'end'>>
 } {
@@ -48,6 +51,16 @@ export function standardSettings({ shortcuts = true, updates }: StandardSettings
       render: () => <ShortcutSettingsPanel />,
     })
     placement.shortcuts = 'start'
+  }
+  if (appearance !== undefined && (appearance.zoom !== false || appearance.density !== false || appearance.font !== false)) {
+    panels.push({
+      id: 'appearance',
+      label: 'Apparence',
+      hint: 'Zoom, densité, police',
+      icon: Palette,
+      render: () => <AppearanceSettingsPanel view={appearance} />,
+    })
+    placement.appearance = 'start'
   }
   if (updates !== undefined) {
     panels.push({

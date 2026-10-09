@@ -24,7 +24,7 @@ import { useAppStatusStore } from './useAppStatus'
 
 defineCommandCatalog({
   categories: [...STANDARD_CATEGORIES],
-  commands: standardCommands(['app.palette', 'app.settings', 'app.shortcuts', 'app.toggleTheme']),
+  commands: standardCommands(['app.palette', 'app.settings', 'app.shortcuts', 'app.toggleTheme', 'view.zoomOut', 'view.zoomIn', 'view.zoomReset', 'view.toggleDensity']),
 })
 
 const mark = {
@@ -78,6 +78,7 @@ describe('SuiteApp', () => {
     const tabs = within(dialog).getAllByRole('tab')
     expect(tabs.map(tab => tab.textContent)).toEqual([
       expect.stringContaining('Raccourcis'),
+      expect.stringContaining('Apparence'),
       expect.stringContaining('Quiz'),
       expect.stringContaining('Mises à jour'),
     ])
@@ -94,6 +95,26 @@ describe('SuiteApp', () => {
     expect(screen.getByRole('button', { name: 'Paramètres' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Basculer le thème/ })).not.toBeInTheDocument()
     await act(async () => {})
+  })
+
+  it('pose le zoom d\'interface : la barre, les commandes et la racine', async () => {
+    const user = userEvent.setup()
+    localStorage.clear()
+    render(<SuiteApp app={makeApp({ id: 'zoomy' })}><main /></SuiteApp>)
+    await act(async () => {})
+    await user.click(screen.getByRole('button', { name: /^Zoomer/ }))
+    expect(screen.getByRole('button', { name: 'Zoom à 100 %' })).toHaveTextContent('110 %')
+    expect(document.documentElement.style.zoom).toBe('110%')
+    act(() => void runCommand('view.zoomReset'))
+    expect(document.documentElement.style.zoom).toBe('')
+  })
+
+  it('une app qui désactive le zoom n\'a ni ses boutons ni son effet', async () => {
+    render(<SuiteApp app={makeApp({ id: 'nozoom', view: { zoom: false } })}><main /></SuiteApp>)
+    await act(async () => {})
+    expect(screen.queryByRole('group', { name: 'Zoom' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Mode condensé' })).toBeInTheDocument()
+    expect(document.documentElement.style.getPropertyValue('--app-zoom')).toBe('')
   })
 
   it('une mise à jour prête devient un bandeau de la pile, masquable', async () => {

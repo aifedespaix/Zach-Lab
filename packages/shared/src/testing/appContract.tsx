@@ -42,7 +42,6 @@ export interface AppContractOptions {
 export const PLANNED_CHECKS: readonly { lot: string; check: string }[] = [
   { lot: 'L1', check: 'la palette liste aussi app.toggleTheme dans toutes les apps' },
   { lot: 'L2', check: 'les clés de stockage de l\'app sont préfixées et relues avec leurs alias' },
-  { lot: 'L5', check: 'le zoom 50→150 % par pas de 10 et le mode condensé sont disponibles' },
   { lot: 'L6', check: 'fermer / nouveau / annuler / rétablir sont présents et activés selon l\'état' },
   { lot: 'L7', check: 'les panneaux latéraux se replient au raccourci et mémorisent leur état' },
   { lot: 'L8', check: 'l\'arbre de fichiers crée, renomme, déplace et supprime' },
@@ -170,6 +169,39 @@ export function describeAppContract(renderApp: () => ReactElement, options: AppC
       const dialog = await screen.findByRole('dialog', { name: 'Paramètres' })
       const selected = within(dialog).getAllByRole('tab').find(tab => tab.getAttribute('aria-selected') === 'true')
       expect(selected?.textContent ?? '').toMatch(/^Raccourcis/)
+    })
+
+    lot('L5')('L5 — le zoom d\'interface répond (Mod+Plus / Mod+Minus / Mod+0), borné à 50–150 %', async () => {
+      render(renderApp())
+      await act(async () => {})
+      const zoom = () => document.documentElement.style.getPropertyValue('--app-zoom')
+      expect(zoom()).toBe('1')
+      act(() => {
+        runCommand('view.zoomIn')
+      })
+      expect(zoom()).toBe('1.1')
+      act(() => {
+        for (let i = 0; i < 20; i++) runCommand('view.zoomOut')
+      })
+      expect(zoom()).toBe('0.5')
+      act(() => {
+        runCommand('view.zoomReset')
+      })
+      expect(zoom()).toBe('1')
+    })
+
+    lot('L5')('L5 — la densité bascule', async () => {
+      render(renderApp())
+      await act(async () => {})
+      const button = () => screen.getByRole('button', { name: commandById('view.toggleDensity')!.label })
+      expect(button()).toHaveAttribute('aria-pressed', 'false')
+      act(() => {
+        runCommand('view.toggleDensity')
+      })
+      expect(button()).toHaveAttribute('aria-pressed', 'true')
+      act(() => {
+        runCommand('view.toggleDensity')
+      })
     })
 
     it('la palette s\'ouvre au raccourci et liste les paramètres', async () => {

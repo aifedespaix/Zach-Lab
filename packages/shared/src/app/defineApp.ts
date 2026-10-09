@@ -1,6 +1,7 @@
 import type { GlobalShortcutOptions } from '../commands'
 import type { SettingsParts } from '../settings'
 import type { MarkConfig, ToolbarDefinition } from '../shell'
+import type { ViewOptions } from '../view'
 
 /** Width bounds of a side panel, in px. */
 export interface PanelBounds {
@@ -24,6 +25,8 @@ export interface AppConfig {
   settings?: Partial<SettingsParts>
   /** The app's own items on the top bar (`defineToolbar`), and the standard ones it hides. */
   toolbar?: ToolbarDefinition
+  /** Which view preferences the app has: zoom, density, font (all on by default). */
+  view?: ViewOptions
   /** Options of the global shortcuts: a mode where nothing may change, the canvas selector. */
   shortcuts?: GlobalShortcutOptions
   /**
