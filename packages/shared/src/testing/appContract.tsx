@@ -2,13 +2,16 @@ import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactElement } from 'react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { commandById } from '../commands'
+import { commandById, commandList, useCommandRegistry } from '../commands'
 
 /**
  * Les commandes que toute app de la suite expose, par leur identifiant canonique.
  * `commandIds` permet à une app d'en désigner une autre sous un alias historique.
  */
 export const CONTRACT_COMMANDS = ['app.palette', 'app.settings', 'app.toggleTheme'] as const
+
+/** Les ids standard (L1) : l'id canonique doit répondre, directement ou par un alias du catalogue. */
+export const STANDARD_CONTRACT_COMMANDS = ['app.palette', 'app.settings', 'app.toggleTheme'] as const
 export type ContractCommand = (typeof CONTRACT_COMMANDS)[number]
 
 export interface AppContractOptions {
@@ -18,6 +21,16 @@ export interface AppContractOptions {
   reset?: () => void | Promise<void>
   /** Id réel d'une commande du contrat, quand l'app a gardé un ancien nom. */
   commandIds?: Partial<Record<ContractCommand, string>>
+  /**
+   * Commandes du catalogue que l'app n'enregistre volontairement pas à l'ouverture
+   * (elles dépendent d'un fichier ouvert, d'une sélection…) : la liste est explicite.
+   */
+  unregisteredCommands?: readonly string[]
+  /**
+   * Lots dont l'app a déjà adopté les vérifications (chantier 3). Les autres restent
+   * `skip` avec leur numéro : `base` les active toutes, Maths et Mentale au fil de leur migration.
+   */
+  adoptedLots?: readonly string[]
   /** Touches qui ouvrent la palette (syntaxe user-event). Défaut : Ctrl+K. */
   paletteKeys?: string
 }
@@ -28,7 +41,6 @@ export interface AppContractOptions {
  */
 export const PLANNED_CHECKS: readonly { lot: string; check: string }[] = [
   { lot: 'L1', check: 'la palette liste aussi app.toggleTheme dans toutes les apps' },
-  { lot: 'L1', check: 'toutes les commandes du catalogue sont enregistrées ou désactivées explicitement' },
   { lot: 'L2', check: 'les clés de stockage de l\'app sont préfixées et relues avec leurs alias' },
   { lot: 'L3', check: 'l\'écran de chargement apparaît puis disparaît' },
   { lot: 'L4', check: 'la barre du haut ne déborde jamais (600 / 900 / 1 400 px)' },
@@ -67,6 +79,23 @@ export function describeAppContract(renderApp: () => ReactElement, options: AppC
 
     it.each(CONTRACT_COMMANDS)('le catalogue expose %s', command => {
       expect(commandById(id(command))).toBeDefined()
+    })
+
+    const lot = (name: string) => ((options.adoptedLots ?? []).includes(name) ? it : it.skip)
+
+    lot('L1').each(STANDARD_CONTRACT_COMMANDS)('L1 — ids standard : %s répond sous son id canonique', command => {
+      // Une app non migrée peut garder un ancien id : l'alias du catalogue doit alors le résoudre.
+      expect(commandById(command)).toBeDefined()
+    })
+
+    lot('L1')('L1 — toutes les commandes du catalogue ont un gestionnaire une fois l\'app montée', async () => {
+      render(renderApp())
+      await act(async () => {})
+      const registered = useCommandRegistry.getState().registrations
+      const orphans = commandList()
+        .map(command => command.id)
+        .filter(commandId => registered[commandId] === undefined && !(options.unregisteredCommands ?? []).includes(commandId))
+      expect(orphans).toEqual([])
     })
 
     it('la palette s\'ouvre au raccourci et liste les paramètres', async () => {

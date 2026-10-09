@@ -1,15 +1,10 @@
-import { exists, readTextFile, writeTextFile, mkdir } from '@tauri-apps/plugin-fs'
-import { appConfigDir, join } from '@tauri-apps/api/path'
+import { readJsonConfig, writeJsonConfig } from '../storage'
 import type { ShortcutSettings } from './shortcutSettingsTypes'
 import { DEFAULT_SHORTCUT_SETTINGS } from './shortcutSettingsTypes'
-import { isCommandId } from './catalog'
+import { commandIdAliases, isCommandId } from './catalog'
 import { normalizeBinding } from './keys'
 
 const SETTINGS_FILE_NAME = 'shortcuts.json'
-
-async function settingsFilePath(): Promise<string> {
-  return join(await appConfigDir(), SETTINGS_FILE_NAME)
-}
 
 /**
  * Keeps only entries this version can act on: a known command id, and either
@@ -25,9 +20,16 @@ export function sanitizeShortcutSettings(raw: unknown): ShortcutSettings {
   const bindings = (raw as { bindings?: unknown }).bindings
   if (typeof bindings !== 'object' || bindings === null) return DEFAULT_SHORTCUT_SETTINGS
 
+  const entries = Object.entries(bindings as Record<string, unknown>)
   const kept: Record<string, string | null> = {}
-  for (const [id, value] of Object.entries(bindings as Record<string, unknown>)) {
+  // Entries under a current id first, then the ones under a former id, which only
+  // fill what is still free: if a file holds both, the new id's value wins.
+  const aliases = commandIdAliases()
+  const current = entries.filter(([id]) => !aliases.has(id))
+  const former = entries.filter(([id]) => aliases.has(id)).map(([id, value]) => [aliases.get(id)!, value] as const)
+  for (const [id, value] of [...current, ...former]) {
     if (!isCommandId(id)) continue
+    if (Object.prototype.hasOwnProperty.call(kept, id)) continue
     if (value === null) {
       kept[id] = null
       continue
@@ -40,14 +42,9 @@ export function sanitizeShortcutSettings(raw: unknown): ShortcutSettings {
 }
 
 export async function loadShortcutSettings(): Promise<ShortcutSettings> {
-  const path = await settingsFilePath()
-  if (!(await exists(path))) return DEFAULT_SHORTCUT_SETTINGS
-  return sanitizeShortcutSettings(JSON.parse(await readTextFile(path)) as unknown)
+  return readJsonConfig(SETTINGS_FILE_NAME, { fallback: DEFAULT_SHORTCUT_SETTINGS, parse: sanitizeShortcutSettings })
 }
 
 export async function saveShortcutSettings(settings: ShortcutSettings): Promise<void> {
-  const dir = await appConfigDir()
-  if (!(await exists(dir))) await mkdir(dir, { recursive: true })
-  const path = await settingsFilePath()
-  await writeTextFile(path, JSON.stringify(settings, null, 2))
+  await writeJsonConfig(SETTINGS_FILE_NAME, settings)
 }

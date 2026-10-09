@@ -72,3 +72,21 @@ describe('@suite/shared/testing', () => {
     expect(importers).toEqual([])
   })
 })
+
+describe('persistance (L2)', () => {
+  const STORAGE_ACCESS = /\b(?:local|session)Storage\b\s*(?:\.|\[|\?\.)/
+
+  it('repère un accès direct au stockage du navigateur', () => {
+    expect(STORAGE_ACCESS.test(`localStorage.getItem('k')`)).toBe(true)
+    expect(STORAGE_ACCESS.test(`window.localStorage['k']`)).toBe(true)
+    expect(STORAGE_ACCESS.test('// la clé `localStorage` du repli')).toBe(false)
+  })
+
+  it('aucun `localStorage` hors de shared/storage (tests exceptés)', () => {
+    const offenders = Object.entries(sources)
+      .filter(([path]) => !path.startsWith('./storage/') && !/\.test\.tsx?$/.test(path) && !path.startsWith('./testing/'))
+      .filter(([, source]) => STORAGE_ACCESS.test(source))
+      .map(([path]) => path)
+    expect(offenders).toEqual([])
+  })
+})

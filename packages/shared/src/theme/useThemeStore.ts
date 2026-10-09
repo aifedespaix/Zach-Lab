@@ -1,4 +1,5 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
+import { safeStorage } from '../storage'
 
 export type ThemeMode = 'light' | 'dark' | 'system'
 
@@ -19,19 +20,9 @@ interface ThemeState {
 
 export type ThemeStore = UseBoundStore<StoreApi<ThemeState>>
 
-/**
- * `localStorage` when the webview lets us touch it. Reading the property itself
- * can throw (storage disabled, sandboxed frame), so even asking is guarded.
- */
-function defaultStorage(): Storage | null {
-  try {
-    return typeof localStorage === 'undefined' ? null : localStorage
-  } catch {
-    return null
-  }
-}
+type ThemeStorage = Pick<Storage, 'getItem' | 'setItem'>
 
-function readMode(storage: Storage | null): ThemeMode {
+function readMode(storage: ThemeStorage | null): ThemeMode {
   try {
     return parseThemeMode(storage?.getItem(THEME_STORAGE_KEY)) ?? 'system'
   } catch {
@@ -47,7 +38,7 @@ function readMode(storage: Storage | null): ThemeMode {
  * Anything that is not a known mode — a stale value, another version's format —
  * reads as « system », the neutral default.
  */
-export function createThemeStore(storage: Storage | null = defaultStorage()): ThemeStore {
+export function createThemeStore(storage: ThemeStorage | null = safeStorage): ThemeStore {
   return create<ThemeState>(set => ({
     mode: readMode(storage),
     setMode: mode => {
