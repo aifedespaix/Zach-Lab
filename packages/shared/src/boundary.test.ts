@@ -62,3 +62,13 @@ describe('frontière de @suite/shared', () => {
     expect(violations(path, source)).toEqual([])
   })
 })
+
+describe('@suite/shared/testing', () => {
+  it('n\'est importé par aucun fichier de production', () => {
+    const importers = Object.entries(sources)
+      .filter(([path]) => !path.startsWith('./testing/') && !/\.test\.tsx?$/.test(path) && !path.startsWith('./test/'))
+      .filter(([, source]) => specifiers(source).some(s => /(^|\/)testing(\/|$)/.test(s)))
+      .map(([path]) => path)
+    expect(importers).toEqual([])
+  })
+})

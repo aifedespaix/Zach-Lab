@@ -26,6 +26,8 @@ Run everything from the repository root.
 - `bunx tsc --noEmit -p apps/<app>` (or `-p packages/shared`) — type-check one workspace.
 - `cargo test --workspace` — the Rust side.
 - `bun run new-app <nom> [--port <n>]` — a new app, copied from `apps/base`.
+- `bun run measure:sharing [apps/<app>]` — part of the lines reachable from `main.tsx` that live in `packages/shared`.
+- `node scripts/baseline-shots.mjs <app>` — 6 screenshots (no Tauri: fake `__TAURI_INTERNALS__`, Chromium) into `chantier/captures/` (gitignored).
 - `bun run deploy [<app|all> <patch|minor|major|X.Y.Z>]` — publishes (bump, commit, push, tag); interactive without args, see `docs/RELEASE.md`.
 - `bun run version:bump -- <app> <patch|minor|major|X.Y.Z>` — see `docs/RELEASE.md`.
 - `bun run update:mentale|update:maths|update:all [-- patch|minor|major|X.Y.Z]` — builds the signed
@@ -41,7 +43,7 @@ what is theirs by props, slots, options, or by registering it — the command
 catalogue (`defineCommandCatalog`), the settings panels and sources, the search
 ranking.
 
-- Public entry points only: `@suite/shared/{ui,theme,update,shell,commands,settings,search,math,tree,equation}`
+- Public entry points only: `@suite/shared/{ui,theme,update,shell,commands,settings,search,math,tree,equation,testing}`
   and `@suite/shared/theme.css`. Never import a file inside a sub-path.
 - Sources are consumed as TypeScript, with no build step. Inside `shared`, imports
   are **relative**, never `@suite/shared/…`.
@@ -50,6 +52,7 @@ ranking.
 - New shared UI: the shadcn config in `components.json` still writes to the app.
   Generate there, then `git mv` the files into `packages/shared/src/ui` and run
   `bun scripts/move-module.mjs <app> <old path> @suite/shared/ui`.
+- Tests (`@suite/shared/testing`, never imported by production code — `boundary.test.ts`): `describeAppContract(() => <App />, { name, reset, commandIds })` is the conformance suite every app plugs in via `src/app.contract.test.tsx` (the app declares its own `vi.mock`s); the next lots turn its `todo`s into checks. `createMemoryFs` is an in-memory `Fs`.
 - Search is Orama (`@suite/shared/search`): `createSearchIndex(fields)`,
   `loadSearchIndex(fields, serialized)`. French, accent- and typo-tolerant.
 - Math is KaTeX (`@suite/shared/math`): `renderMathToHtml(latex, display?)`, bounded, never
