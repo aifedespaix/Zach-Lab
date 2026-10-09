@@ -55,3 +55,5 @@ apps/*/infra/backups/
 # Mises à jour générées en local par `bun run update:*` (installeurs signés, latest.json)
 /updates/
 chantier/captures/
+
+todo.md
