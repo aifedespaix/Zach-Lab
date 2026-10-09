@@ -3,6 +3,7 @@ import { CommandPalette, useCommand, useGlobalShortcuts, useShortcutSettingsStor
 import { SettingsDialog, mergeSettings, standardSettings } from '../settings'
 import { AnimatedMark, AppBoot, AppShell, AppToolbar, ResizablePanel, createPanelWidthStorage, type ToolbarFile } from '../shell'
 import { useThemeDomSync, useToggleTheme } from '../theme'
+import { AppIdProvider, useApplyView, viewStores, ZOOM_STEP } from '../view'
 import { TooltipProvider } from '../ui'
 import { useAppUpdater } from '../update'
 import type { AppDefinition } from './defineApp'
@@ -45,6 +46,9 @@ export function SuiteApp({
 }: SuiteAppProps) {
   useThemeDomSync()
   useGlobalShortcuts(app.shortcuts)
+  useApplyView(app.id, app.view)
+  const view = app.view
+  const stores = viewStores(app.id)
 
   const updater = useAppUpdater()
   const { updateReady, dismissed } = updater
@@ -89,12 +93,16 @@ export function SuiteApp({
   useCommand('app.settings', () => openSettings())
   useCommand('app.shortcuts', () => openSettings('shortcuts'))
   useCommand('app.toggleTheme', () => toggleTheme())
+  useCommand('view.zoomOut', () => stores.zoom.getState().set(current => current - ZOOM_STEP), view?.zoom !== false)
+  useCommand('view.zoomIn', () => stores.zoom.getState().set(current => current + ZOOM_STEP), view?.zoom !== false)
+  useCommand('view.zoomReset', () => stores.zoom.getState().reset(), view?.zoom !== false)
+  useCommand('view.toggleDensity', () => stores.compact.getState().set(current => !current), view?.density !== false)
 
   const settings = useMemo(
-    () => mergeSettings(standardSettings({ updates: updater }), app.settings),
+    () => mergeSettings(standardSettings({ appearance: app.view ?? {}, updates: updater }), app.settings),
     // `updater` changes on every status tick: the panels read it when rendered, not here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [app.settings, updater.status, updater.updateReady, updater.checkNow, updater.applyUpdate],
+    [app.settings, app.view, updater.status, updater.updateReady, updater.checkNow, updater.applyUpdate],
   )
 
   const leftBounds = app.panels?.left ?? LEFT_BOUNDS
@@ -102,7 +110,16 @@ export function SuiteApp({
   const leftStorage = useMemo(() => createPanelWidthStorage({ key: `${app.id}:left-width`, ...leftBounds }), [app.id, leftBounds])
   const rightStorage = useMemo(() => createPanelWidthStorage({ key: `${app.id}:right-width`, ...rightBounds }), [app.id, rightBounds])
 
+  // A preference the app turns off has no button on the bar either.
+  const toolbar = useMemo(() => {
+    const hide = [...(app.toolbar?.hide ?? [])]
+    if (view?.zoom === false) hide.push('view.zoom')
+    if (view?.density === false) hide.push('view.density')
+    return { ...app.toolbar, hide }
+  }, [app.toolbar, view?.zoom, view?.density])
+
   return (
+    <AppIdProvider id={app.id}>
     <TooltipProvider>
       <AppShell
         left={
@@ -129,7 +146,7 @@ export function SuiteApp({
             right
           )
         }
-        toolbar={<AppToolbar toolbar={app.toolbar} file={file} />}
+        toolbar={<AppToolbar toolbar={toolbar} file={file} />}
         overlays={
           <>
             <AppBoot ready={ready} floorMs={app.bootFloorMs ?? 1300}>
@@ -151,5 +168,6 @@ export function SuiteApp({
         {children}
       </AppShell>
     </TooltipProvider>
+    </AppIdProvider>
   )
 }

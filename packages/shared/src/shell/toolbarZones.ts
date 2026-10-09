@@ -33,7 +33,7 @@ export interface ToolbarItem {
 /**
  * Ids of the items the suite puts on the bar itself, when the catalogue has the command behind them:
  * `file.newOrClose` (« Nouveau » with no file open, « Fermer » with one), `file.menu`, `edit.undo`,
- * `edit.redo`, `title`, `app.palette`, `app.toggleTheme`, `app.settings`.
+ * `edit.redo`, `title`, `view.zoom`, `view.density`, `app.palette`, `app.toggleTheme`, `app.settings`.
  */
 export type StandardToolbarItemId =
   | 'file.newOrClose'
@@ -44,6 +44,8 @@ export type StandardToolbarItemId =
   | 'app.palette'
   | 'app.toggleTheme'
   | 'app.settings'
+  | 'view.zoom'
+  | 'view.density'
 
 export interface ToolbarConfig {
   /** The app's own items, usually in the `app` zone. */

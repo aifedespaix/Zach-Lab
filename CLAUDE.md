@@ -43,7 +43,7 @@ what is theirs by props, slots, options, or by registering it — the command
 catalogue (`defineCommandCatalog`), the settings panels and sources, the search
 ranking.
 
-- Public entry points only: `@suite/shared/{app,ui,theme,update,shell,commands,settings,search,math,tree,equation,storage,testing}`
+- Public entry points only: `@suite/shared/{app,ui,theme,update,shell,commands,settings,search,math,tree,equation,storage,view,testing}`
   and `@suite/shared/theme.css`. Never import a file inside a sub-path.
 - Sources are consumed as TypeScript, with no build step. Inside `shared`, imports
   are **relative**, never `@suite/shared/…`.
@@ -83,6 +83,14 @@ ranking.
   status: 'saved'|'saving'|'error' }`), `app.palette`, `app.toggleTheme` (`ThemeToggle`), `app.settings`. The app declares its own with
   `defineApp({ toolbar: defineToolbar({ items: [{ id, zone: 'app', node, menu?, priority? }], hide: ['file.menu'] }) })`. `panels` and `view` stay
   empty until L7 / L5. Buttons are `ghost` + `icon-sm`. Maths and Mentale still draw their own bar until their L4 migration (chantier 3).
+- View (`@suite/shared/view`, chantier L5): `<SuiteApp>` applies and offers the interface zoom, the density and the font (`defineApp({ view?: { zoom?, density?, font? } })`,
+  all on; `false` = no command, no bar button, no settings row, no effect — Mentale may turn the zoom off until its canvas is checked, S1). Voie A (CSS): `useApplyView`
+  writes `documentElement.style.zoom`, `--app-zoom`, `--app-height` (read by `AppShell`) and `--font-sans`; the Radix popover rule is in `theme.css`, never in an app.
+  `useUiZoom()` (`percent`, `zoomIn/zoomOut/reset/set`; 50–150, step 10), `useDensity()` (`compact`, `toggle`), `useFontFamily()`, `spacing(compact)`; stores per app id
+  (`viewStores(id)`; `AppIdProvider` is put by `SuiteApp`), keys `<id>:zoom`, `<id>:compact` (`on`/`off`), `<id>:font` — Maths' `zachart-maths:zoom|compact` are these. Commands
+  `view.zoomOut/zoomIn/zoomReset/toggleDensity` (standard; registered by `SuiteApp`, the app declares them in its catalogue); bar items `view.zoom` (`ZoomControls`) and
+  `view.density` (`DensityToggle`) in the `view` zone when the catalogue has the commands; « Apparence » panel (`AppearanceSettingsPanel`, `standardSettings({ appearance })`,
+  applied at once, no draft). Maths and Mentale still use their own zoom/compact/font code until their L5 migration (chantier 3).
 - Persistence (`@suite/shared/storage`, chantier L2): the ONLY place that touches `localStorage` (`boundary.test.ts`).
   `readStored`/`writeStored` never throw and fall back to memory. `defineAppStorage('zachart-maths').key('zoom')` →
   `zachart-maths:zoom` (existing keys are kept as they are). `createPersisted({ key, fallback, parse, serialize?, migrate?, normalize? })`
