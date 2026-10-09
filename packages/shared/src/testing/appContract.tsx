@@ -2,7 +2,7 @@ import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactElement } from 'react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { commandById, commandList, useCommandRegistry } from '../commands'
+import { commandById, commandList, runCommand, useCommandRegistry } from '../commands'
 
 /**
  * Les commandes que toute app de la suite expose, par leur identifiant canonique.
@@ -42,7 +42,6 @@ export interface AppContractOptions {
 export const PLANNED_CHECKS: readonly { lot: string; check: string }[] = [
   { lot: 'L1', check: 'la palette liste aussi app.toggleTheme dans toutes les apps' },
   { lot: 'L2', check: 'les clés de stockage de l\'app sont préfixées et relues avec leurs alias' },
-  { lot: 'L3', check: 'l\'écran de chargement apparaît puis disparaît' },
   { lot: 'L4', check: 'la barre du haut ne déborde jamais (600 / 900 / 1 400 px)' },
   { lot: 'L5', check: 'le zoom 50→150 % par pas de 10 et le mode condensé sont disponibles' },
   { lot: 'L6', check: 'fermer / nouveau / annuler / rétablir sont présents et activés selon l\'état' },
@@ -96,6 +95,36 @@ export function describeAppContract(renderApp: () => ReactElement, options: AppC
         .map(command => command.id)
         .filter(commandId => registered[commandId] === undefined && !(options.unregisteredCommands ?? []).includes(commandId))
       expect(orphans).toEqual([])
+    })
+
+    lot('L3')('L3 — l\'écran de chargement apparaît puis disparaît après le plancher', async () => {
+      render(renderApp())
+      expect(screen.getByRole('status', { name: 'Chargement de l’application' })).toBeInTheDocument()
+      await waitFor(() => expect(screen.queryByRole('status', { name: 'Chargement de l’application' })).not.toBeInTheDocument(), {
+        timeout: 4000,
+      })
+    })
+
+    lot('L3')('L3 — app.toggleTheme bascule le thème sombre', async () => {
+      render(renderApp())
+      await act(async () => {})
+      expect(document.documentElement).not.toHaveClass('dark')
+      act(() => {
+        runCommand(id('app.toggleTheme'))
+      })
+      await waitFor(() => expect(document.documentElement).toHaveClass('dark'))
+    })
+
+    lot('L3')('L3 — les réglages ont les panneaux Raccourcis et Mises à jour', async () => {
+      render(renderApp())
+      await act(async () => {})
+      act(() => {
+        runCommand(id('app.settings'))
+      })
+      const dialog = await screen.findByRole('dialog', { name: 'Paramètres' })
+      const tabs = within(dialog).getAllByRole('tab').map(tab => tab.textContent ?? '')
+      expect(tabs.some(label => label.startsWith('Raccourcis'))).toBe(true)
+      expect(tabs.some(label => label.startsWith('Mises à jour'))).toBe(true)
     })
 
     it('la palette s\'ouvre au raccourci et liste les paramètres', async () => {

@@ -112,9 +112,9 @@ export function createApp({ root, name, port }) {
       next = replaceExact(file, next, 'port: 1440,', `port: ${vitePort},`)
       return next
     })
-    edit('src/App.tsx', (text, file) => {
-      let next = replaceExact(file, text, "'base:left-width'", `'${name}:left-width'`)
-      next = replaceExact(file, next, "'base:right-width'", `'${name}:right-width'`)
+    edit('src/app.config.ts', (text, file) => {
+      let next = replaceExact(file, text, "id: 'base',", `id: '${name}',`)
+      next = replaceExact(file, next, "name: 'Base',", `name: '${product}',`)
       return next
     })
     edit('src-tauri/Cargo.toml', (text, file) => {

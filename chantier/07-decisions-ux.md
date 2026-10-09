@@ -133,3 +133,6 @@ moins fragile techniquement.
 | | | | |
 | 2026-10-09 | D01, D16 appliquées par défaut (ids standard + alias ; `Mod+Shift+T` pour le thème dans `base`) | recommandation | L1 |
 | 2026-10-09 | Entorse : `createPersisted` n'a pas de `version` ; une entrée ancienne passe par `migrate`, les fichiers par `readVersioned` | extraction | L2 |
+| 2026-10-09 | D10, D11 appliquées par défaut (écran de chargement et bandeaux communs ; `app.shortcuts` ouvre les réglages sur « Raccourcis ») | recommandation | L3 |
+| 2026-10-09 | Entorse : `AnimatedMark` fait glisser chaque point depuis le précédent (ou `origins`) via `--from-x/--from-y` au lieu d'un jeu de keyframes par app ; avec `origins` le M de Maths et le Z de Mentale sont reproduits à l'identique. Les noms de classes passent de `.animated-logo*` à `.animated-mark*` | extraction | L3 |
+| 2026-10-09 | Entorse : pas de panneau « Apparence » dans `standardSettings` (rempli au L5) ; `standardSettings` renvoie en plus `placement` pour que `mergeSettings` range les panneaux ; `app.toolbarItems` remplacé par `toolbar` + `systemButtons` (la barre est refaite au L4) | extraction | L3 |
