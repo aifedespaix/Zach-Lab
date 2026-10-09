@@ -35,7 +35,10 @@ il s'appuie sur `@suite/shared/storage`, `app` et `commands`.
    Le prof voit toutes les copies et filtre par élève.
 7. **Élève et prof ont la main complète** sur leurs fichiers. Seule asymétrie : le prof peut annuler la
    suppression d'un fichier par un élève, l'inverse n'existe pas.
-8. Le prof s'inscrit sur le site, y crée ses élèves (identifiants), et les donne aux élèves — ou
+8. **Dossier de synchro par défaut par app, modifiable dans les réglages de toutes les apps.**
+9. **Maths : format `.zmath`** (les `.json` actuels restent lus). **`infra/` passe à la racine.**
+10. **1 élève = 1 prof.** Mise à jour des copies **à la demande**.
+11. Le prof s'inscrit sur le site, y crée ses élèves (identifiants), et les donne aux élèves — ou
    configure lui-même leurs machines.
 
 ## Ce qui existe déjà et qu'on réutilise

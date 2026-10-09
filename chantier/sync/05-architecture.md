@@ -44,8 +44,7 @@ chaque fichier (reprise après interruption).
 ## Serveur (PocketBase, un seul)
 
 Étendre `apps/zachart-mentale/infra/pocketbase-schema.mjs` (le schéma reste de la donnée, ce que le
-script d'application lit). Déplacer/renommer le dossier `infra/` en `infra/` à la racine ou
-`apps/sync-server/` : il sert maintenant toute la suite (décision à prendre au lot S1).
+script d'application lit). Le dossier `infra/` passe **à la racine** du dépôt (décision S0) : il sert maintenant toute la suite.
 
 | Collection | Contenu |
 |---|---|
@@ -83,8 +82,22 @@ client envoie `base_rev` avec sa modification ; si `base_rev ≠ rev` actuel, le
 | App | `kind` | extension | validateur existant à brancher |
 |---|---|---|---|
 | Mentale | `cours`, `exo`, `corrections`, `prise de notes` (déjà `MapType`) | `.zmap` | `validateCards`, `repairCards` |
-| Maths | `fiche` (Sheet v2) | `.json` (à confirmer dans le code) | lecture de `Sheet` (v1→v2), `parseBlocks` |
+| Maths | `fiche` (Sheet v2) | `.zmath` (les `.json` actuels restent lus, renommés à la première écriture) | lecture de `Sheet` (v1→v2), `parseBlocks` |
 | base | `note` (fichier de démonstration) | `.txt` | trivial — sert de référence et de test |
+
+## Cas particulier : `_ordre.json` (Maths)
+
+L'ordre d'un dossier est un fichier de dossier, pas une fiche. Il se synchronise avec `kind: ordre` et
+une règle propre déclarée par l'app (`FileFormat.merge`) : **fusion automatique par union** (garder
+l'ordre du serveur, ajouter les fichiers inconnus à la fin) — jamais de doublon pour ce fichier. C'est la
+seule exception à « pas de fusion », et l'ordre peut toujours être reconstruit depuis les fichiers.
+
+## Dossier de synchro et réglages
+
+Chaque app déclare son dossier **par défaut** dans `defineSyncApp({ folder })`. Le panneau
+« Synchronisation » (fourni par `standardSettings`, donc présent dans toutes les apps) permet de le
+changer, avec le même garde qu'au cas 17 : changer de dossier ne supprime rien sur le serveur et
+déclenche un état « nouveau dossier » (comparaison par `id`, pas de suppression de masse).
 
 ## Sécurité et vie privée (à ne pas oublier)
 

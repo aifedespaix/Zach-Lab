@@ -6,7 +6,7 @@
   **crée ses élèves** : identifiant + mot de passe. Chaque élève a un `teacher` (relation vers le prof).
 - Le prof donne les identifiants aux élèves, ou configure lui-même leur machine (URL serveur + identifiants).
 - Le prof a la main sur ses élèves : créer, réinitialiser un mot de passe, désactiver, supprimer.
-- Un élève n'appartient qu'à un prof (v1). Un prof ne voit jamais les élèves d'un autre prof.
+- Un élève n'appartient qu'à **un** prof (décision S0). Un prof ne voit jamais les élèves d'un autre prof.
 
 ## Le principe qui simplifie tout : une copie par élève
 

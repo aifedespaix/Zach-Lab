@@ -4,7 +4,7 @@
 
 | Lot | Titre | Taille | Dépend de | État | Notes |
 |---|---|---|---|---|---|
-| S0 | Décisions et cadrage | S | — | à faire | Analyse écrite (ce dossier) ; reste à clore les questions ouvertes de `06-lots.md` |
+| S0 | Décisions et cadrage | S | — | terminé | Décisions prises : voir `06-lots.md` (2 questions non bloquantes restent) |
 | S1 | Serveur unique | M | S0 | à faire | |
 | S2 | Moteur pur | L | S0 | à faire | |
 | S3 | Droits | S | S2 | à faire | |
