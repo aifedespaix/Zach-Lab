@@ -131,3 +131,5 @@ moins fragile techniquement.
 | Date | Décision | Prise par | Lot |
 |---|---|---|---|
 | | | | |
+| 2026-10-09 | D01, D16 appliquées par défaut (ids standard + alias ; `Mod+Shift+T` pour le thème dans `base`) | recommandation | L1 |
+| 2026-10-09 | Entorse : `createPersisted` n'a pas de `version` ; une entrée ancienne passe par `migrate`, les fichiers par `readVersioned` | extraction | L2 |

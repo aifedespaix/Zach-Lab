@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import { useCommandRegistry, type CommandRegistration } from './useCommandRegistry'
 import { useShortcutSettingsStore } from './useShortcutSettingsStore'
 import { formatBinding } from './keys'
+import { resolveCommandId } from './catalog'
 
 /**
  * Publishes `run` as the handler for `id` for as long as the component is
@@ -11,7 +12,8 @@ import { formatBinding } from './keys'
  * re-registering on every render — the registration only changes when the
  * command's availability (or its contextual label) actually changes.
  */
-export function useCommand(id: string, run: () => void, enabled = true, label?: string): void {
+export function useCommand(rawId: string, run: () => void, enabled = true, label?: string): void {
+  const id = resolveCommandId(rawId)
   const runRef = useRef(run)
   runRef.current = run
 
@@ -25,22 +27,25 @@ export function useCommand(id: string, run: () => void, enabled = true, label?: 
 
 /** Whether the command can be run right now — what a menu entry disables itself on. */
 export function useCommandEnabled(id: string): boolean {
-  return useCommandRegistry(state => state.registrations[id]?.enabled === true)
+  const current = resolveCommandId(id)
+  return useCommandRegistry(state => state.registrations[current]?.enabled === true)
 }
 
 /** The contextual label a handler published, falling back to the catalogue's. */
 export function useCommandLabel(id: string): string | undefined {
-  return useCommandRegistry(state => state.registrations[id]?.label)
+  const current = resolveCommandId(id)
+  return useCommandRegistry(state => state.registrations[current]?.label)
 }
 
 /** Runs a command by id — the same entry point a keystroke, a menu and the palette all use. */
 export function runCommand(id: string): boolean {
-  return useCommandRegistry.getState().run(id)
+  return useCommandRegistry.getState().run(resolveCommandId(id))
 }
 
 /** The command's binding as configured, or `null` when it has none. */
 export function useBinding(id: string): string | null {
-  return useShortcutSettingsStore(state => state.bindings[id] ?? null)
+  const current = resolveCommandId(id)
+  return useShortcutSettingsStore(state => state.bindings[current] ?? null)
 }
 
 /** The binding spelled for a human — « Ctrl + Maj + Z » — or `''` when unbound. */

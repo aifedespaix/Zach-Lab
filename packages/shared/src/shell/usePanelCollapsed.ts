@@ -1,26 +1,16 @@
 import { useCallback, useSyncExternalStore } from 'react'
+import { readStored, writeStored } from '../storage'
 
 // Every panel folded state is shared by key: the panel that owns it and an app command that wants to
 // unfold it (a toolbar button) read and write the same value.
 const listeners = new Set<() => void>()
-// Only used when `localStorage` is blocked: the choice then holds for the session.
-const memory = new Map<string, boolean>()
-
 function read(key: string): boolean {
-  try {
-    return localStorage.getItem(key) === '1'
-  } catch {
-    return memory.get(key) ?? false
-  }
+  return readStored(key) === '1'
 }
 
 /** Fold or unfold a panel from outside it; same storage and same notification as `usePanelCollapsed`. */
 export function setPanelCollapsed(key: string, value: boolean): void {
-  try {
-    localStorage.setItem(key, value ? '1' : '0')
-  } catch {
-    memory.set(key, value) // best-effort: see the contract below
-  }
+  writeStored(key, value ? '1' : '0') // best-effort: a blocked storage keeps it for the session
   listeners.forEach(listener => listener())
 }
 

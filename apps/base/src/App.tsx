@@ -1,18 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Download, Keyboard, Moon, Search, Settings as SettingsIcon } from 'lucide-react'
-import {
-  CommandButton,
-  CommandPalette,
-  useCommand,
-  useGlobalShortcuts,
-  useShortcutSettingsStore,
-} from '@suite/shared/commands'
+import { CommandPalette, useGlobalShortcuts, useShortcutSettingsStore } from '@suite/shared/commands'
 import { SettingsDialog, ShortcutSettingsPanel } from '@suite/shared/settings'
 import { AppShell, ResizablePanel, createPanelWidthStorage } from '@suite/shared/shell'
 import { startCircularThemeTransition, useResolvedTheme, useThemeDomSync, useThemeStore } from '@suite/shared/theme'
 import { TooltipProvider } from '@suite/shared/ui'
 import { UpdateReadyBanner, UpdateSettingsSection, useAppUpdater } from '@suite/shared/update'
-import './commands'
+import { CommandButton, useCommand } from './commands'
 
 // Each app picks its own bounds and its own storage keys: two apps of the suite
 // share a machine, but never a webview.

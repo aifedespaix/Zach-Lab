@@ -43,7 +43,7 @@ what is theirs by props, slots, options, or by registering it — the command
 catalogue (`defineCommandCatalog`), the settings panels and sources, the search
 ranking.
 
-- Public entry points only: `@suite/shared/{ui,theme,update,shell,commands,settings,search,math,tree,equation,testing}`
+- Public entry points only: `@suite/shared/{ui,theme,update,shell,commands,settings,search,math,tree,equation,storage,testing}`
   and `@suite/shared/theme.css`. Never import a file inside a sub-path.
 - Sources are consumed as TypeScript, with no build step. Inside `shared`, imports
   are **relative**, never `@suite/shared/…`.
@@ -53,6 +53,22 @@ ranking.
   Generate there, then `git mv` the files into `packages/shared/src/ui` and run
   `bun scripts/move-module.mjs <app> <old path> @suite/shared/ui`.
 - Tests (`@suite/shared/testing`, never imported by production code — `boundary.test.ts`): `describeAppContract(() => <App />, { name, reset, commandIds })` is the conformance suite every app plugs in via `src/app.contract.test.tsx` (the app declares its own `vi.mock`s); the next lots turn its `todo`s into checks. `createMemoryFs` is an in-memory `Fs`.
+- Standard commands (`@suite/shared/commands`, chantier L1): `standardCommands(['file.new', 'edit.undo', …], overrides?)` returns the
+  definitions of the shared vocabulary (`app.*`, `file.*`, `edit.*`, `view.toggleLeftPanel/RightPanel/zoom*/toggleDensity`,
+  `tree.*`; `STANDARD_CATEGORIES`) — an app may reword one or move its default key, never change its meaning. A catalogue that gives a
+  standard command's key to another command of the same scope throws in dev. `defineCommandCatalog({ …, aliases })` takes
+  `oldId → newId`: `commandById`, `isCommandId`, `runCommand`, `useCommand`, `useBinding` resolve an old id, and
+  `sanitizeShortcutSettings` rewrites it in an old `shortcuts.json` (the new id wins if both are there). Never rename a command id
+  without an alias. `createTypedCommands<typeof COMMANDS, 'old.id'>()` gives `useCommand`, `runCommand`, `CommandButton`,
+  `CommandMenuItem`, `CommandDropdownItem`… typed on the app's ids: call it once, in `commands.ts`. `apps/base` is the reference.
+- Persistence (`@suite/shared/storage`, chantier L2): the ONLY place that touches `localStorage` (`boundary.test.ts`).
+  `readStored`/`writeStored` never throw and fall back to memory. `defineAppStorage('zachart-maths').key('zoom')` →
+  `zachart-maths:zoom` (existing keys are kept as they are). `createPersisted({ key, fallback, parse, serialize?, migrate?, normalize? })`
+  is a zustand store `{ value, set, reset }` read once at creation; `persistedFlag` (`on`/`off` = the strings the key already holds),
+  `persistedNumber`, `persistedEnum`, `persistedSet`, `persistedJson` are its common cases. `readJsonConfig(name, { fallback, parse })` /
+  `writeJsonConfig(name, value)` read and write `appConfigDir` files (missing → fallback; unreadable → moved to `<name>.bak`; written
+  beside and renamed, which needs `fs:allow-rename`). `readVersioned(raw, { current, steps })` runs format migrations in order.
+  Maths and Mentale still use their own readers until their L2 migration (chantier 3).
 - Search is Orama (`@suite/shared/search`): `createSearchIndex(fields)`,
   `loadSearchIndex(fields, serialized)`. French, accent- and typo-tolerant.
 - Math is KaTeX (`@suite/shared/math`): `renderMathToHtml(latex, display?)`, bounded, never

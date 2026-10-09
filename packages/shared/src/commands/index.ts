@@ -1,4 +1,6 @@
 export * from './catalog'
+export * from './standard'
+export * from './typed'
 export * from './keys'
 export * from './shortcutSettingsTypes'
 export * from './shortcutSettingsPersistence'

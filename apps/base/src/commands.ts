@@ -1,38 +1,17 @@
-import { defineCommandCatalog } from '@suite/shared/commands'
+import { defineCommandCatalog, standardCommands, STANDARD_CATEGORIES, createTypedCommands } from '@suite/shared/commands'
 
 /**
  * What this app can do, declared once: the toolbar, the palette and the
- * shortcuts panel all read it. Add your app's actions here — a `category` must
- * be one of `categories` below — and register their handlers with `useCommand`.
+ * shortcuts panel all read it. Pick the standard commands the app has, add its
+ * own beside them (a `category` must be one of `categories`), and register their
+ * handlers with `useCommand`.
  */
 export const COMMANDS = [
-  {
-    id: 'app.palette',
-    label: 'Palette de commandes',
-    description: 'Cherche une action par son nom et la lance.',
-    category: 'app',
-    defaultBinding: 'Mod+K',
-    allowInEditable: true,
-  },
-  {
-    id: 'app.settings',
-    label: 'Paramètres',
-    description: 'Ouvre la fenêtre des paramètres.',
-    category: 'app',
-    defaultBinding: 'Mod+Comma',
-  },
-  {
-    id: 'app.toggleTheme',
-    label: 'Basculer le thème',
-    description: 'Passe du thème clair au thème sombre, et inversement.',
-    category: 'app',
-    defaultBinding: null,
-  },
+  ...standardCommands(['app.palette', 'app.settings', 'app.toggleTheme']),
 ] as const
 
 export type CommandId = (typeof COMMANDS)[number]['id']
 
-defineCommandCatalog({
-  categories: [{ id: 'app', label: 'Application' }],
-  commands: COMMANDS,
-})
+defineCommandCatalog({ categories: [...STANDARD_CATEGORIES], commands: COMMANDS })
+
+export const { useCommand, CommandButton } = createTypedCommands<typeof COMMANDS>()

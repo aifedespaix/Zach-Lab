@@ -1,3 +1,5 @@
+import { readStored, writeStored } from '../storage'
+
 /**
  * Remembered width for a resizable side panel.
  *
@@ -46,21 +48,13 @@ export function createPanelWidthStorage(options: {
     DEFAULT: fallback,
     clamp,
     load() {
-      try {
-        const raw = localStorage.getItem(key)
-        if (raw === null) return fallback
-        return clamp(Number.parseFloat(raw))
-      } catch {
-        return fallback
-      }
+      const raw = readStored(key)
+      if (raw === null) return fallback
+      return clamp(Number.parseFloat(raw))
     },
     save(width) {
-      try {
-        localStorage.setItem(key, String(clamp(width)))
-      } catch {
-        // Best-effort, same contract as `saveSessionState`: storage being
-        // blocked only costs the next launch its remembered width.
-      }
+      // Best-effort: storage being blocked only costs the next launch its remembered width.
+      writeStored(key, String(clamp(width)))
     },
   }
 }
