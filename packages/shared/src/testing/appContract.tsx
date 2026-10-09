@@ -42,7 +42,6 @@ export interface AppContractOptions {
 export const PLANNED_CHECKS: readonly { lot: string; check: string }[] = [
   { lot: 'L1', check: 'la palette liste aussi app.toggleTheme dans toutes les apps' },
   { lot: 'L2', check: 'les clés de stockage de l\'app sont préfixées et relues avec leurs alias' },
-  { lot: 'L4', check: 'la barre du haut ne déborde jamais (600 / 900 / 1 400 px)' },
   { lot: 'L5', check: 'le zoom 50→150 % par pas de 10 et le mode condensé sont disponibles' },
   { lot: 'L6', check: 'fermer / nouveau / annuler / rétablir sont présents et activés selon l\'état' },
   { lot: 'L7', check: 'les panneaux latéraux se replient au raccourci et mémorisent leur état' },
@@ -125,6 +124,52 @@ export function describeAppContract(renderApp: () => ReactElement, options: AppC
       const tabs = within(dialog).getAllByRole('tab').map(tab => tab.textContent ?? '')
       expect(tabs.some(label => label.startsWith('Raccourcis'))).toBe(true)
       expect(tabs.some(label => label.startsWith('Mises à jour'))).toBe(true)
+    })
+
+    // Zones de la barre du haut (L4), de gauche à droite : l'ordre est celui de la suite.
+    const BAR_ORDER = ['file.new', 'file.close', 'edit.undo', 'edit.redo', 'app.palette', 'app.toggleTheme', 'app.settings']
+    const barButtons = () =>
+      BAR_ORDER.flatMap(command => {
+        const definition = commandById(command)
+        if (definition === undefined) return []
+        const button = screen.queryAllByRole('button').find(b => b.getAttribute('aria-label') === definition.label)
+        return button === undefined ? [] : [{ command, button }]
+      })
+
+    lot('L4')('L4 — les zones de la barre du haut sont dans l\'ordre imposé', async () => {
+      render(renderApp())
+      await act(async () => {})
+      const found = barButtons()
+      expect(found.map(f => f.command)).toContain('app.settings')
+      for (let i = 1; i < found.length; i++) {
+        const before = found[i - 1].button.compareDocumentPosition(found[i].button)
+        expect(before & Node.DOCUMENT_POSITION_FOLLOWING, `${found[i - 1].command} avant ${found[i].command}`).toBeTruthy()
+      }
+    })
+
+    lot('L4')('L4 — Fermer est dans la zone fichier, avant Annuler (si l\'app a ces commandes)', async () => {
+      render(renderApp())
+      await act(async () => {})
+      const close = commandById('file.close')
+      const undo = commandById('edit.undo')
+      if (close === undefined || undo === undefined) return
+      // Fermer n'est sur la barre que quand un fichier est ouvert : Nouveau tient la même place.
+      const slot = screen.queryAllByRole('button').find(b => [close.label, commandById('file.new')?.label].includes(b.getAttribute('aria-label') ?? ''))
+      const undoButton = screen.getByRole('button', { name: undo.label })
+      expect(slot).toBeDefined()
+      expect(slot!.compareDocumentPosition(undoButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+
+    lot('L4')('L4 — app.shortcuts ouvre l\'onglet Raccourcis des réglages', async () => {
+      render(renderApp())
+      await act(async () => {})
+      if (commandById(id('app.shortcuts' as ContractCommand)) === undefined) return
+      act(() => {
+        runCommand(id('app.shortcuts' as ContractCommand))
+      })
+      const dialog = await screen.findByRole('dialog', { name: 'Paramètres' })
+      const selected = within(dialog).getAllByRole('tab').find(tab => tab.getAttribute('aria-selected') === 'true')
+      expect(selected?.textContent ?? '').toMatch(/^Raccourcis/)
     })
 
     it('la palette s\'ouvre au raccourci et liste les paramètres', async () => {

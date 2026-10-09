@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Moon, Search, Settings as SettingsIcon } from 'lucide-react'
-import { CommandButton, CommandPalette, useCommand, useGlobalShortcuts, useShortcutSettingsStore } from '../commands'
+import { CommandPalette, useCommand, useGlobalShortcuts, useShortcutSettingsStore } from '../commands'
 import { SettingsDialog, mergeSettings, standardSettings } from '../settings'
-import { AnimatedMark, AppBoot, AppShell, ResizablePanel, createPanelWidthStorage } from '../shell'
+import { AnimatedMark, AppBoot, AppShell, AppToolbar, ResizablePanel, createPanelWidthStorage, type ToolbarFile } from '../shell'
 import { useThemeDomSync, useToggleTheme } from '../theme'
 import { TooltipProvider } from '../ui'
 import { useAppUpdater } from '../update'
@@ -20,10 +19,8 @@ interface SuiteAppProps {
   left?: ReactNode
   /** Replaces the empty right panel; `null` = no right panel. */
   right?: ReactNode
-  /** The app's own toolbar items, before the system ones. */
-  toolbar?: ReactNode
-  /** The palette, theme and settings buttons. Default: shown. */
-  systemButtons?: boolean
+  /** The open file, for the bar: Nouveau ↔ Fermer, the title and its save state. Default: none open. */
+  file?: ToolbarFile
   /** The app is done loading; the loading screen waits for it (and for the floor). Default: ready. */
   ready?: boolean
   /** Covers and dialogs of the app, over the frame. */
@@ -41,8 +38,7 @@ export function SuiteApp({
   app,
   left,
   right,
-  toolbar,
-  systemButtons = true,
+  file,
   ready = true,
   overlays,
   children,
@@ -133,18 +129,7 @@ export function SuiteApp({
             right
           )
         }
-        toolbar={
-          <>
-            {toolbar}
-            {systemButtons && (
-              <>
-                <CommandButton command="app.palette" icon={Search} variant="ghost" size="icon-sm" />
-                <CommandButton command="app.toggleTheme" icon={Moon} variant="ghost" size="icon-sm" />
-                <CommandButton command="app.settings" icon={SettingsIcon} variant="ghost" size="icon-sm" />
-              </>
-            )}
-          </>
-        }
+        toolbar={<AppToolbar toolbar={app.toolbar} file={file} />}
         overlays={
           <>
             <AppBoot ready={ready} floorMs={app.bootFloorMs ?? 1300}>

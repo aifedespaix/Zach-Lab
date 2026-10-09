@@ -62,7 +62,7 @@ ranking.
   without an alias. `createTypedCommands<typeof COMMANDS, 'old.id'>()` gives `useCommand`, `runCommand`, `CommandButton`,
   `CommandMenuItem`, `CommandDropdownItem`… typed on the app's ids: call it once, in `commands.ts`. `apps/base` is the reference.
 - App frame (`@suite/shared/app`, chantier L3): `defineApp({ id, name, mark, bootFloorMs?, panels?, settings?, shortcuts?, onReady? })`
-  is an inert object (`id` prefixes the storage keys, e.g. `<id>:left-width`); `<SuiteApp app left? right? toolbar? systemButtons? ready? overlays?>{work area}</SuiteApp>`
+  is an inert object (`id` prefixes the storage keys, e.g. `<id>:left-width`); `<SuiteApp app left? right? file? ready? overlays?>{work area}</SuiteApp>`
   wires theme sync, global shortcuts (`app.shortcuts` = `isSuspended` / `canvasSelector`), the shortcut store init, `app.onReady` (once; may
   return a cleanup — keep the app's store init order there), the updater, the palette, the settings window, the loading screen and the
   banners, and registers `app.palette`, `app.settings`, `app.shortcuts` (opens the « Raccourcis » tab) and `app.toggleTheme`. `left`/`right`
@@ -75,6 +75,14 @@ ranking.
   Settings: `standardSettings({ shortcuts?, updates })` → `{ panels, sources, placement }`, `mergeSettings(standard, app)` puts the app's
   panels between « Raccourcis » (first) and « Mises à jour » (last); an app panel with a standard id replaces it. Maths and Mentale still wire
   all of this by hand (and keep their own `AnimatedLogo`) until their L3 migration (chantier 3). `apps/base/src/App.tsx` is 12 lines.
+- Top bar (`@suite/shared/shell`, chantier L4): `<SuiteApp file?>` draws `<AppToolbar toolbar={app.toolbar} file>` on an `OverflowToolbar`. Seven
+  zones, fixed order `file · edit · title · app · panels · view · system` (`TOOLBAR_ZONES`), each with a priority (`ZONE_PRIORITY`: file and
+  system leave last, the title first). The suite draws its own items when the catalogue has the command: `file.newOrClose` (`file.new` with no
+  file open, `file.close` with one — one slot), `file.menu` (« Fichier », from 3 actions: `file.new/open`, `tree.newFolder`, `file.save/rename/duplicate`,
+  `file.reveal`, `file.close/delete`), `edit.undo`, `edit.redo` (enabled by the app's `useCommand`), `title` (`FileTitle`, from `file = { open, name, path,
+  status: 'saved'|'saving'|'error' }`), `app.palette`, `app.toggleTheme` (`ThemeToggle`), `app.settings`. The app declares its own with
+  `defineApp({ toolbar: defineToolbar({ items: [{ id, zone: 'app', node, menu?, priority? }], hide: ['file.menu'] }) })`. `panels` and `view` stay
+  empty until L7 / L5. Buttons are `ghost` + `icon-sm`. Maths and Mentale still draw their own bar until their L4 migration (chantier 3).
 - Persistence (`@suite/shared/storage`, chantier L2): the ONLY place that touches `localStorage` (`boundary.test.ts`).
   `readStored`/`writeStored` never throw and fall back to memory. `defineAppStorage('zachart-maths').key('zoom')` →
   `zachart-maths:zoom` (existing keys are kept as they are). `createPersisted({ key, fallback, parse, serialize?, migrate?, normalize? })`

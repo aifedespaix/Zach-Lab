@@ -17,6 +17,7 @@ vi.mock('@tauri-apps/api/path', () => ({
 import { check } from '@tauri-apps/plugin-updater'
 import { Cog } from 'lucide-react'
 import { defineCommandCatalog, standardCommands, STANDARD_CATEGORIES, runCommand } from '../commands'
+import { defineToolbar } from '../shell'
 import { defineApp } from './defineApp'
 import { SuiteApp } from './SuiteApp'
 import { useAppStatusStore } from './useAppStatus'
@@ -83,9 +84,14 @@ describe('SuiteApp', () => {
     expect(tabs[0]).toHaveAttribute('aria-selected', 'true')
   })
 
-  it('`systemButtons={false}` retire palette, thème et réglages de la barre', async () => {
-    render(<SuiteApp app={makeApp()} systemButtons={false} toolbar={<button>À moi</button>}><main /></SuiteApp>)
+  it('`toolbar.hide` retire un item standard, et l\'app pose les siens dans la zone `app`', async () => {
+    const toolbar = defineToolbar({
+      items: [{ id: 'mine', zone: 'app', node: <button>À moi</button> }],
+      hide: ['app.toggleTheme'],
+    })
+    render(<SuiteApp app={makeApp({ toolbar })}><main /></SuiteApp>)
     expect(screen.getByRole('button', { name: 'À moi' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Paramètres' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Basculer le thème/ })).not.toBeInTheDocument()
     await act(async () => {})
   })

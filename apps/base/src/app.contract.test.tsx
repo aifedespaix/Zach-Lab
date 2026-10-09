@@ -15,4 +15,4 @@ vi.mock('@tauri-apps/api/path', () => ({
 
 import App from './App'
 
-describeAppContract(() => <App />, { name: 'base', reset: () => localStorage.clear(), adoptedLots: ['L1', 'L3'] })
+describeAppContract(() => <App />, { name: 'base', reset: () => localStorage.clear(), adoptedLots: ['L1', 'L3', 'L4'] })
