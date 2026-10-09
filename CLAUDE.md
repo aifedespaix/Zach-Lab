@@ -250,6 +250,13 @@ under `src/`, wired together in `App.tsx`:
 The app imports nothing from another app and only `@suite/shared` public entry points
 (`src/boundary.test.ts`).
 
+## Chantier « Harmonie » (mutualisation de la suite)
+
+`chantier/` holds the analysis and the plan that bring `apps/base` to ~95 % shared code and migrate Maths and
+Mentale onto it, **lot by lot**. Start at `chantier/README.md`; the next lot to do is in `chantier/suivi.md`; the
+generic prompts are in `chantier/prompts/`. Until a lot is `terminé`, the sections of this file describing the
+current (duplicated) state remain true. Never rename a command id, a storage key or a file format without an alias.
+
 ## Explore via the knowledge graph first
 
 A graphify knowledge graph exists at `graphify-out/graph.json` (4084 nodes, 206 communities, rebuilt from `git rev-parse HEAD`). For any question about architecture, "what calls X", data flow, or "where does Y live" — run `/graphify query "<question>"` before grepping or reading files raw. This applies to subagents too: if you spawn an Explore/general-purpose agent for a codebase question, tell it to check for `graphify-out/graph.json` and query it first instead of walking the tree cold.
