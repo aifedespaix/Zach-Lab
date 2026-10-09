@@ -59,9 +59,11 @@ describe('createApp — ce qui est renommé', () => {
     expect(read('apps', 'maths-college', 'src-tauri', 'src', 'main.rs')).toContain('maths_college_lib::run()')
     expect(read('apps', 'maths-college', 'src-tauri', 'build.rs')).toContain('maths-college-icon.ico')
 
-    const app = read('apps', 'maths-college', 'src', 'App.tsx')
-    expect(app).toContain("'maths-college:left-width'")
-    expect(app).toContain("'maths-college:right-width'")
+    // One string names the app for the frame: the storage keys (`<id>:left-width`…) derive from it.
+    const config = read('apps', 'maths-college', 'src', 'app.config.ts')
+    expect(config).toContain("id: 'maths-college',")
+    expect(config).toContain("name: 'Maths College',")
+    expect(read('apps', 'maths-college', 'src', 'App.tsx')).not.toMatch(/base/i)
   })
 
   it('ne laisse rien de « base » là où il identifie l\'app', () => {

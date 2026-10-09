@@ -43,7 +43,7 @@ what is theirs by props, slots, options, or by registering it — the command
 catalogue (`defineCommandCatalog`), the settings panels and sources, the search
 ranking.
 
-- Public entry points only: `@suite/shared/{ui,theme,update,shell,commands,settings,search,math,tree,equation,storage,testing}`
+- Public entry points only: `@suite/shared/{app,ui,theme,update,shell,commands,settings,search,math,tree,equation,storage,testing}`
   and `@suite/shared/theme.css`. Never import a file inside a sub-path.
 - Sources are consumed as TypeScript, with no build step. Inside `shared`, imports
   are **relative**, never `@suite/shared/…`.
@@ -61,6 +61,20 @@ ranking.
   `sanitizeShortcutSettings` rewrites it in an old `shortcuts.json` (the new id wins if both are there). Never rename a command id
   without an alias. `createTypedCommands<typeof COMMANDS, 'old.id'>()` gives `useCommand`, `runCommand`, `CommandButton`,
   `CommandMenuItem`, `CommandDropdownItem`… typed on the app's ids: call it once, in `commands.ts`. `apps/base` is the reference.
+- App frame (`@suite/shared/app`, chantier L3): `defineApp({ id, name, mark, bootFloorMs?, panels?, settings?, shortcuts?, onReady? })`
+  is an inert object (`id` prefixes the storage keys, e.g. `<id>:left-width`); `<SuiteApp app left? right? toolbar? systemButtons? ready? overlays?>{work area}</SuiteApp>`
+  wires theme sync, global shortcuts (`app.shortcuts` = `isSuspended` / `canvasSelector`), the shortcut store init, `app.onReady` (once; may
+  return a cleanup — keep the app's store init order there), the updater, the palette, the settings window, the loading screen and the
+  banners, and registers `app.palette`, `app.settings`, `app.shortcuts` (opens the « Raccourcis » tab) and `app.toggleTheme`. `left`/`right`
+  omitted = an empty resizable panel; `null` = no panel (Mentale during a quiz). `systemButtons={false}` drops the palette/theme/settings
+  buttons (an app with its own toolbar, until L4). The app's `app.config.ts` must import its `commands.ts` (the catalogue registers itself on
+  import). `useAppStatus()` → `push({ id, kind: 'error'|'info', text, action?, dismiss? })` / `remove(id)` feeds `StatusBannerStack` (same id =
+  replaced in place); « Mise à jour prête » is one entry of it. Shell: `AnimatedMark` (`MarkConfig`: 4 `points`, `colors`, ≤3 `segments`
+  as polylines, optional `origins` for where dots 2–4 slide in from; CSS `.animated-mark*` in `theme.css`; modes `draw-fade` / `draw-pulse`),
+  `AppBoot` (`ready` + `floorMs`), `StatusBanner`. Theme: `useToggleTheme()` (origin = click if given, else top centre), `ThemeToggle`.
+  Settings: `standardSettings({ shortcuts?, updates })` → `{ panels, sources, placement }`, `mergeSettings(standard, app)` puts the app's
+  panels between « Raccourcis » (first) and « Mises à jour » (last); an app panel with a standard id replaces it. Maths and Mentale still wire
+  all of this by hand (and keep their own `AnimatedLogo`) until their L3 migration (chantier 3). `apps/base/src/App.tsx` is 12 lines.
 - Persistence (`@suite/shared/storage`, chantier L2): the ONLY place that touches `localStorage` (`boundary.test.ts`).
   `readStored`/`writeStored` never throw and fall back to memory. `defineAppStorage('zachart-maths').key('zoom')` →
   `zachart-maths:zoom` (existing keys are kept as they are). `createPersisted({ key, fallback, parse, serialize?, migrate?, normalize? })`

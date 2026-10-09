@@ -515,3 +515,123 @@ math-field {
 /* La sous-ligne « opération » d'une équation (+ 3, × 2) : vert, foncé en thème clair et clair en thème sombre. */
 :root { --equation-operation: #15803d; }
 .dark { --equation-operation: #4ade80; }
+
+/* ---------------------------------------------------------------------------
+   `AnimatedMark` (shell) : la marque de l'app, quatre points reliés par jusqu'à trois traits, qui
+   s'écrit comme à la main. Chaque point glisse depuis où le stylo se trouvait : l'app donne ce
+   décalage dans `--from-x` / `--from-y` (unités de la grille 128 × 128).
+   `--draw-fade` : dessine, tient, efface le tout d'un bloc, recommence — « chargement ».
+   `--draw-pulse` : dessine une fois puis respire, sans reprise — « en attente ».
+   --------------------------------------------------------------------------- */
+.animated-mark-dot,
+.animated-mark-seg {
+  opacity: 0;
+}
+.animated-mark-seg {
+  stroke: #64748b;
+  stroke-width: 12;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  stroke-dasharray: 80;
+  stroke-dashoffset: 80;
+}
+.animated-mark-dot {
+  transform-origin: center;
+  --slide-from: translate(calc(var(--from-x, 0) * 1px), calc(var(--from-y, 0) * 1px)) scale(0.6);
+}
+.animated-mark-dot--1 {
+  --slide-from: scale(0.3);
+}
+
+@keyframes animated-mark-pop {
+  0%   { opacity: 0; transform: var(--slide-from); }
+  100% { opacity: 1; transform: translate(0, 0) scale(1); }
+}
+@keyframes animated-mark-draw-seg {
+  to { stroke-dashoffset: 0; opacity: 1; }
+}
+@keyframes animated-mark-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.08); }
+}
+
+.animated-mark--draw-pulse .animated-mark-dot--1 {
+  animation: animated-mark-pop 0.3s ease-out 0s forwards, animated-mark-pulse 2.2s ease-in-out 1.35s infinite;
+}
+.animated-mark--draw-pulse .animated-mark-dot--2 {
+  animation: animated-mark-pop 0.35s ease-out 0.3s forwards, animated-mark-pulse 2.2s ease-in-out 1.5s infinite;
+}
+.animated-mark--draw-pulse .animated-mark-dot--3 {
+  animation: animated-mark-pop 0.35s ease-out 0.65s forwards, animated-mark-pulse 2.2s ease-in-out 1.65s infinite;
+}
+.animated-mark--draw-pulse .animated-mark-dot--4 {
+  animation: animated-mark-pop 0.35s ease-out 1s forwards, animated-mark-pulse 2.2s ease-in-out 1.8s infinite;
+}
+.animated-mark--draw-pulse .animated-mark-seg--1 { animation: animated-mark-draw-seg 0.35s ease-out 0.3s forwards; }
+.animated-mark--draw-pulse .animated-mark-seg--2 { animation: animated-mark-draw-seg 0.35s ease-out 0.65s forwards; }
+.animated-mark--draw-pulse .animated-mark-seg--3 { animation: animated-mark-draw-seg 0.35s ease-out 1s forwards; }
+/* Estompée au repos : un filigrane qui attend, pas un morceau d'interface qui rivalise avec le texte. */
+.animated-mark--draw-pulse {
+  opacity: 0.55;
+}
+
+@keyframes animated-mark-cycle-1 {
+  0%        { opacity: 0; transform: var(--slide-from); }
+  8.3%      { opacity: 1; transform: translate(0, 0) scale(1); }
+  61%       { opacity: 1; transform: translate(0, 0) scale(1); }
+  72%, 100% { opacity: 0; transform: translate(0, 0) scale(1); }
+}
+@keyframes animated-mark-cycle-2 {
+  0%, 8.3%  { opacity: 0; transform: var(--slide-from); }
+  18%       { opacity: 1; transform: translate(0, 0) scale(1); }
+  61%       { opacity: 1; transform: translate(0, 0) scale(1); }
+  72%, 100% { opacity: 0; transform: translate(0, 0) scale(1); }
+}
+@keyframes animated-mark-cycle-3 {
+  0%, 18%   { opacity: 0; transform: var(--slide-from); }
+  27.8%     { opacity: 1; transform: translate(0, 0) scale(1); }
+  61%       { opacity: 1; transform: translate(0, 0) scale(1); }
+  72%, 100% { opacity: 0; transform: translate(0, 0) scale(1); }
+}
+@keyframes animated-mark-cycle-4 {
+  0%, 27.8% { opacity: 0; transform: var(--slide-from); }
+  37.5%     { opacity: 1; transform: translate(0, 0) scale(1); }
+  61%       { opacity: 1; transform: translate(0, 0) scale(1); }
+  72%, 100% { opacity: 0; transform: translate(0, 0) scale(1); }
+}
+@keyframes animated-mark-cycle-seg-1 {
+  0%, 8.3%  { opacity: 0; stroke-dashoffset: 80; }
+  18%       { opacity: 1; stroke-dashoffset: 0; }
+  61%       { opacity: 1; stroke-dashoffset: 0; }
+  72%, 100% { opacity: 0; stroke-dashoffset: 0; }
+}
+@keyframes animated-mark-cycle-seg-2 {
+  0%, 18%   { opacity: 0; stroke-dashoffset: 80; }
+  27.8%     { opacity: 1; stroke-dashoffset: 0; }
+  61%       { opacity: 1; stroke-dashoffset: 0; }
+  72%, 100% { opacity: 0; stroke-dashoffset: 0; }
+}
+@keyframes animated-mark-cycle-seg-3 {
+  0%, 27.8% { opacity: 0; stroke-dashoffset: 80; }
+  37.5%     { opacity: 1; stroke-dashoffset: 0; }
+  61%       { opacity: 1; stroke-dashoffset: 0; }
+  72%, 100% { opacity: 0; stroke-dashoffset: 0; }
+}
+.animated-mark--draw-fade .animated-mark-dot--1 { animation: animated-mark-cycle-1 3.6s ease-out infinite; }
+.animated-mark--draw-fade .animated-mark-dot--2 { animation: animated-mark-cycle-2 3.6s ease-out infinite; }
+.animated-mark--draw-fade .animated-mark-dot--3 { animation: animated-mark-cycle-3 3.6s ease-out infinite; }
+.animated-mark--draw-fade .animated-mark-dot--4 { animation: animated-mark-cycle-4 3.6s ease-out infinite; }
+.animated-mark--draw-fade .animated-mark-seg--1 { animation: animated-mark-cycle-seg-1 3.6s ease-out infinite; }
+.animated-mark--draw-fade .animated-mark-seg--2 { animation: animated-mark-cycle-seg-2 3.6s ease-out infinite; }
+.animated-mark--draw-fade .animated-mark-seg--3 { animation: animated-mark-cycle-seg-3 3.6s ease-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animated-mark-dot,
+  .animated-mark-seg {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+    stroke-dashoffset: 0;
+  }
+}

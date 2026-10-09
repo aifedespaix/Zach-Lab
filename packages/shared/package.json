@@ -16,6 +16,7 @@
     "./equation": "./src/equation/index.ts",
     "./tree": "./src/tree/index.ts",
     "./storage": "./src/storage/index.ts",
+    "./app": "./src/app/index.ts",
     "./testing": "./src/testing/index.ts"
   },
   "scripts": {
