@@ -246,6 +246,9 @@
  */
 [data-radix-popper-content-wrapper] {
   zoom: calc(1 / var(--app-zoom, 1));
+  /* Sans cela, un contenu `inline-flex` (l'infobulle) pose sa ligne dans l'enveloppe, dont la hauteur plancher est celle
+   * d'une ligne de texte zoomée à 1/zoom : dézoomé elle dépasse l'infobulle, qui s'éloigne de son bouton. */
+  display: flex;
 }
 [data-radix-popper-content-wrapper] > * {
   zoom: var(--app-zoom, 1);
