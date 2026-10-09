@@ -23,6 +23,7 @@
     "update:maths": "bun scripts/make-update.mjs maths",
     "update:all": "bun scripts/make-update.mjs all",
     "new-app": "bun scripts/new-app.mjs",
+    "measure:sharing": "bun scripts/measure-sharing.mjs",
     "test:scripts": "bun test scripts"
   }
 }

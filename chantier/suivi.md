@@ -8,13 +8,13 @@ et dont les dépendances le sont.
 ## État de référence
 
 Voir `09-non-regression.md` §1 : 3 547 tests (shared 554, base 10, Maths 647, Mentale 2 336) + admin 179 + scripts 89.
-Mesure de mutualisation de `base` au départ : *à relever au L0* (`bun run measure:sharing`).
+Mesure de mutualisation de `base` au départ (L0, `bun run measure:sharing`) : **95,9 %** — mais la mesure compte tout fichier atteint en entier (barrels compris) : elle est déjà ≥ 95 % car `base` est vide. Le critère qui reste discriminant est « `base` ≤ 150 lignes, `App.tsx` sans logique » (README).
 
 ## Lots
 
 | Lot | Titre | Taille | Dépend de | Fichier | État | Tests (après) | Mutualisation `base` | Notes / décisions par défaut |
 |---|---|---|---|---|---|---|---|---|
-| L0 | Socle et filet | M | — | [lots/L00-socle-et-filet.md](lots/L00-socle-et-filet.md) | à faire | | | |
+| L0 | Socle et filet | M | — | [lots/L00-socle-et-filet.md](lots/L00-socle-et-filet.md) | extrait | voir journal | base 95,9 % (lignes de `shared` atteintes depuis `main.tsx`, 4 002 / 4 175) ; Maths 49,5 % | Contrat branché sur les 3 apps (5 vérifs actives + 10 `todo` par lot). Mentale : `app.toggleTheme` s'appelle `view.toggleTheme` (alias via `commandIds`, L1). Rien à migrer côté apps : L0 est terminé côté chantier 3. S1 : voie A (CSS) pour D09. S2 : livré. |
 | L1 | Commandes | M | L0 | [lots/L01-commandes.md](lots/L01-commandes.md) | à faire | | | |
 | L2 | Persistance | M | L0 | [lots/L02-persistance.md](lots/L02-persistance.md) | à faire | | | |
 | L3 | Cadre et démarrage | L | L1, L2 | [lots/L03-cadre-et-demarrage.md](lots/L03-cadre-et-demarrage.md) | à faire | | | |
@@ -42,4 +42,5 @@ Voir `07-decisions-ux.md`. Décisions non validées au démarrage d'un lot : pri
 
 | Date | Lot | Événement |
 |---|---|---|
+| 2026-10-09 | L0 | Extrait : `@suite/shared/testing` (`describeAppContract`, `createMemoryFs`), `bun run measure:sharing`, spikes S1 (voie A) et S2 (`scripts/baseline-shots.mjs`). |
 | 2026-10-09 | — | Chantier 1 (analyse) terminé : `chantier/` créé, état de référence relevé. |
