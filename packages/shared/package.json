@@ -18,7 +18,9 @@
     "./storage": "./src/storage/index.ts",
     "./app": "./src/app/index.ts",
     "./view": "./src/view/index.ts",
-    "./testing": "./src/testing/index.ts"
+    "./testing": "./src/testing/index.ts",
+    "./history": "./src/history/index.ts",
+    "./files": "./src/files/index.ts"
   },
   "scripts": {
     "test": "vitest run"

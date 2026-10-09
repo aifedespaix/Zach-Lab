@@ -14,7 +14,7 @@
     "fs:allow-rename",
     {
       "identifier": "fs:scope",
-      "allow": ["$APPCONFIG/**"]
+      "allow": ["$APPCONFIG/**", "$DOCUMENT/Base", "$DOCUMENT/Base/**"]
     },
     "updater:default"
   ]

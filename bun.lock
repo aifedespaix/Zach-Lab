@@ -7,11 +7,12 @@
     },
     "apps/base": {
       "name": "base",
-      "version": "3.1.0",
+      "version": "3.3.0",
       "dependencies": {
         "@suite/shared": "workspace:*",
         "@tailwindcss/vite": "^4.3.3",
         "@tauri-apps/api": "^2",
+        "@tauri-apps/plugin-fs": "~2",
         "lucide-react": "^1.41.0",
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
@@ -33,7 +34,7 @@
     },
     "apps/zachart-maths": {
       "name": "zachart-maths",
-      "version": "3.2.4",
+      "version": "3.3.3",
       "dependencies": {
         "@suite/shared": "workspace:*",
         "@tailwindcss/vite": "^4.3.3",
@@ -68,7 +69,7 @@
     },
     "apps/zachart-mentale": {
       "name": "zachart-mentale",
-      "version": "3.1.0",
+      "version": "3.3.0",
       "dependencies": {
         "@fontsource-variable/geist": "^5.3.0",
         "@suite/shared": "workspace:*",
