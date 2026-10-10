@@ -121,7 +121,7 @@ export function NewSheetDialog() {
 
   return (
     <Dialog open={open} onOpenChange={o => { if (!o) close() }}>
-      <DialogContent onOpenAutoFocus={e => { e.preventDefault(); titleRef.current?.focus() }}>
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg" onOpenAutoFocus={e => { e.preventDefault(); titleRef.current?.focus() }}>
         <form onSubmit={submit} style={{ display: 'contents' }}>
           <DialogHeader>
             <DialogTitle>Nouvelle fiche</DialogTitle>

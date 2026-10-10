@@ -122,7 +122,8 @@ export function NewMindMapDialog({ onClose, onCreated }: NewMindMapDialogProps) 
 
   return (
     <Dialog open onOpenChange={open => !open && onClose()}>
-      <DialogContent>
+      {/* Wider than the default `sm:max-w-sm` and scrollable: a deep folder name or zoom 150 % must not push the fields out. */}
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Nouvelle carte mentale</DialogTitle>
           {options.length === 0 && (
@@ -133,14 +134,17 @@ export function NewMindMapDialog({ onClose, onCreated }: NewMindMapDialogProps) 
         </DialogHeader>
 
         {options.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 }}>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
               <span style={{ fontWeight: 500 }}>Dossier</span>
               <select
                 aria-label="Dossier de destination"
                 value={folder}
                 onChange={event => setFolder(event.target.value)}
                 style={{
+                  width: '100%',
+                  minWidth: 0,
+                  boxSizing: 'border-box',
                   padding: '6px 8px',
                   borderRadius: 8,
                   border: '1px solid var(--border)',
@@ -157,7 +161,7 @@ export function NewMindMapDialog({ onClose, onCreated }: NewMindMapDialogProps) 
               </select>
             </label>
 
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
               <span style={{ fontWeight: 500 }}>Nom</span>
               <input
                 autoFocus
@@ -169,6 +173,9 @@ export function NewMindMapDialog({ onClose, onCreated }: NewMindMapDialogProps) 
                 }}
                 placeholder="Chapitre 1"
                 style={{
+                  width: '100%',
+                  minWidth: 0,
+                  boxSizing: 'border-box',
                   padding: '6px 8px',
                   borderRadius: 8,
                   border: '1px solid var(--border)',
