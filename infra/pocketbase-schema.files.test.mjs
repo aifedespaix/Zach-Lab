@@ -58,3 +58,37 @@ describe('files', () => {
     expect(plan.changes.length).toBeGreaterThan(0)
   })
 })
+
+describe('files : règles', () => {
+  const { rules } = byName(FILES_COLLECTION)
+
+  it('un élève ne lit que ses copies, un prof celles de ses élèves', () => {
+    for (const rule of [rules.listRule, rules.viewRule]) {
+      expect(rule).toContain('owner = @request.auth.id')
+      expect(rule).toContain('@request.auth.role = "prof"')
+      expect(rule).toContain('owner.teacher = @request.auth.id')
+    }
+  })
+
+  it('personne ne peut écrire rev, ni changer owner', () => {
+    expect(rules.createRule).toContain('@request.body.rev:isset = false')
+    expect(rules.updateRule).toContain('@request.body.rev:isset = false')
+    expect(rules.updateRule).toContain('@request.body.owner:isset = false')
+  })
+
+  it('on ne crée une copie que pour soi, ou pour un de ses élèves', () => {
+    expect(rules.createRule).toContain('@request.body.owner = @request.auth.id')
+    expect(rules.createRule).toContain('@request.body.owner.teacher = @request.auth.id')
+    expect(rules.createRule).toContain('@request.body.deleted_at:isset = false')
+  })
+
+  it('seul un prof peut vider deleted_at (annuler une suppression)', () => {
+    expect(rules.updateRule).toContain('@request.body.deleted_at:isset = false')
+    expect(rules.updateRule).toContain('@request.body.deleted_at != ""')
+    expect(rules.updateRule).toContain('@request.auth.role = "prof"')
+  })
+
+  it('la suppression définitive est réservée au serveur', () => {
+    expect(rules.deleteRule).toBeNull()
+  })
+})

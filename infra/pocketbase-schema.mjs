@@ -667,12 +667,24 @@ export const FILE_INDEXES = [
   'CREATE UNIQUE INDEX `idx_files_owner_app_file_id` ON `files` (`owner`, `app`, `file_id`)',
 ]
 
-// Remplacé par les vraies règles (tâche 2) : en attendant, superutilisateurs seuls.
+const FILE_VISIBLE = `owner = @request.auth.id || (@request.auth.role = "prof" && owner.teacher = @request.auth.id)`
+
+/**
+ * Table de droits de 03-prof-et-eleves.md. Élève et prof ont la main complète
+ * sur leurs fichiers ; la seule asymétrie : annuler une suppression (vider
+ * `deleted_at`) est réservé au prof. Ni `rev` (le serveur compte), ni `owner`
+ * (une copie ne change pas de main) ne s'écrivent depuis un client.
+ */
 export const FILE_RULES = {
-  listRule: null,
-  viewRule: null,
-  createRule: null,
-  updateRule: null,
+  listRule: FILE_VISIBLE,
+  viewRule: FILE_VISIBLE,
+  createRule:
+    '@request.auth.id != "" && @request.body.rev:isset = false && @request.body.deleted_at:isset = false' +
+    ' && (@request.body.owner = @request.auth.id || (@request.auth.role = "prof" && @request.body.owner.teacher = @request.auth.id))',
+  updateRule:
+    `(${FILE_VISIBLE}) && @request.body.rev:isset = false && @request.body.owner:isset = false` +
+    ' && (@request.body.deleted_at:isset = false || @request.body.deleted_at != "" || @request.auth.role = "prof")',
+  // Suppression définitive : le serveur seul (purge de la corbeille après 30 jours).
   deleteRule: null,
 }
 
