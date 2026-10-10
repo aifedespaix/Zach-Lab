@@ -332,7 +332,7 @@ root** — this is the user's real personal course content, not example/demo dat
 and the repo is open source. Don't Read the PDFs directly unless the task is
 specifically converting that course; the mind map files are the thing to
 inspect for content. Never `git add -f` anything under either directory. Never
-`git add -A` either: add explicit paths (`apps/*/infra/.env` holds credentials).
+`git add -A` either: add explicit paths (`infra/.env` holds credentials, as did the old `apps/*/infra/.env`).
 
 ## RTK is already active
 

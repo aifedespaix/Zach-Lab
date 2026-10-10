@@ -116,8 +116,10 @@ export const MIND_MAP_RULES = {
   // A PocketBase rule is per RECORD, not per field: `author || prof` lets a prof
   // write ANY field, `content` included, so "the author pushes content, the prof
   // pushes path" is a CLIENT discipline, not a server guarantee. Acceptable
-  // here — one server belongs to one prof, who administers it — and the property
-  // that protects people survives: a pupil cannot touch another pupil's record.
+  // here, and the property that protects people survives: a pupil cannot touch
+  // another pupil's record. CAVEAT: with invite codes SEVERAL profs can exist on
+  // one server, and this collection (like sync_events and sync_conflicts) is open
+  // to ANY prof account until the Synchro chantier (S1/S3/S7) scopes it per teacher.
   updateRule: '@request.auth.username = author || @request.auth.role = "prof"',
   deleteRule: '@request.auth.username = author || @request.auth.role = "prof"',
 }

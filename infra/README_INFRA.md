@@ -89,20 +89,28 @@ Dans Dokploy, créez une application « Docker Compose » pointant sur
 Exposez le port `8090` derrière votre tunnel Cloudflare, sur le sous-domaine de
 votre choix (ex. `cartes.mon-domaine.fr`).
 
-> **Si votre déploiement existe déjà, il n'y a RIEN à reconfigurer côté
-> Dokploy ni côté tunnel.** Le service, son nom, son port `8090` et son volume
-> `pb_data` sont inchangés ; seule la façon de fabriquer l'image change. Le
-> domaine que vous avez déjà servira le site en plus de l'API.
+> **Si votre déploiement existe déjà, UNE chose est à changer dans Dokploy :
+> le chemin du fichier compose.** Le compose a quitté
+> `apps/zachart-mentale/infra/docker-compose.yml` : il est maintenant
+> `infra/docker-compose.yml`. Sans cette modification, Dokploy ne trouve plus
+> son fichier et le redéploiement échoue.
 >
-> Une seule chose est à vérifier dans Dokploy : que le service est bien
-> **construit depuis le dépôt** et non tiré d'un registre. Le compose déclare
-> désormais `build:` au lieu de `image:` — Dokploy le fait tout seul au premier
-> redéploiement, mais s'il avait mis l'image en cache, un « Redeploy » (ou
-> « Rebuild ») force la reconstruction.
->
-> Le contexte de construction est la **racine du dépôt**, pas `infra/` : l'image
-> a besoin de `apps/site` et de `apps/zachart-mentale/src`. C'est déjà ce que
-> déclare le compose (`context: ..`) ; rien à saisir.
+> - Dans Dokploy, ouvrez l'application, champ « Compose Path » : saisissez
+>   `infra/docker-compose.yml`.
+> - Le contexte de construction est la **racine du dépôt**, pas `infra/` :
+>   l'image a besoin de `apps/site` et de `apps/zachart-mentale/src`. C'est déjà
+>   ce que déclare le compose (`context: ..`) ; rien à saisir.
+> - Inchangés : le nom du service, le port `8090`, le volume `pb_data` (les
+>   données sont conservées) et le tunnel Cloudflare. Le domaine que vous avez
+>   déjà servira le site en plus de l'API.
+> - Le compose déclare désormais `build:` au lieu de `image:` : au premier
+>   redéploiement, faites un « Rebuild » pour forcer la reconstruction si
+>   Dokploy avait mis l'image en cache.
+> - Après le redéploiement, ouvrez le journal du job `schema` : il doit montrer
+>   `invite_codes` **créée** avant la mise à jour de `users`.
+> - **Déplacez votre `.env` local** : `apps/zachart-mentale/infra/.env` doit
+>   devenir `infra/.env` (les scripts ne lisent plus que celui-là). L'ancien
+>   emplacement reste ignoré par git, mais n'est plus lu.
 
 Le premier build est plus long que d'habitude (il installe les dépendances du
 site et le compile, soit une poignée de secondes à quelques minutes selon la
@@ -436,12 +444,24 @@ une page du site (`apps/site/src/app/bibliotheque/`, voir son `README.md`) :
 bun run infra/setup-pocketbase.mjs --check   # 0 = le serveur a tout ce qu'il faut
 ```
 
+## Limite connue : collections de synchronisation
+
+Avec les codes d'invitation, **plusieurs profs** peuvent exister sur un même
+serveur. Les règles de `sync_events`, `sync_conflicts` et `cartes_mentales` ne
+sont pas encore cloisonnées par prof (elles appartiennent au chantier Synchro,
+lots S1/S3/S7) : un prof peut lire les événements et conflits de synchronisation
+des élèves d'un autre prof, et modifier ou supprimer n'importe quelle carte.
+Les comptes (`users`) sont, eux, cloisonnés.
+
+En attendant le chantier Synchro, ne donnez de code d'invitation qu'à des
+collègues de confiance.
+
 ## Tests
 
-- `bun run test:infra` (depuis la racine) lance les tests unitaires de `infra/`. Le
-  script appelle le `vitest` installé dans `apps/zachart-mentale/node_modules` : ni
-  `vitest` seul (non résolu depuis la racine) ni `bunx vitest` (télécharge une
-  autre version) ne conviennent.
+- `bun run test:infra` (depuis la racine) lance les tests unitaires de `infra/` avec
+  le `vitest` installé à la racine du dépôt (devDependency du `package.json` racine,
+  environnement Node). Un `bun install` suffit. La CI le joue dans
+  `infra-pocketbase.yml` et dans le job `infra` de `build.yml`.
 - `bun run infra/integration.mjs` joue les scénarios S1–S9 (inscription par code,
   élèves, hooks, règles) contre un **vrai** PocketBase, qui doit avoir été
   configuré avec `--no-rate-limits`. `--only-rate-limit` joue S10 (le `429`), après

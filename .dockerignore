@@ -25,6 +25,9 @@ dist/
 
 infra/backups/
 infra/.env
+# Ancien emplacement, gardé exclu exprès.
+apps/*/infra/backups/
+apps/*/infra/.env
 
 graphify-out/
 docs/

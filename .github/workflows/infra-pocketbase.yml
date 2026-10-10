@@ -32,6 +32,11 @@ jobs:
       - name: install frontend dependencies
         run: bun install
 
+      # Les tests de schéma et de règles (sans serveur) échouent ici, avant de
+      # lancer un conteneur : ils ne tournaient nulle part en CI.
+      - name: unit tests of the schema, rules and hooks
+        run: bun run test:infra
+
       # La version n'est PAS réécrite ici : elle est lue dans le Dockerfile, qui
       # est depuis l'arrivée de l'interface d'administration le seul endroit où
       # l'image de base est nommée (le compose, lui, construit). La CI prouve

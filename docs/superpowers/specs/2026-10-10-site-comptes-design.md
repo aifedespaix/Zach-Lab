@@ -178,3 +178,5 @@ design de la vitrine, moteur de synchronisation, schéma `files`, migration de M
 - Le `/compte/` de l'administrateur est en **lecture seule** : son mot de passe serait réécrit par `infra/.env` à chaque démarrage.
 - La limitation de débit de l'inscription est une **règle de PocketBase** (5 requêtes / 60 s sur `POST /api/inscription`), avec sa propre politique d'activation ; `--no-rate-limits` permet de jouer les scénarios d'intégration S1–S9 avant de l'appliquer.
 - Dans `/bibliotheque`, les listes internes défilent **avec la page** : `AppShell` n'a pas de hauteur fixe.
+- Les collections de synchronisation (`sync_events`, `sync_conflicts`, `cartes_mentales`) ne sont **pas cloisonnées par prof** : tout compte prof peut lire les événements et conflits des élèves d'un autre prof, et modifier ou supprimer n'importe quelle carte. Décision : documenté (`infra/README_INFRA.md`, « Limite connue »), à corriger par le chantier Synchro (S1/S3/S7).
+- Supprimer un prof qui a encore des élèves est refusé par le hook `infra/pb_hooks/users.pb.js` (le superutilisateur contourne les règles de collection, donc la règle seule ne suffirait pas).

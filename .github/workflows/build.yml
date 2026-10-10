@@ -37,6 +37,22 @@ jobs:
       - name: build the site
         run: bun run --filter site build
 
+  # Les tests unitaires de `infra/` (schéma, règles, hooks) : sans ce job, ils ne
+  # tournent que sur les PR qui touchent `infra/**` (workflow infra-pocketbase).
+  infra:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: setup bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: run infra tests
+        run: bun run test:infra
+
   build-windows:
     runs-on: windows-latest
     steps:

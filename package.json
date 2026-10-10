@@ -5,13 +5,16 @@
     "apps/*",
     "packages/*"
   ],
+  "devDependencies": {
+    "vitest": "^5.0.3"
+  },
   "scripts": {
     "dev": "bun run --filter zachart-mentale dev",
     "build": "bun run --filter zachart-mentale build",
     "tauri": "bun run --filter zachart-mentale tauri",
     "test": "bun run --filter '*' test",
     "test:all": "bun run test && bun run test:infra && bun run test:scripts",
-    "test:infra": "bun apps/zachart-mentale/node_modules/vitest/vitest.mjs run --root infra",
+    "test:infra": "vitest run --root infra --environment node",
     "site:dev": "bun run --filter site dev",
     "site:build": "bun run --filter site build",
     "infra:check": "bun run infra/setup-pocketbase.mjs --check",
