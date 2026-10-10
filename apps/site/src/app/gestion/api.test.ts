@@ -121,7 +121,16 @@ describe('toPocketBaseDate / expiration', () => {
 
 describe('describeApiError', () => {
   it('traduit les erreurs de champ', () => {
-    expect(describeApiError({ status: 400, response: { data: { username: { message: 'x' } } } })).toBe('username : x')
+    expect(describeApiError({ status: 400, response: { data: { username: { message: 'x' } } } })).toBe('Identifiant : x')
+  })
+  it('traduit les codes PocketBase connus', () => {
+    const err = (key: string, code: string) => ({ status: 400, response: { data: { [key]: { code, message: 'Invalid value.' } } } })
+    expect(describeApiError(err('oldPassword', 'validation_invalid_old_password'))).toBe('Mot de passe actuel : incorrect')
+    expect(describeApiError(err('username', 'validation_not_unique'))).toBe('Identifiant : déjà utilisé')
+  })
+  it('code inconnu : texte du serveur ; champ inconnu : clé brute', () => {
+    expect(describeApiError({ status: 400, response: { data: { username: { code: 'validation_zzz', message: 'Bizarre.' } } } })).toBe('Identifiant : Bizarre.')
+    expect(describeApiError({ status: 400, response: { data: { autre: { code: 'validation_not_unique', message: 'm' } } } })).toBe('autre : déjà utilisé')
   })
   it('serveur injoignable, accès refusé, repli', () => {
     expect(describeApiError({ status: 0 })).toBe('Serveur injoignable.')

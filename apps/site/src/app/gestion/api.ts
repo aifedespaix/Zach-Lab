@@ -25,6 +25,20 @@ const toCode = (r: RecordModel): CodeRow => ({
   revoked: r.revoked === true, note: text(r.note), created: text(r.created),
 })
 
+const FIELD_NAMES: Record<string, string> = {
+  oldPassword: 'Mot de passe actuel', password: 'Nouveau mot de passe', passwordConfirm: 'Confirmation du mot de passe',
+  username: 'Identifiant', code: 'Code', expires_at: 'Date d’expiration', teacher: 'Professeur', email: 'Courriel',
+}
+
+const ERROR_CODES: Record<string, string> = {
+  validation_invalid_old_password: 'incorrect',
+  validation_not_unique: 'déjà utilisé',
+  validation_required: 'obligatoire',
+  validation_values_mismatch: 'ne correspond pas',
+  validation_min_text_constraint: 'trop court',
+  validation_max_text_constraint: 'trop long',
+}
+
 interface ApiErrorShape {
   status?: unknown
   response?: { data?: unknown; message?: unknown }
@@ -38,8 +52,14 @@ export function describeApiError(error: unknown): string {
   if (status === 401 || status === 403) return 'Accès refusé : reconnectez-vous.'
   const fields = shape.response?.data
   if (typeof fields === 'object' && fields !== null) {
-    const first = Object.entries(fields)[0] as [string, { message?: unknown } | undefined] | undefined
-    if (typeof first?.[1]?.message === 'string') return `${first[0]} : ${first[1].message}`
+    const first = Object.entries(fields)[0] as [string, { code?: unknown; message?: unknown } | undefined] | undefined
+    if (first !== undefined) {
+      const [key, detail] = first
+      // Le code PocketBase est stable, son texte est en anglais : on traduit le code, sinon on garde le texte serveur.
+      const known = typeof detail?.code === 'string' ? ERROR_CODES[detail.code] : undefined
+      const reason = known ?? (typeof detail?.message === 'string' ? detail.message : undefined)
+      if (reason !== undefined) return `${FIELD_NAMES[key] ?? key} : ${reason}`
+    }
   }
   const message = shape.response?.message
   return typeof message === 'string' && message !== '' ? message : `Erreur ${status}.`

@@ -8,7 +8,10 @@ import { describeApiError } from '../gestion/api'
 import { passwordError, usernameError } from '../gestion/validation'
 import { InlineError, SecretNotice } from '../gestion/parts'
 
-type Prof = { id: string; username: string }
+// Laisse le temps de lire le message avant la redirection.
+const RECONNECT_REDIRECT_MS = 2500
+
+type Prof ={ id: string; username: string }
 
 /** Message d'une erreur : une erreur locale garde son texte, une erreur serveur est traduite. */
 const messageOf = (e: unknown) => (e instanceof Error && !('status' in e) ? e.message : describeApiError(e))
@@ -56,12 +59,21 @@ function PasswordSection({ prof }: { prof: Prof }) {
     setError(null)
     try {
       await pb.collection('users').update(prof.id, { oldPassword, password, passwordConfirm: confirm })
-      // PocketBase invalide le jeton au changement de mot de passe : on se reconnecte pour rester sur la page.
+    } catch (e) {
+      // Changement refusé : rien n'est vidé, l'utilisateur corrige et réessaie.
+      return setError(messageOf(e))
+    }
+    // Dès ici le mot de passe a changé et l'ancien jeton est invalide : les champs ne servent plus.
+    setOld(''); setNew(''); setConfirm('')
+    try {
+      // PocketBase invalide le jeton : on se reconnecte pour rester sur la page.
       await loginAny(prof.username, password)
       setDone(true)
-      setOld(''); setNew(''); setConfirm('')
-    } catch (e) {
-      setError(messageOf(e))
+    } catch {
+      // « Identifiant incorrect » serait faux : le changement a réussi, seule la reconnexion a échoué.
+      setError('Mot de passe modifié, mais la reconnexion a échoué : reconnectez-vous.')
+      logout()
+      window.setTimeout(() => window.location.replace('/login/'), RECONNECT_REDIRECT_MS)
     }
   }
   return (

@@ -88,12 +88,47 @@ describe('/compte — prof', () => {
     expect(h.update).not.toHaveBeenCalled()
   })
 
-  it('affiche l’erreur 400 de PocketBase pour un identifiant déjà pris', async () => {
-    h.update.mockRejectedValue({ status: 400, response: { data: { username: { message: 'Cet identifiant est déjà utilisé.' } } } })
+  it('affiche en français l’erreur 400 d’un identifiant déjà pris', async () => {
+    h.update.mockRejectedValue({ status: 400, response: { data: { username: { code: 'validation_not_unique', message: 'The username is invalid or already in use.' } } } })
     render(<ComptePage />)
     type(main().getByLabelText('Identifiant'), 'durand')
     fireEvent.click(main().getByRole('button', { name: 'Changer l’identifiant' }))
-    expect(await main().findByRole('alert')).toHaveTextContent('Cet identifiant est déjà utilisé.')
+    expect(await main().findByRole('alert')).toHaveTextContent('Identifiant : déjà utilisé')
+  })
+
+  it('traduit un ancien mot de passe erroné, garde les champs et ne se reconnecte pas', async () => {
+    h.update.mockRejectedValue({ status: 400, response: { data: { oldPassword: { code: 'validation_invalid_old_password', message: 'Invalid value.' } } } })
+    render(<ComptePage />)
+    type(main().getByLabelText('Mot de passe actuel'), 'mauvaismotdepasse')
+    type(main().getByLabelText('Nouveau mot de passe'), 'nouveaumotdepasse')
+    type(main().getByLabelText('Confirmer le nouveau mot de passe'), 'nouveaumotdepasse')
+    fireEvent.click(main().getByRole('button', { name: 'Changer le mot de passe' }))
+    expect(await main().findByRole('alert')).toHaveTextContent('Mot de passe actuel : incorrect')
+    expect(h.loginAny).not.toHaveBeenCalled()
+    expect(main().getByLabelText('Mot de passe actuel')).toHaveValue('mauvaismotdepasse')
+    expect(main().getByLabelText('Nouveau mot de passe')).toHaveValue('nouveaumotdepasse')
+  })
+
+  it('mot de passe changé mais reconnexion en échec : message exact, champs vidés, déconnexion puis redirection', async () => {
+    const replace = vi.fn()
+    vi.stubGlobal('location', { ...window.location, replace })
+    h.loginAny.mockRejectedValue(new Error('Identifiant ou mot de passe incorrect.'))
+    render(<ComptePage />)
+    type(main().getByLabelText('Mot de passe actuel'), 'ancienmotdepasse')
+    type(main().getByLabelText('Nouveau mot de passe'), 'nouveaumotdepasse')
+    type(main().getByLabelText('Confirmer le nouveau mot de passe'), 'nouveaumotdepasse')
+    fireEvent.click(main().getByRole('button', { name: 'Changer le mot de passe' }))
+    const alert = await main().findByRole('alert')
+    expect(alert).toHaveTextContent('Mot de passe modifié, mais la reconnexion a échoué : reconnectez-vous.')
+    expect(alert).not.toHaveTextContent('Identifiant ou mot de passe incorrect')
+    expect(main().getByLabelText('Mot de passe actuel')).toHaveValue('')
+    expect(main().getByLabelText('Nouveau mot de passe')).toHaveValue('')
+    expect(main().getByLabelText('Confirmer le nouveau mot de passe')).toHaveValue('')
+    expect(h.logout).toHaveBeenCalledTimes(1)
+    // La redirection est différée pour laisser lire le message.
+    expect(replace).not.toHaveBeenCalled()
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/login/'), { timeout: 4000 })
+    vi.unstubAllGlobals()
   })
 
   it('se déconnecte', () => {
