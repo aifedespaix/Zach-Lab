@@ -1,7 +1,7 @@
 import type { RecordModel } from 'pocketbase'
 import { describe, it, expect } from 'vitest'
 import { INVITE_ALPHABET, INVITE_LENGTH } from '../lib/inviteCode'
-import { createCode, createUser, describeApiError, setPassword, type Client } from './api'
+import { createCode, createUser, describeApiError, setPassword, toPocketBaseDate, type Client } from './api'
 
 const record = (id: string, extra: Record<string, unknown> = {}): RecordModel => ({ id, collectionId: '', collectionName: '', ...extra })
 
@@ -75,6 +75,35 @@ describe('createCode', () => {
     const { client, calls } = fakeClient([boom])
     await expect(createCode({ kind: 'unique', expiresAt: '', note: '' }, client)).rejects.toBe(boom)
     expect(calls).toHaveLength(1)
+  })
+})
+
+describe('toPocketBaseDate / expiration', () => {
+  it('convertit une valeur datetime-local (heure locale) au format PocketBase', () => {
+    const out = toPocketBaseDate('2026-10-20T14:30')
+    expect(out).toBe(new Date('2026-10-20T14:30').toISOString().replace('T', ' '))
+    expect(out).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}Z$/)
+  })
+  it('laisse passer une date déjà au format PocketBase', () => {
+    expect(toPocketBaseDate('2026-10-20 00:00:00.000Z')).toBe('2026-10-20 00:00:00.000Z')
+  })
+  it('refuse une date illisible', () => {
+    expect(() => toPocketBaseDate('demain')).toThrow('Date d’expiration invalide.')
+  })
+  it('createCode « duree » avec une date illisible ne fait aucune requête', async () => {
+    const { client, calls } = fakeClient()
+    await expect(createCode({ kind: 'duree', expiresAt: 'demain', note: '' }, client)).rejects.toThrow('Date d’expiration invalide.')
+    expect(calls.filter(c => c.method === 'create')).toHaveLength(0)
+  })
+  it('createCode « duree » envoie la date convertie', async () => {
+    const { client, calls } = fakeClient()
+    await createCode({ kind: 'duree', expiresAt: '2026-10-20T14:30', note: '' }, client)
+    expect(calls[0].args[0]).toMatchObject({ expires_at: new Date('2026-10-20T14:30').toISOString().replace('T', ' ') })
+  })
+  it('createCode « unique » n’envoie pas expires_at, même avec une date illisible', async () => {
+    const { client, calls } = fakeClient()
+    await createCode({ kind: 'unique', expiresAt: 'demain', note: '' }, client)
+    expect('expires_at' in (calls[0].args[0] as object)).toBe(false)
   })
 })
 

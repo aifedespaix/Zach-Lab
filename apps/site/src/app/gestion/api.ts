@@ -75,17 +75,31 @@ export async function listCodes(client: Client = pb): Promise<CodeRow[]> {
   return (await client.collection('invite_codes').getFullList({ sort: '-created' })).map(toCode)
 }
 
+/**
+ * Contrat de `expiresAt` : toute chaîne que `new Date(...)` sait lire, en pratique la
+ * valeur d'un `<input type="datetime-local">` (« 2026-10-20T14:30 », sans fuseau), lue
+ * comme l'heure LOCALE de l'utilisateur. PocketBase attend « YYYY-MM-DD HH:mm:ss.SSSZ »
+ * en UTC : on convertit ici, et on refuse une date illisible AVANT toute requête
+ * (sinon le 400 serait pris pour un code en double et retenté pour rien).
+ */
+export function toPocketBaseDate(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) throw new Error('Date d’expiration invalide.')
+  return date.toISOString().replace('T', ' ')
+}
+
 export async function createCode(
   input: { kind: 'unique' | 'duree'; expiresAt: string; note: string },
   client: Client = pb
 ): Promise<CodeRow> {
+  const expiresAt = input.kind === 'duree' ? toPocketBaseDate(input.expiresAt) : undefined
   let lastError: unknown
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       return toCode(
         await client.collection('invite_codes').create({
           code: generateCode(), kind: input.kind, note: input.note,
-          ...(input.kind === 'duree' ? { expires_at: input.expiresAt } : {}),
+          ...(expiresAt !== undefined ? { expires_at: expiresAt } : {}),
         })
       )
     } catch (error) {
