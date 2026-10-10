@@ -1,0 +1,62 @@
+---
+// Exemple minimal d'un composant de la vitrine : statique, aucun script.
+// Le design définitif viendra plus tard ; ce composant ne fixe que la structure.
+interface Props {
+  title: string
+  tagline: string
+}
+const { title, tagline } = Astro.props
+---
+
+<section class="hero">
+  <h1>{title}</h1>
+  <p class="tagline">{tagline}</p>
+  <p class="actions">
+    <a class="primary" href="/login/">Se connecter</a>
+    <a class="secondary" href="/inscription/">Créer un compte professeur</a>
+  </p>
+</section>
+
+<style>
+  .hero {
+    max-width: 40rem;
+    margin: 0 auto;
+    padding: 4rem 1.5rem;
+    text-align: center;
+  }
+  h1 {
+    margin: 0 0 1rem;
+    font-size: 2.5rem;
+    line-height: 1.15;
+  }
+  .tagline {
+    margin: 0 0 2rem;
+    font-size: 1.125rem;
+    color: #444;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+    margin: 0;
+  }
+  a {
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.5rem;
+    border: 1px solid #1a1a1a;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .primary {
+    background: #1a1a1a;
+    color: #fff;
+  }
+  .secondary {
+    color: #1a1a1a;
+  }
+  a:focus-visible {
+    outline: 3px solid #2563eb;
+    outline-offset: 2px;
+  }
+</style>

@@ -5,11 +5,13 @@ workspaces for the frontends, a Cargo workspace for the Rust side. **React, not
 Vue** — there is no Vue anywhere.
 
 ```
-apps/zachart-mentale/   Zachar't Mentale (src/, src-tauri/, admin/, infra/)
+apps/zachart-mentale/   Zachar't Mentale (src/, src-tauri/)
 apps/zachart-maths/     Zach'Math (src/exercises, src/cours, src/math)
 apps/base/              empty, working shell: the template of every new app
+apps/site/              the suite's website (Astro, static): showcase + connected app
 packages/shared/        @suite/shared — the React code every app reuses
 crates/suite-tauri/     the Rust code every app reuses
+infra/                  PocketBase: image, schema, hooks, integration tests, deployment docs
 scripts/                new-app, bump-version (+ their tests)
 docs/RELEASE.md         how an app is versioned and published
 ```
@@ -18,8 +20,10 @@ docs/RELEASE.md         how an app is versioned and published
 
 Run everything from the repository root.
 
-- `bun run test` — every workspace's suite (`--filter '*'`). `bun run test:admin`
-  (the web admin), `bun run test:scripts`, and `bun run test:all` for the three.
+- `bun run test` — every workspace's suite (`--filter '*'`), site included. `bun run test:infra`
+  (`infra/`), `bun run test:scripts`, and `bun run test:all` for the three.
+- `bun run site:dev` / `site:build` — the website (`bun run --filter site dev|test|build`).
+- `bun run infra:plan|apply|check` — the PocketBase schema script; `bun run infra/integration.mjs` plays the accounts scenarios.
 - `bun run --filter <app> dev|build|tauri …` — per app, e.g.
   `bun run --filter zachart-mentale tauri dev`. `dev`, `build` and `tauri` at the
   root default to Zachar't Mentale.
@@ -33,7 +37,7 @@ Run everything from the repository root.
 - `bun run update:mentale|update:maths|update:all [-- patch|minor|major|X.Y.Z]` — builds the signed
   update locally (Windows) into `updates/`; publishes nothing. See `docs/RELEASE.md`.
 
-Ports: zachart-mentale 1420, its admin 1430, base 1440, zachart-maths 1450 (HMR = port + 1).
+Ports: zachart-mentale 1420, base 1440, zachart-maths 1450, site 1460 (HMR = port + 1).
 
 ## `packages/shared` — the one rule
 
@@ -102,7 +106,7 @@ ranking.
 - Search is Orama (`@suite/shared/search`): `createSearchIndex(fields)`,
   `loadSearchIndex(fields, serialized)`. French, accent- and typo-tolerant.
 - Math is KaTeX (`@suite/shared/math`): `renderMathToHtml(latex, display?)`, bounded, never
-  throws, `trust: false`, with `\ce` / `\pu` (mhchem). It touches no Tauri, so the web admin may use it.
+  throws, `trust: false`, with `\ce` / `\pu` (mhchem). It touches no Tauri, so the site may use it.
   It also holds the pure equation logic both apps share: `equationStepIsSolved`, `isBareVariable`,
   and the keyboard map `navigate` / `readingOrder` / `operationVisible` (steps are `{ left, right, operation? }`).
 - Shell panels fold (`@suite/shared/shell`): `usePanelCollapsed(key)` (remembered like the width),
@@ -121,7 +125,7 @@ ranking.
   `onDrop`; rows carry `data-tree-row`, `data-tree-kind` and the enclosing branch `data-drop-folder`.
   `TreeDragGhost` + `useTreeDragStore` are shared too (the ghost's CSS is in `theme.css`). Mentale
   keeps `sidebar/treeDrag.ts`, `state/useTreeDragStore.ts` and `sidebar/TreeDragGhost.tsx` as thin
-  facades over it; Maths' `ExerciseTree` uses it directly. `admin/` must not import it.
+  facades over it; Maths' `ExerciseTree` uses it directly. The site (`apps/site`) must not import it.
 - Blocks and sub-blocks (`@suite/shared/equation`): `MathFieldEditor` (MathLive + raw-LaTeX fallback that is
   a complete editor), the keyboard intents (`rawFieldKeyDown`, `latchEdgeKey`, `BlockPlace`…),
   `EquationStepsField` (steps `{ left, right, operation? }`, no ids) and `LinesBlockField` (lines
@@ -146,32 +150,32 @@ capability names (`fs`, `updater`…): `tauri-build` reads plugin permissions fr
 direct dependencies only, and `suite-tauri` registering them is not enough. It
 also needs `serde_json` (`generate_context!`). `apps/base` is the reference.
 
-## Zachar't Mentale's second front-end: the web admin
+## Le site (`apps/site`)
 
-`apps/zachart-mentale/admin/` is a SECOND, standalone Vite app — the teacher's web
-admin panel, built into the PocketBase image (`apps/zachart-mentale/infra/Dockerfile`)
-and served from `/pb_public` at the root of the sync domain. It has its own
-`package.json`, `tsconfig`, `vitest.config.ts` and `node_modules`.
+Astro **statique** (`bun run --filter site build` → `dist/`), servi par PocketBase à la racine du domaine de
+synchronisation (`infra/Dockerfile` copie `dist/` dans `/pb_public`). Routes : `/` (la vitrine, **sans JavaScript** —
+`scripts/check-dist.mjs` fait échouer le build sinon), `/login/`, `/inscription/`, `/gestion/` (admin), `/dashboard/`,
+`/eleves/`, `/compte/`, `/bibliotheque/`. Les pages connectées sont des îlots React `client:only`. Liens internes avec la
+barre finale (`/login/`).
 
-- It imports the desktop app's **pure** modules through the `@app` alias
-  (`admin/src/…` → `../src/…`, i.e. `apps/zachart-mentale/src`): card types,
-  `validateCards`/`repairCards`, serialization, path helpers. Never copy that
-  code into `admin/` — a validator that drifts from the real format is worse
-  than none.
-- Nothing under `admin/` may import `@tauri-apps/*`, directly or transitively, nor
-  the `@suite/shared` sub-paths that touch Tauri (`commands`, `settings`, `shell`,
-  `update`) — `admin/src/boundary.test.ts` enforces it.
-- Run its suite with `bun run test:admin` from the root. Invoking `vitest`
-  directly from the root against `admin/` picks up the wrong binary and its
-  jest-dom matchers go missing.
-- The app's `vitest.config.ts` deliberately excludes `admin/**`.
+- `/bibliotheque` est l'ex-« admin web » de Mentale (`src/app/bibliotheque/`). Elle importe les modules **purs** de
+  l'application de bureau (types des cartes, `validateCards`/`repairCards`, sérialisation, chemins) par l'alias `@app`
+  (`→ apps/zachart-mentale/src`), **réservé à `src/app/bibliotheque/`** : `src/boundary.test.ts` le fait respecter. Dette de
+  transition, levée au lot S9. Ne jamais recopier ce code. Rien sous `apps/site` n'importe `@tauri-apps/*` ni les
+  sous-chemins `@suite/shared` qui touchent Tauri (`commands`, `settings`, `shell`, `update`).
+- `apps/site/CLAUDE.md` est pour la personne qui dessine la vitrine : son périmètre (`src/pages/index.astro`, `src/site/`,
+  `src/assets/`) et les règles Astro ; la skill locale `.claude/skills/astro-vitrine/`.
+- Comptes : l'administrateur est le **superutilisateur** PocketBase (`PB_ADMIN_EMAIL`/`PB_ADMIN_PASSWORD` de `infra/.env`,
+  aussi sa connexion à `/gestion/`) ; un **prof** naît d'un code d'invitation créé dans `/gestion/` ; un **élève** est créé
+  par son prof dans `/eleves/`. Hooks JavaScript : `infra/pb_hooks/` (`inscription.pb.js`, `users.pb.js`), copiés dans
+  `/pb_hooks` par l'image. Détails d'exploitation : `infra/README_INFRA.md`.
+- Tests : `bun run --filter site test` (le site), `bun run test:infra` (schéma, hooks), `bun run infra/integration.mjs`
+  (scénarios contre un vrai PocketBase, voir `infra/README_INFRA.md`).
 
-Server-side schema lives in `apps/zachart-mentale/infra/pocketbase-schema.mjs` as
-data, and `infra/setup-pocketbase.mjs` applies it idempotently — `bun run
-infra:plan` / `infra:apply` / `infra:check`. Adding a collection means editing the
-schema module, nothing else: the script, its tests and the docs all read that one
-definition. Synchronisation and PocketBase belong to Zachar't Mentale only; the
-other apps of the suite have none.
+Server-side schema lives in `infra/pocketbase-schema.mjs` as data, and `infra/setup-pocketbase.mjs` applies it
+idempotently — `bun run infra:plan` / `infra:apply` / `infra:check`. Adding a collection means editing the schema module,
+nothing else: the script, its tests and the docs all read that one definition. The synchronisation *logic* stays Zachar't
+Mentale's own; the server and the accounts (profs, students, invite codes) now serve the whole suite.
 
 ## Zach'Math (`apps/zachart-maths`)
 

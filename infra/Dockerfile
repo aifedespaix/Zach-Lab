@@ -36,6 +36,9 @@ WORKDIR /build
 COPY package.json bun.lock tsconfig.base.json ./
 COPY apps ./apps
 COPY packages ./packages
+# La table de cas des codes d'invitation : le test du site l'importe, et `astro check`
+# type-vérifie les tests aussi.
+COPY infra/fixtures ./infra/fixtures
 RUN bun install --frozen-lockfile --filter site
 
 # `bun run build` = `astro check && astro build && check-dist` : la construction

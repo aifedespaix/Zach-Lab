@@ -1,14 +1,49 @@
 ---
+// La vitrine : page statique, sans JavaScript (la garde du build y veille).
+// Périmètre de la personne qui la dessine : cette page, `src/site/` et `src/assets/`.
+import Hero from '../site/Hero.astro'
 ---
+
 <!doctype html>
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Zachar’t</title>
+    <title>Zachar’t — cartes mentales et exercices pour réviser</title>
+    <meta
+      name="description"
+      content="Zachar’t : la suite d’outils pour réviser avec des cartes mentales et des fiches d’exercices, pensée pour les élèves et leurs professeurs."
+    />
   </head>
   <body>
-    <h1>Zachar’t</h1>
-    <p><a href="/login/">Se connecter</a></p>
+    <header>
+      <strong>Zachar’t</strong>
+    </header>
+    <main>
+      <Hero
+        title="Réviser avec méthode"
+        tagline="Des cartes mentales et des fiches d’exercices, pour les élèves et leurs professeurs."
+      />
+    </main>
+    <footer>
+      <small>© Zachar’t</small>
+    </footer>
   </body>
 </html>
+
+<style>
+  body {
+    margin: 0;
+    font-family: system-ui, sans-serif;
+    color: #1a1a1a;
+    background: #fff;
+  }
+  header,
+  footer {
+    padding: 1rem 1.5rem;
+  }
+  footer {
+    text-align: center;
+    color: #444;
+  }
+</style>
