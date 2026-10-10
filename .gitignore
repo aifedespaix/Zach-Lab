@@ -44,10 +44,10 @@ apps/*/src-tauri/gen/schemas
 .cartes-mentales/
 
 # PocketBase deployment credentials (superuser email/password) — see infra/.env.example
-apps/*/infra/.env
+infra/.env
 
 # PocketBase backups downloaded by infra/backup-pocketbase.mjs — data, not code
-apps/*/infra/backups/
+infra/backups/
 
 # Etat runtime de headroom, regenere a chaque lancement
 .claude/.headroom_*

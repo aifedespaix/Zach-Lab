@@ -37,7 +37,7 @@ COPY --from=deps /app/node_modules/pocketbase ./node_modules/pocketbase
 # `infra/.env` et `infra/backups/` sont exclus par le .dockerignore de la racine :
 # les identifiants arrivent par l'environnement du conteneur, jamais dans une
 # couche d'image.
-COPY apps/zachart-mentale/infra ./infra
+COPY infra ./infra
 
 # Sans argument, le script lit PB_URL / PB_ADMIN_EMAIL / PB_ADMIN_PASSWORD dans
 # l'environnement — ce que le compose lui fournit.

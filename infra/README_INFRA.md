@@ -1,9 +1,8 @@
 # Déployer PocketBase pour la synchronisation
 
-> **Où lancer ces commandes.** Ce dossier est `apps/zachart-mentale/infra/` : les chemins
-> `infra/…` des exemples ci-dessous sont relatifs à `apps/zachart-mentale/`. Depuis la racine
-> du dépôt, `bun run infra:plan`, `infra:apply` et `infra:check` font la même chose ; les
-> scripts retrouvent leur `.env` à côté d’eux, d’où qu’on les lance.
+> **Où lancer ces commandes.** Ce dossier est `infra/`, à la racine du dépôt. Depuis la racine,
+> `bun run infra:plan`, `infra:apply` et `infra:check` font la même chose ; les scripts
+> retrouvent leur `.env` à côté d’eux, d’où qu’on les lance.
 
 Une seule image, ARM64 compatible (Raspberry Pi), SQLite embarqué — pas de base
 de données séparée. Toute la configuration des collections est **automatique** :
@@ -365,3 +364,9 @@ L'interface web servie à la racine du domaine. Elle est décrite dans
 ```bash
 bun run infra/setup-pocketbase.mjs --check   # 0 = le serveur a tout ce qu'il faut
 ```
+
+## Tests de ce dossier
+
+`bun run test:infra` (depuis la racine) lance les tests de `infra/`. Le script appelle le `vitest`
+installé dans `apps/zachart-mentale/node_modules` : ni `vitest` seul (non résolu depuis la racine)
+ni `bunx vitest` (télécharge une autre version) ne conviennent.

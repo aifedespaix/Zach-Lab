@@ -23,8 +23,8 @@ dist/
 **/src-tauri/target/
 **/src-tauri/
 
-apps/*/infra/backups/
-apps/*/infra/.env
+infra/backups/
+infra/.env
 
 graphify-out/
 docs/
