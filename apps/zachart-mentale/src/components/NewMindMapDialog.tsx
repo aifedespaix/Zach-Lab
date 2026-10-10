@@ -12,6 +12,8 @@ import {
   DialogTitle,
   DialogFooter,
   Button,
+  FolderPicker,
+  type FolderNode,
 } from '@suite/shared/ui'
 
 export interface FolderOption {
@@ -22,9 +24,6 @@ export interface FolderOption {
   /** Every folder from the root down to this one — what has to be expanded for it to be visible. */
   trail: string[]
 }
-
-/** Non-breaking spaces: a `<option>` collapses ordinary leading whitespace away. */
-const INDENT = '\u00a0\u00a0'
 
 function folderDisplayName(path: string): string {
   const segments = path.split(/[\\/]/).filter(Boolean)
@@ -55,6 +54,13 @@ export function folderOptions(rootFolders: RootFolder[]): FolderOption[] {
   return options
 }
 
+/** The workspace's folders as the picker's tree (files left out). */
+export function folderNodes(rootFolders: RootFolder[]): FolderNode[] {
+  const walk = (nodes: FileTreeNode[]): FolderNode[] =>
+    nodes.flatMap(node => (node.type === 'folder' ? [{ value: node.path, name: node.name, children: walk(node.children) }] : []))
+  return rootFolders.map(root => ({ value: root.path, name: folderDisplayName(root.path), children: walk(root.tree) }))
+}
+
 interface NewMindMapDialogProps {
   onClose: () => void
   /** Opened through the app's normal file-switch path, so the guard still runs. */
@@ -76,6 +82,7 @@ export function NewMindMapDialog({ onClose, onCreated }: NewMindMapDialogProps) 
   // Computed once, on mount: the dialog is mounted fresh each time it opens,
   // and recomputing on every keystroke would fight the user's own selection.
   const [options] = useState(() => folderOptions(rootFolders))
+  const [folders] = useState(() => folderNodes(rootFolders))
   const [folder, setFolder] = useState(() => {
     const beside = currentFilePath === null ? null : parentDirOf(currentFilePath)
     // The folder of the open map is where the next one most likely belongs —
@@ -137,28 +144,13 @@ export function NewMindMapDialog({ onClose, onCreated }: NewMindMapDialogProps) 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 }}>
             <label style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
               <span style={{ fontWeight: 500 }}>Dossier</span>
-              <select
-                aria-label="Dossier de destination"
+              <FolderPicker
+                ariaLabel="Dossier de destination"
+                folders={folders}
                 value={folder}
-                onChange={event => setFolder(event.target.value)}
-                style={{
-                  width: '100%',
-                  minWidth: 0,
-                  boxSizing: 'border-box',
-                  padding: '6px 8px',
-                  borderRadius: 8,
-                  border: '1px solid var(--border)',
-                  background: 'var(--background)',
-                  color: 'inherit',
-                  font: 'inherit',
-                }}
-              >
-                {options.map(option => (
-                  <option key={option.path} value={option.path}>
-                    {`${INDENT.repeat(option.depth)}${option.name}`}
-                  </option>
-                ))}
-              </select>
+                onChange={setFolder}
+                placeholder="Taper pour filtrer les dossiers…"
+              />
             </label>
 
             <label style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>

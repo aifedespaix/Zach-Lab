@@ -1,7 +1,7 @@
-import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { create } from 'zustand'
 import { useCommand } from '@suite/shared/commands'
-import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@suite/shared/ui'
+import { Button, ComboboxSelect, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@suite/shared/ui'
 import { useExerciseStore } from './useExerciseStore'
 
 interface NewSheetDialogState {
@@ -27,62 +27,18 @@ const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCas
  * Un nom qui n'existe pas encore est proposé comme nouveau chapitre.
  */
 function ChapterSelect({ value, onChange, chapters }: { value: string; onChange: (v: string) => void; chapters: string[] }) {
-  const listId = useId()
-  const [listOpen, setListOpen] = useState(false)
-  const [active, setActive] = useState(0)
-  const query = fold(value)
-  const matches = useMemo(() => chapters.filter(c => fold(c).includes(query)), [chapters, query])
-  const canCreate = value.trim() !== '' && !chapters.some(c => fold(c) === query)
-  const options = [...matches.map(name => ({ name, create: false })), ...(canCreate ? [{ name: value.trim(), create: true }] : [])]
-  const pick = (name: string) => { onChange(name); setListOpen(false) }
-
+  const options = useMemo(() => chapters.map(name => ({ value: name, label: name })), [chapters])
+  const creatable = useMemo(() => ({ label: (name: string) => `Créer le chapitre « ${name} »`, toValue: (name: string) => name }), [])
   return (
-    <div style={{ position: 'relative' }}>
-      <input
-        role="combobox"
-        aria-label="Chapitre"
-        aria-expanded={listOpen}
-        aria-controls={listId}
-        aria-autocomplete="list"
-        autoComplete="off"
-        placeholder="Choisir ou taper un chapitre…"
-        value={value}
-        onChange={e => { onChange(e.target.value); setListOpen(true); setActive(0) }}
-        onFocus={() => setListOpen(true)}
-        onBlur={() => setListOpen(false)}
-        onKeyDown={e => {
-          if (e.key === 'ArrowDown') { e.preventDefault(); setListOpen(true); setActive(i => Math.min(i + 1, options.length - 1)) }
-          else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(i => Math.max(i - 1, 0)) }
-          else if (e.key === 'Enter' && listOpen && options[active] !== undefined) { e.preventDefault(); pick(options[active].name) }
-          // Échap ferme d'abord la liste, pas la modale.
-          else if (e.key === 'Escape' && listOpen) { e.preventDefault(); e.stopPropagation(); setListOpen(false) }
-        }}
-        className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
-      />
-      {listOpen && options.length > 0 && (
-        <ul
-          id={listId}
-          role="listbox"
-          aria-label="Chapitres"
-          className="absolute z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
-          style={{ margin: 0, listStyle: 'none' }}
-        >
-          {options.map((option, i) => (
-            <li
-              key={`${option.create}:${option.name}`}
-              role="option"
-              aria-selected={i === active}
-              // `mousedown` : avant que le champ ne perde le focus et ne referme la liste.
-              onMouseDown={e => { e.preventDefault(); pick(option.name) }}
-              onMouseEnter={() => setActive(i)}
-              className={`cursor-pointer rounded-sm px-2 py-1.5 text-sm ${i === active ? 'bg-accent text-accent-foreground' : ''}`}
-            >
-              {option.create ? `Créer le chapitre « ${option.name} »` : option.name}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+    <ComboboxSelect
+      ariaLabel="Chapitre"
+      placeholder="Choisir ou taper un chapitre…"
+      emptyText="Aucun chapitre"
+      options={options}
+      value={value}
+      onChange={onChange}
+      creatable={creatable}
+    />
   )
 }
 

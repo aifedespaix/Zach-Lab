@@ -49,8 +49,9 @@ describe('ExerciseTree', () => {
     const box = within(dialog).getByRole('combobox', { name: 'Chapitre' })
     await user.clear(box)
     await user.type(box, 'alg')
-    expect(within(dialog).getByRole('option', { name: 'Algèbre' })).toBeInTheDocument()
-    expect(within(dialog).queryByRole('option', { name: 'Géométrie' })).toBeNull()
+    // La liste est dans un portail, hors de la modale : on la cherche dans tout l'écran.
+    expect(screen.getByRole('option', { name: 'Algèbre' })).toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: 'Géométrie' })).toBeNull()
     expect(within(dialog).getByRole('button', { name: 'Valider' })).toBeDisabled()
     await user.click(within(dialog).getByRole('button', { name: 'Annuler' }))
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())

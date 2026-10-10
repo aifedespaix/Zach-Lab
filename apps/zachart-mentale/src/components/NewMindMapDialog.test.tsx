@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { NewMindMapDialog, folderOptions } from './NewMindMapDialog'
+import { NewMindMapDialog, folderOptions, folderNodes } from './NewMindMapDialog'
 import { useWorkspaceStore, createWorkspaceStore } from '../state/useWorkspaceStore'
 import type { RootFolder } from '../types/workspace'
 
@@ -63,6 +63,18 @@ describe('folderOptions', () => {
   })
 })
 
+describe('folderNodes', () => {
+  it('turns the workspace into the picker tree, files left out', () => {
+    expect(folderNodes(ROOTS)).toEqual([
+      {
+        value: '/cours',
+        name: 'cours',
+        children: [{ value: '/cours/maths', name: 'maths', children: [{ value: '/cours/maths/algebre', name: 'algebre', children: [] }] }],
+      },
+    ])
+  })
+})
+
 describe('NewMindMapDialog', () => {
   beforeEach(() => {
     resetWorkspaceStore()
@@ -79,7 +91,9 @@ describe('NewMindMapDialog', () => {
     const onClose = vi.fn()
     render(<NewMindMapDialog onClose={onClose} onCreated={onCreated} />)
 
-    await user.selectOptions(screen.getByLabelText('Dossier de destination'), '/cours/maths/algebre')
+    await user.click(screen.getByLabelText('Dossier de destination'))
+    await user.keyboard('maths/alg')
+    await user.click(await screen.findByRole('option', { name: /algebre/ }))
     await user.type(screen.getByLabelText('Nom de la nouvelle carte mentale'), 'Chapitre 1')
     await user.click(screen.getByRole('button', { name: 'Créer' }))
 
@@ -96,7 +110,7 @@ describe('NewMindMapDialog', () => {
     useWorkspaceStore.setState({ currentFilePath: '/cours/maths/trigo.zmap' })
     render(<NewMindMapDialog onClose={vi.fn()} onCreated={vi.fn()} />)
 
-    expect(screen.getByLabelText<HTMLSelectElement>('Dossier de destination').value).toBe('/cours/maths')
+    expect(screen.getByLabelText('Dossier de destination')).toHaveValue('maths')
   })
 
   it('refuses a name already taken rather than overwriting that map', async () => {
