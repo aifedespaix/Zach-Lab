@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { BrainCircuit, LogIn } from 'lucide-react'
-import { login, LoginError, type AdminUser } from '@/lib/pb'
-import { Button, Field, inputClass } from './ui/primitives'
+import { login, LoginError, type AdminUser } from '@/bibliotheque/lib/pb'
+import { Button, Field, inputClass } from '@/ui/primitives'
 
 /**
  * L'écran de connexion.

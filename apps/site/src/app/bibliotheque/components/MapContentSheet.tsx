@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
-import { fetchMap, updateMapContent } from '@/lib/api'
-import { describeApiError, type AdminUser } from '@/lib/pb'
-import type { LibraryMap } from '@/lib/tree'
-import { Button, ErrorBanner, Sheet, Spinner } from './ui/primitives'
+import { fetchMap, updateMapContent } from '@/bibliotheque/lib/api'
+import { describeApiError, type AdminUser } from '@/bibliotheque/lib/pb'
+import type { LibraryMap } from '@/bibliotheque/lib/tree'
+import { Button, ErrorBanner, Sheet, Spinner } from '@/ui/primitives'
 import { MindMapTextEditor } from './MindMapTextEditor'
-import type { QualityReport } from '@/lib/quality'
-import { fullDate, relativeTime } from '@/lib/format'
-import { useLibrary } from '@/state/useLibrary'
+import type { QualityReport } from '@/bibliotheque/lib/quality'
+import { fullDate, relativeTime } from '@/bibliotheque/lib/format'
+import { useLibrary } from '@/bibliotheque/state/useLibrary'
 
 /**
  * Ouvrir une carte existante et en réécrire le contenu, en texte.

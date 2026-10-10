@@ -1,9 +1,9 @@
 import { useRef } from 'react'
 import { ChevronRight, FileText, Folder, FolderOpen, MoreVertical } from 'lucide-react'
-import { countMaps, type TreeNode } from '@/lib/tree'
-import { Badge } from './ui/primitives'
+import { countMaps, type TreeNode } from '@/bibliotheque/lib/tree'
+import { Badge } from '@/ui/primitives'
 import { MAP_TYPE_LABELS, mapTypeOf } from '@app/types/mapType'
-import { plural, relativeTime } from '@/lib/format'
+import { plural, relativeTime } from '@/bibliotheque/lib/format'
 
 /**
  * L'arborescence, au doigt.

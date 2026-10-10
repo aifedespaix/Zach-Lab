@@ -16,10 +16,10 @@ import {
   updateMapType,
   type RemoteConflict,
   type RemoteSyncEvent,
-} from '@/lib/api'
-import { describeApiError } from '@/lib/pb'
-import type { CleanupPlan } from '@/lib/duplicates'
-import { buildTree, type LibraryFolder, type LibraryMap, type TreeNode } from '@/lib/tree'
+} from '@/bibliotheque/lib/api'
+import { describeApiError } from '@/bibliotheque/lib/pb'
+import type { CleanupPlan } from '@/bibliotheque/lib/duplicates'
+import { buildTree, type LibraryFolder, type LibraryMap, type TreeNode } from '@/bibliotheque/lib/tree'
 import type { Card, UserRole } from '@app/types/card'
 
 /**

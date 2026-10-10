@@ -1,7 +1,7 @@
 services:
   pocketbase:
-    # Construite plutôt que tirée telle quelle : l'image ajoute l'interface
-    # d'administration (`admin/`) dans le `/pb_public` de PocketBase, qui la
+    # Construite plutôt que tirée telle quelle : l'image ajoute le site
+    # (`apps/site`, dont la bibliothèque d'administration) dans le `/pb_public` de PocketBase, qui la
     # sert alors à la racine du même domaine que l'API. Un seul conteneur, un
     # seul port, aucune origine supplémentaire — voir infra/Dockerfile.
     #
@@ -12,8 +12,8 @@ services:
     # ensemble : nouvelle image dans infra/Dockerfile + vérification du script.
     #
     # Le contexte est la RACINE du dépôt, pas `infra/` : la construction a
-    # besoin de `admin/` et de `src/` (l'admin importe le code pur de
-    # l'application de bureau).
+    # besoin de `apps/site` et de `apps/zachart-mentale/src` (la bibliothèque
+    # importe le code pur de l'application de bureau via l'alias `@app`).
     build:
       context: ..
       dockerfile: infra/Dockerfile

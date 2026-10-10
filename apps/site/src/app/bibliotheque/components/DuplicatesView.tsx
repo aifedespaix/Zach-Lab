@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import { Copy, Eraser, GitFork, RefreshCw, ScanSearch, ShieldCheck, Trash2 } from 'lucide-react'
-import { fetchMapContents } from '@/lib/api'
-import { describeApiError } from '@/lib/pb'
+import { fetchMapContents } from '@/bibliotheque/lib/api'
+import { describeApiError } from '@/bibliotheque/lib/pb'
 import {
   findCopyGroups,
   findDuplicateGroups,
@@ -9,12 +9,12 @@ import {
   type CleanupPlan,
   type CopyGroup,
   type DuplicateGroup,
-} from '@/lib/duplicates'
-import { fullDate, plural } from '@/lib/format'
-import { nameOf, parentOf } from '@/lib/tree'
+} from '@/bibliotheque/lib/duplicates'
+import { fullDate, plural } from '@/bibliotheque/lib/format'
+import { nameOf, parentOf } from '@/bibliotheque/lib/tree'
 import { MAP_TYPE_LABELS, mapTypeOf } from '@app/types/mapType'
-import { useLibrary } from '@/state/useLibrary'
-import { Badge, Button, EmptyState, ErrorBanner, IconButton, Sheet, Spinner } from './ui/primitives'
+import { useLibrary } from '@/bibliotheque/state/useLibrary'
+import { Badge, Button, EmptyState, ErrorBanner, IconButton, Sheet, Spinner } from '@/ui/primitives'
 
 /**
  * Les doublons de contenu, et leur arbitrage.

@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { CheckCheck, GitCompareArrows, RefreshCw, ShieldCheck } from 'lucide-react'
-import { fetchMap, type RemoteConflict } from '@/lib/api'
-import { describeApiError, pb, type AdminUser } from '@/lib/pb'
-import { useLibrary } from '@/state/useLibrary'
-import { Badge, Button, EmptyState, ErrorBanner, IconButton, Sheet, Spinner } from './ui/primitives'
-import { compareMindMaps, summarizeComparison, type MindMapComparison } from '@/lib/compare'
-import { fullDate, relativeTime } from '@/lib/format'
+import { fetchMap, type RemoteConflict } from '@/bibliotheque/lib/api'
+import { describeApiError, pb, type AdminUser } from '@/bibliotheque/lib/pb'
+import { useLibrary } from '@/bibliotheque/state/useLibrary'
+import { Badge, Button, EmptyState, ErrorBanner, IconButton, Sheet, Spinner } from '@/ui/primitives'
+import { compareMindMaps, summarizeComparison, type MindMapComparison } from '@/bibliotheque/lib/compare'
+import { fullDate, relativeTime } from '@/bibliotheque/lib/format'
 
 /**
  * Les conflits, et leur arbitrage.

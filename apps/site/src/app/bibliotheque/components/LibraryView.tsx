@@ -14,8 +14,8 @@ import {
 } from 'lucide-react'
 import { FileTree } from './FileTree'
 import { MapContentSheet } from './MapContentSheet'
-import { Badge, Button, EmptyState, ErrorBanner, Field, IconButton, Sheet, Spinner, inputClass } from './ui/primitives'
-import { useLibrary } from '@/state/useLibrary'
+import { Badge, Button, EmptyState, ErrorBanner, Field, IconButton, Sheet, Spinner, inputClass } from '@/ui/primitives'
+import { useLibrary } from '@/bibliotheque/state/useLibrary'
 import {
   allFolderPaths,
   countMaps,
@@ -29,10 +29,10 @@ import {
   parentOf,
   renamedTo,
   type TreeNode,
-} from '@/lib/tree'
+} from '@/bibliotheque/lib/tree'
 import { MAP_TYPES, MAP_TYPE_LABELS, mapTypeOf } from '@app/types/mapType'
-import { plural } from '@/lib/format'
-import type { AdminUser } from '@/lib/pb'
+import { plural } from '@/bibliotheque/lib/format'
+import type { AdminUser } from '@/bibliotheque/lib/pb'
 import { withMindMapExtension } from '@app/persistence/paths'
 import { kebabCase } from '@app/utils/kebabCase'
 

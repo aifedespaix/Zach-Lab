@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { render, screen, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { FileTree, type TreeCallbacks } from './FileTree'
-import { buildTree, type LibraryMap } from '@/lib/tree'
+import { buildTree, type LibraryMap } from '@/bibliotheque/lib/tree'
 
 function map(path: string, overrides: Partial<LibraryMap> = {}): LibraryMap {
   return {

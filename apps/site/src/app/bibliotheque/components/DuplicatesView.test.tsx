@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { Card } from '@app/types/card'
-import { fullDate } from '@/lib/format'
-import type { DuplicateFile } from '@/lib/duplicates'
+import { fullDate } from '@/bibliotheque/lib/format'
+import type { DuplicateFile } from '@/bibliotheque/lib/duplicates'
 
 const { fetchMapContents, removeMaps, cleanDuplicates } = vi.hoisted(() => ({
   fetchMapContents: vi.fn(),
@@ -11,9 +11,9 @@ const { fetchMapContents, removeMaps, cleanDuplicates } = vi.hoisted(() => ({
   cleanDuplicates: vi.fn(),
 }))
 
-vi.mock('@/lib/api', () => ({ fetchMapContents }))
-vi.mock('@/lib/pb', () => ({ describeApiError: (_error: unknown, what: string) => `${what} a échoué.` }))
-vi.mock('@/state/useLibrary', () => ({
+vi.mock('@/bibliotheque/lib/api', () => ({ fetchMapContents }))
+vi.mock('@/bibliotheque/lib/pb', () => ({ describeApiError: (_error: unknown, what: string) => `${what} a échoué.` }))
+vi.mock('@/bibliotheque/state/useLibrary', () => ({
   useLibrary: (selector: (state: { removeMaps: typeof removeMaps; cleanDuplicates: typeof cleanDuplicates }) => unknown) =>
     selector({ removeMaps, cleanDuplicates }),
 }))

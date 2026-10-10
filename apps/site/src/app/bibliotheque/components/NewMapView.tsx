@@ -1,14 +1,14 @@
 import { useMemo, useState } from 'react'
 import { CircleCheck } from 'lucide-react'
-import { Button, ErrorBanner, Field, inputClass } from './ui/primitives'
+import { Button, ErrorBanner, Field, inputClass } from '@/ui/primitives'
 import { FormatHelp, MindMapTextEditor } from './MindMapTextEditor'
-import { useLibrary } from '@/state/useLibrary'
-import { allFolderPaths, isValidSegment, joinPath, normalizePath } from '@/lib/tree'
+import { useLibrary } from '@/bibliotheque/state/useLibrary'
+import { allFolderPaths, isValidSegment, joinPath, normalizePath } from '@/bibliotheque/lib/tree'
 import { MAP_TYPES, MAP_TYPE_LABELS } from '@app/types/mapType'
 import { withMindMapExtension } from '@app/persistence/paths'
-import type { QualityReport } from '@/lib/quality'
-import { describeApiError, type AdminUser } from '@/lib/pb'
-import { plural } from '@/lib/format'
+import type { QualityReport } from '@/bibliotheque/lib/quality'
+import { describeApiError, type AdminUser } from '@/bibliotheque/lib/pb'
+import { plural } from '@/bibliotheque/lib/format'
 
 /**
  * Créer une carte mentale à partir d'un texte collé.

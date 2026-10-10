@@ -8,7 +8,7 @@ import { DuplicatesView } from './components/DuplicatesView'
 import { LogsView } from './components/LogsView'
 import { currentUser, logout, type AdminUser } from './lib/pb'
 import { openConflictCount, useLibrary } from './state/useLibrary'
-import { Badge } from './components/ui/primitives'
+import { Badge } from '@/ui/primitives'
 
 /**
  * La coque : qui est connecté, et quel onglet est ouvert.
@@ -36,7 +36,7 @@ function tabFromHash(): TabId {
   return TABS.some(tab => tab.id === raw) ? (raw as TabId) : 'fichiers'
 }
 
-export function App() {
+export function BibliothequeApp() {
   const [user, setUser] = useState<AdminUser | null>(currentUser)
   const [tab, setTab] = useState<TabId>(tabFromHash)
   const { conflicts, refreshAll } = useLibrary()

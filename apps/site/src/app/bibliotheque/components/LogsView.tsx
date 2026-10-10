@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react'
 import { ArrowDownToLine, ArrowUpFromLine, CircleAlert, RefreshCw, ScrollText, TriangleAlert } from 'lucide-react'
-import { useLibrary } from '@/state/useLibrary'
-import type { RemoteSyncEvent } from '@/lib/api'
-import { Badge, EmptyState, ErrorBanner, IconButton, Sheet, Spinner } from './ui/primitives'
-import { fullDate, relativeTime } from '@/lib/format'
+import { useLibrary } from '@/bibliotheque/state/useLibrary'
+import type { RemoteSyncEvent } from '@/bibliotheque/lib/api'
+import { Badge, EmptyState, ErrorBanner, IconButton, Sheet, Spinner } from '@/ui/primitives'
+import { fullDate, relativeTime } from '@/bibliotheque/lib/format'
 
 /**
  * Le journal de synchronisation, côté serveur.

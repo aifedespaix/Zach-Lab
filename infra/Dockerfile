@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---------------------------------------------------------------------------
-# PocketBase + l'interface d'administration, dans UNE seule image.
+# PocketBase + le site (vitrine et applications web), dans UNE seule image.
 #
 # Pourquoi pas un second conteneur : PocketBase sert lui-même les fichiers
 # statiques déposés dans `--publicDir` (`/pb_public` dans cette image, voir son
@@ -26,26 +26,23 @@ FROM oven/bun:1.3-alpine AS build
 
 WORKDIR /build
 
-# Les dépendances d'abord, séparément : elles ne changent qu'au gré du
-# package.json, et cette couche se garde en cache d'une image à l'autre. Copier
-# les sources avant ferait réinstaller tout `node_modules` à chaque virgule
-# changée dans un composant.
-COPY apps/zachart-mentale/admin/package.json apps/zachart-mentale/admin/bun.lock ./apps/zachart-mentale/admin/
-RUN cd apps/zachart-mentale/admin && bun install --frozen-lockfile
+# Les workspaces Bun veulent tous leurs package.json pour résoudre bun.lock :
+# on copie donc `apps/` et `packages/` (le .dockerignore écarte node_modules,
+# src-tauri et dist), puis on n'installe que le site. `apps/zachart-mentale/src`
+# est indispensable : la bibliothèque importe le code PUR de l'application de
+# bureau (types des cartes, validation, sérialisation) via l'alias `@app`.
+# C'est délibéré — un validateur recopié finirait par accepter ce que
+# l'application refuse d'ouvrir.
+COPY package.json bun.lock tsconfig.base.json ./
+COPY apps ./apps
+COPY packages ./packages
+RUN bun install --frozen-lockfile --filter site
 
-# `src/` est indispensable : l'interface d'administration importe le code PUR de
-# l'application de bureau (types des cartes, validation structurelle,
-# sérialisation) via son alias `@app`. C'est délibéré — un validateur recopié
-# finirait par accepter ce que l'application refuse d'ouvrir.
-COPY apps/zachart-mentale/admin ./apps/zachart-mentale/admin
-COPY apps/zachart-mentale/src ./apps/zachart-mentale/src
-
-# `bun run build` = `tsc && vite build` : la compilation ÉCHOUE sur une erreur de
-# types. Une image qui se construit quand même sur du code cassé ne rend service
-# à personne.
-RUN cd apps/zachart-mentale/admin && bun run build
+# `bun run build` = `astro check && astro build && check-dist` : la construction
+# ÉCHOUE sur une erreur de types, une route manquante ou un <script> dans la vitrine.
+RUN cd apps/site && bun run build
 
 FROM ghcr.io/muchobien/pocketbase:0.40.3
 
 # Servi à la racine du domaine pour tout ce qui n'est pas `/api/…` ni `/_/…`.
-COPY --from=build /build/apps/zachart-mentale/admin/dist /pb_public
+COPY --from=build /build/apps/site/dist /pb_public

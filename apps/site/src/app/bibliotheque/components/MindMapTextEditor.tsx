@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AlertTriangle, CircleCheck, CircleX, ClipboardPaste, Sparkles, Wand2 } from 'lucide-react'
-import { analyzeMindMapText, repairMindMapText, type QualityReport } from '@/lib/quality'
-import { Badge, Button, Spinner } from './ui/primitives'
-import { humanSize, plural } from '@/lib/format'
+import { analyzeMindMapText, repairMindMapText, type QualityReport } from '@/bibliotheque/lib/quality'
+import { Badge, Button, Spinner } from '@/ui/primitives'
+import { humanSize, plural } from '@/bibliotheque/lib/format'
 
 /**
  * Coller une carte mentale, et savoir tout de suite ce qu'elle vaut.
