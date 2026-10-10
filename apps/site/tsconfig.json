@@ -1,0 +1,13 @@
+{
+  "extends": "astro/tsconfigs/strict",
+  "include": [".astro/types.d.ts", "src", "scripts", "*.mjs", "vitest.config.ts"],
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+    "resolveJsonModule": true,
+    "paths": {
+      "@/*": ["./src/app/*"],
+      "@app/*": ["../zachart-mentale/src/*"]
+    }
+  }
+}

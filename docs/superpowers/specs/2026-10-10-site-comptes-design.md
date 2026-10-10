@@ -61,6 +61,7 @@ apps/site/
 - **Risque à lever en premier** : comment PocketBase sert `/login` quand le fichier est
   `login/index.html` (le repli `indexFallback` renvoie sinon la vitrine). Première étape du plan, testée
   sur une vraie image avant d'écrire le reste.
+- **Vérifié (PocketBase 0.40.3, image réelle)** : `/login/` sert `login/index.html` (200) et `/login` sans barre répond 301 vers `/login/` ; le repli vitrine n'intervient pas, aucun hook de redirection n'est nécessaire.
 
 ## 2. Comptes et accès
 
