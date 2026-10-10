@@ -2,8 +2,9 @@
 // embarquer AUCUN script — c'est la promesse faite à la personne qui la dessine.
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const dist = new URL('../dist/', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')
+const dist = fileURLToPath(new URL('../dist/', import.meta.url))
 const routes = ['login', 'inscription', 'gestion', 'dashboard', 'eleves', 'compte', 'bibliotheque']
 
 const problems = []
