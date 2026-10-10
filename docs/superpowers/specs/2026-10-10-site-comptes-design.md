@@ -61,6 +61,7 @@ apps/site/
 - **Risque à lever en premier** : comment PocketBase sert `/login` quand le fichier est
   `login/index.html` (le repli `indexFallback` renvoie sinon la vitrine). Première étape du plan, testée
   sur une vraie image avant d'écrire le reste.
+- **Vérifié (PocketBase 0.40.3, image réelle)** : `/login/` sert `login/index.html` (200) et `/login` sans barre répond 301 vers `/login/` ; le repli vitrine n'intervient pas, aucun hook de redirection n'est nécessaire.
 
 ## 2. Comptes et accès
 
@@ -169,3 +170,13 @@ partiellement livré, déplacement d'`infra/` de S1 fait).
 
 Inscription des élèves par code, envoi de courriels, réinitialisation de mot de passe par courriel,
 design de la vitrine, moteur de synchronisation, schéma `files`, migration de Mentale ou de Maths.
+
+## Écarts assumés à l'exécution
+
+- `invite_code` (sur `users`) est un champ **texte** et non une relation vers `invite_codes` : une relation exigerait l'id généré de la collection, que le schéma-comme-donnée ne connaît pas.
+- La fonction d'état d'un code existe en **deux implémentations** (le JS du hook, le TS du site), faute de pouvoir importer un module CommonJS dans le bundle ; toutes deux rejouent la même table de cas, `infra/fixtures/invite-code-states.json`.
+- Le `/compte/` de l'administrateur est en **lecture seule** : son mot de passe serait réécrit par `infra/.env` à chaque démarrage.
+- La limitation de débit de l'inscription est une **règle de PocketBase** (5 requêtes / 60 s sur `POST /api/inscription`), avec sa propre politique d'activation ; `--no-rate-limits` permet de jouer les scénarios d'intégration S1–S9 avant de l'appliquer.
+- Dans `/bibliotheque`, les listes internes défilent **avec la page** : `AppShell` n'a pas de hauteur fixe.
+- Les collections de synchronisation (`sync_events`, `sync_conflicts`, `cartes_mentales`) ne sont **pas cloisonnées par prof** : tout compte prof peut lire les événements et conflits des élèves d'un autre prof, et modifier ou supprimer n'importe quelle carte. Décision : documenté (`infra/README_INFRA.md`, « Limite connue »), à corriger par le chantier Synchro (S1/S3/S7).
+- Supprimer un prof qui a encore des élèves est refusé par le hook `infra/pb_hooks/users.pb.js` (le superutilisateur contourne les règles de collection, donc la règle seule ne suffirait pas).

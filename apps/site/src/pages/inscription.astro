@@ -1,0 +1,7 @@
+---
+import AppPage from '../layouts/AppPage.astro'
+import { InscriptionPage } from '../app/inscription/InscriptionPage'
+---
+<AppPage title="Inscription">
+  <InscriptionPage client:only="react" />
+</AppPage>

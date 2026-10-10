@@ -96,7 +96,8 @@ synchronisation est dans ce dépôt, lisible et modifiable.
 
 | Dossier | Contenu |
 |---|---|
-| `apps/zachart-mentale` | **Zachar't Mentale** : cartes mentales, synchronisation, interface web d'administration (`admin/`) |
+| `apps/zachart-mentale` | **Zachar't Mentale** : cartes mentales, synchronisation |
+| `apps/site` | **Le site** : vitrine, comptes (profs, élèves), bibliothèque web ; `infra/` porte le serveur PocketBase |
 | `apps/zachart-maths` | **Zach'Math** : fiches, exercices, cours, calculatrice |
 | `apps/base` | Gabarit vide qui fonctionne : le point de départ de chaque nouveau logiciel de la suite |
 | `packages/shared` | `@suite/shared` : le code React commun (interface, thème, mises à jour, recherche, équations…) |
@@ -119,13 +120,13 @@ bun run test                                   # toutes les suites
 
 | Commande | Ce qu'elle fait |
 |---|---|
-| `bun run test:admin` | la suite de l'interface web du professeur |
+| `bun run test:infra` | les tests de `infra/` (schéma, hooks) |
 | `bun run test:scripts` | les tests des scripts du dépôt |
 | `bunx tsc --noEmit -p apps/zachart-maths` | vérifie les types d'une app |
 | `cargo test --workspace` | les tests du code Rust |
 | `bun run new-app <nom>` | crée un nouveau logiciel à partir de `apps/base` |
 
-Ports de développement : Zachar't Mentale `1420`, son administration `1430`, Zach'Math `1450`, le gabarit `1440`.
+Ports de développement : Zachar't Mentale `1420`, Zach'Math `1450`, le gabarit `1440`, le site `1460`.
 
 Pour un nouveau logiciel :
 
@@ -150,7 +151,7 @@ Le code partagé (`packages/shared`) ne doit jamais importer une app ; les règl
 - **Mises à jour** : les logiciels installés vérifient une adresse de mise à jour signée et s'installent
   d'eux-mêmes. Pour construire une mise à jour en local (Windows) : `bun run update:mentale`.
 - **Serveur de synchronisation** : PocketBase dans un conteneur Docker, avec sa configuration
-  et ses sauvegardes. Voir [apps/zachart-mentale/infra](apps/zachart-mentale/infra/README_INFRA.md).
+  et ses sauvegardes. Voir [infra](infra/README_INFRA.md).
 
 ---
 

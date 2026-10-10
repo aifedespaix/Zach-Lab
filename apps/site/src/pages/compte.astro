@@ -1,0 +1,7 @@
+---
+import AppPage from '../layouts/AppPage.astro'
+import { ComptePage } from '../app/compte/ComptePage'
+---
+<AppPage title="Compte">
+  <ComptePage client:only="react" />
+</AppPage>

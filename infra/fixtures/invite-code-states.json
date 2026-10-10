@@ -1,0 +1,14 @@
+[
+  { "name": "unique neuf", "code": { "kind": "unique" }, "usedCount": 0, "now": "2026-10-10T12:00:00Z", "expected": "actif" },
+  { "name": "unique consommé", "code": { "kind": "unique" }, "usedCount": 1, "now": "2026-10-10T12:00:00Z", "expected": "utilise" },
+  { "name": "unique révoqué", "code": { "kind": "unique", "revoked": true }, "usedCount": 0, "now": "2026-10-10T12:00:00Z", "expected": "revoque" },
+  { "name": "unique révoqué et consommé", "code": { "kind": "unique", "revoked": true }, "usedCount": 1, "now": "2026-10-10T12:00:00Z", "expected": "revoque" },
+  { "name": "durée avant l'échéance, déjà utilisé 5 fois", "code": { "kind": "duree", "expires_at": "2026-10-11T00:00:00.000Z" }, "usedCount": 5, "now": "2026-10-10T12:00:00Z", "expected": "actif" },
+  { "name": "durée à l'instant exact de l'échéance", "code": { "kind": "duree", "expires_at": "2026-10-10T12:00:00.000Z" }, "usedCount": 0, "now": "2026-10-10T12:00:00Z", "expected": "expire" },
+  { "name": "durée après l'échéance", "code": { "kind": "duree", "expires_at": "2026-10-09T00:00:00.000Z" }, "usedCount": 0, "now": "2026-10-10T12:00:00Z", "expected": "expire" },
+  { "name": "durée, date au format PocketBase (espace)", "code": { "kind": "duree", "expires_at": "2026-10-09 00:00:00.000Z" }, "usedCount": 0, "now": "2026-10-10T12:00:00Z", "expected": "expire" },
+  { "name": "durée, date PocketBase encore valide", "code": { "kind": "duree", "expires_at": "2026-10-11 00:00:00.000Z" }, "usedCount": 0, "now": "2026-10-10T12:00:00Z", "expected": "actif" },
+  { "name": "durée sans échéance : invalide donc expiré", "code": { "kind": "duree" }, "usedCount": 0, "now": "2026-10-10T12:00:00Z", "expected": "expire" },
+  { "name": "durée révoquée", "code": { "kind": "duree", "expires_at": "2026-10-11T00:00:00.000Z", "revoked": true }, "usedCount": 0, "now": "2026-10-10T12:00:00Z", "expected": "revoque" },
+  { "name": "durée expirée et révoquée : révoqué d'abord", "code": { "kind": "duree", "expires_at": "2026-10-09T00:00:00.000Z", "revoked": true }, "usedCount": 0, "now": "2026-10-10T12:00:00Z", "expected": "revoque" }
+]

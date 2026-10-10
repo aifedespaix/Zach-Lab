@@ -1,0 +1,7 @@
+---
+import AppPage from '../layouts/AppPage.astro'
+import { GestionPage } from '../app/gestion/GestionPage'
+---
+<AppPage title="Gestion">
+  <GestionPage client:only="react" />
+</AppPage>

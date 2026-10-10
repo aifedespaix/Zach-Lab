@@ -81,7 +81,7 @@ vert et livrable. L'ordre des lots suit les dépendances (`lots/` + `suivi.md`).
 
 ```
 bun run test            # toutes les apps (état de référence : voir 09-non-regression.md)
-bun run test:admin      # l'admin web de Mentale
+bun run test:infra      # schéma et hooks PocketBase (infra/)
 bun run test:scripts    # scripts du dépôt
 cargo test --workspace  # côté Rust
 bunx tsc --noEmit -p apps/<app>   # types

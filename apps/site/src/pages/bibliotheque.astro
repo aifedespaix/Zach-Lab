@@ -1,0 +1,7 @@
+---
+import AppPage from '../layouts/AppPage.astro'
+import { BibliothequeApp } from '../app/bibliotheque/BibliothequeApp'
+---
+<AppPage title="Bibliothèque">
+  <BibliothequeApp client:only="react" />
+</AppPage>

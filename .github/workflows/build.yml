@@ -15,12 +15,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  # L'interface d'administration est un SECOND projet, avec ses propres
-  # dépendances : elle n'est ni compilée ni testée par le job Windows, qui ne
-  # connaît que l'application de bureau. Sans ce job, une erreur de types dans
-  # `admin/` ne se découvrirait qu'au `docker build` du déploiement — c'est-à-dire
-  # au pire moment, et sur la machine de quelqu'un d'autre.
-  admin:
+  # Le site (vitrine + bibliothèque d'administration) est un projet web à part :
+  # il n'est ni compilé ni testé par le job Windows, qui ne connaît que
+  # l'application de bureau. Sans ce job, une erreur de types dans `apps/site`
+  # ne se découvrirait qu'au `docker build` du déploiement.
+  site:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -28,19 +27,31 @@ jobs:
       - name: setup bun
         uses: oven-sh/setup-bun@v2
 
-      - name: install admin dependencies
-        working-directory: apps/zachart-mentale/admin
+      - name: install dependencies
         run: bun install --frozen-lockfile
 
-      - name: run admin tests
-        working-directory: apps/zachart-mentale/admin
-        run: bun run test
+      - name: run site tests
+        run: bun run --filter site test
 
-      # Exactement ce que fait `infra/Dockerfile` : `tsc && vite build`. Si ça
-      # passe ici, l'image se construira.
-      - name: build the admin bundle
-        working-directory: apps/zachart-mentale/admin
-        run: bun run build
+      # Exactement ce que fait `infra/Dockerfile` : `astro check && astro build`.
+      - name: build the site
+        run: bun run --filter site build
+
+  # Les tests unitaires de `infra/` (schéma, règles, hooks) : sans ce job, ils ne
+  # tournent que sur les PR qui touchent `infra/**` (workflow infra-pocketbase).
+  infra:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: setup bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: run infra tests
+        run: bun run test:infra
 
   build-windows:
     runs-on: windows-latest

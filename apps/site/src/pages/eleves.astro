@@ -1,0 +1,7 @@
+---
+import AppPage from '../layouts/AppPage.astro'
+import { ElevesPage } from '../app/eleves/ElevesPage'
+---
+<AppPage title="Élèves">
+  <ElevesPage client:only="react" />
+</AppPage>

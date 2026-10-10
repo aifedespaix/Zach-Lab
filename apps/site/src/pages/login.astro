@@ -1,0 +1,7 @@
+---
+import AppPage from '../layouts/AppPage.astro'
+import { LoginPage } from '../app/login/LoginPage'
+---
+<AppPage title="Connexion">
+  <LoginPage client:only="react" />
+</AppPage>
