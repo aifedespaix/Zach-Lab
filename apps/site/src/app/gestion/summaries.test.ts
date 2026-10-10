@@ -34,6 +34,14 @@ describe('summarizeCodes', () => {
     expect(views.find(view => view.id === '1')).toMatchObject({ state: 'utilise', inscrits: ['dupont'] })
     expect(views.find(view => view.id === '2')).toMatchObject({ state: 'actif', inscrits: ['martin', 'durand'] })
   })
+  it('un élève portant le code compte : un code unique passe à « utilisé »', () => {
+    const [view] = summarizeCodes(
+      [code({ id: '1', code: 'AAAAAAAAAA' })],
+      [user({ id: 'e1', role: 'eleve', username: 'alice', invite_code: 'AAAAAAAAAA' })],
+      NOW
+    )
+    expect(view).toMatchObject({ state: 'utilise', inscrits: ['alice'] })
+  })
   it('met les codes actifs avant les autres, puis du plus récent au plus ancien', () => {
     const views = summarizeCodes(
       [code({ id: 'old', code: 'AAAAAAAAAA', revoked: true, created: '2026-10-09 00:00:00.000Z' }),

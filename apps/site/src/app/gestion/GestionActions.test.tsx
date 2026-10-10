@@ -75,6 +75,32 @@ describe('élève sans prof', () => {
   })
 })
 
+describe('rattachement et renommage', () => {
+  const STUDENT = user({ id: 'e1', username: 'alice', role: 'eleve', teacher: '' })
+
+  it('élève sans prof et un seul prof : « — aucun — » est choisi, et choisir le prof rattache', async () => {
+    api.updateUser.mockResolvedValue({})
+    await open('Élèves', [PROF, STUDENT])
+    const select = main().getAllByLabelText('Prof de alice')[0] as HTMLSelectElement
+    expect(select.selectedOptions[0]).toHaveTextContent('— aucun —')
+    type(select, 'p1')
+    await vi.waitFor(() => expect(api.updateUser).toHaveBeenCalledWith('e1', { teacher: 'p1' }))
+  })
+
+  it('une ligne d’élève n’a aucun contrôle de renommage', async () => {
+    await open('Élèves', [PROF, { ...STUDENT, teacher: 'p1' }])
+    expect(main().queryByLabelText('Identifiant de alice')).toBeNull()
+    expect(main().queryByRole('button', { name: 'Renommer' })).toBeNull()
+  })
+
+  it('une ligne de prof garde le renommage et son avertissement', async () => {
+    await open('Profs')
+    expect(main().getAllByLabelText('Identifiant de dupont').length).toBeGreaterThan(0)
+    expect(main().getAllByRole('button', { name: 'Renommer' }).length).toBeGreaterThan(0)
+    expect(main().getAllByText('Les cartes déjà publiées gardent l’ancien identifiant comme auteur.').length).toBeGreaterThan(0)
+  })
+})
+
 describe('validation des comptes', () => {
   it.each([
     ['mot de passe de 9 caractères', 'alice', '123456789', 'au moins 10 caractères'],

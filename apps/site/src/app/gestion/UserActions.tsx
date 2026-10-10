@@ -36,13 +36,21 @@ export function UserActions({ user, run, fail, onPassword, teachers, deleteBlock
   }
   return (
     <>
-      <div className="flex gap-2">
-        <input className={`${inputClass} w-40`} aria-label={`Identifiant de ${user.username}`} value={name} onChange={e => setName(e.target.value)} />
-        <Button onClick={rename} disabled={name === user.username}>Renommer</Button>
-      </div>
+      {/* Pas de renommage d'un élève : ses cartes et son historique de synchro sont liés à son identifiant (auteur = username). */}
+      {user.role === 'prof' && (
+        <div>
+          <div className="flex gap-2">
+            <input className={`${inputClass} w-40`} aria-label={`Identifiant de ${user.username}`} value={name} onChange={e => setName(e.target.value)} />
+            <Button onClick={rename} disabled={name === user.username}>Renommer</Button>
+          </div>
+          <p className="mt-1 text-xs opacity-70">Les cartes déjà publiées gardent l’ancien identifiant comme auteur.</p>
+        </div>
+      )}
       {teachers !== undefined && (
         <select className={`${inputClass} w-40`} aria-label={`Prof de ${user.username}`} value={user.teacher}
           onChange={e => void run(() => updateUser(user.id, { teacher: e.target.value }))}>
+          {/* Sans prof, la valeur '' doit être sélectionnée : sinon le premier prof paraît choisi et le choisir ne déclenche aucun changement. */}
+          {user.teacher === '' && <option value="" disabled>— aucun —</option>}
           {teachers.map(t => <option key={t.id} value={t.id}>{t.username}</option>)}
         </select>
       )}

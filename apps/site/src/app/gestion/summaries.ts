@@ -37,8 +37,8 @@ export function teacherCounts(users: readonly UserRow[]): Map<string, number> {
 export function summarizeCodes(codes: readonly CodeRow[], users: readonly UserRow[], nowMs: number): CodeView[] {
   return codes
     .map<CodeView>(row => {
-      // Un code s'utilise à l'inscription d'un prof : ce sont eux qui le « consomment ».
-      const inscrits = users.filter(user => user.role === 'prof' && user.invite_code === row.code)
+      // Tout compte portant le code compte, comme dans le hook inscription.pb.js (aucun filtre sur le rôle).
+      const inscrits = users.filter(user => user.invite_code === row.code)
       return {
         ...row,
         state: inviteCodeState(row, inscrits.length, nowMs),
