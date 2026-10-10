@@ -57,6 +57,7 @@ base lance PocketBase avec `--hooksDir=/pb_hooks`) :
   limitation de débit de PocketBase (voir « Limitation de débit » plus bas).
 - `users.pb.js` — refuse la suppression d'un professeur qui a encore des élèves
   (même par le superutilisateur).
+- `files.pb.js` — collection `files` (chantier Synchro) : pose `rev` (1 à la création, +1 à chaque écriture qui change `content`, `hash`, `path` ou `deleted_at`), répond `409` si le client envoie un `base_rev` périmé, et purge chaque jour (04:00) les fichiers en corbeille depuis plus de 30 jours.
 - `lib/inviteCode.js` — l'état d'un code (valable, épuisé, expiré, révoqué).
 
 ## 1. Renseigner les identifiants d'administration
@@ -442,6 +443,17 @@ une page du site (`apps/site/src/app/bibliotheque/`, voir son `README.md`) :
 
 ```bash
 bun run infra/setup-pocketbase.mjs --check   # 0 = le serveur a tout ce qu'il faut
+```
+
+## La collection `files` et la migration
+
+`files` est la collection unique de la synchronisation commune à la suite (chantier Synchro) : une ligne = une copie d'un fichier pour un propriétaire (`owner`), unique par `(owner, app, file_id)`. Un élève lit et modifie ses copies ; son prof (`owner.teacher`) aussi ; seul un prof peut annuler une suppression (vider `deleted_at`) ; ni `rev` ni `owner` ne s'écrivent depuis un client ; la suppression définitive est réservée au serveur.
+
+`cartes_mentales` n'est pas encore retirée (lot S9). Pour recopier les cartes existantes dans `files` :
+
+```bash
+bun infra/migrate-to-files.mjs           # simulation
+bun infra/migrate-to-files.mjs --apply   # écrit ; rejouable, saute ce qui existe déjà
 ```
 
 ## Limite connue : collections de synchronisation

@@ -5,7 +5,7 @@
 | Lot | Titre | Taille | Dépend de | État | Notes |
 |---|---|---|---|---|---|
 | S0 | Décisions et cadrage | S | — | terminé | Décisions prises : voir `06-lots.md` (2 questions non bloquantes restent) |
-| S1 | Serveur unique | M | S0 | en cours | Déplacement d'`infra/` à la racine : fait. Reste : schéma `files`, hook `rev`, migration |
+| S1 | Serveur unique | M | S0 | terminé | `infra/` à la racine ; collection `files` + règles ; hook `rev` (409, corbeille 30 j) ; `infra/migrate-to-files.mjs`. Scénarios S11 joués sur un vrai PocketBase 0.40.3. `cartes_mentales`/`dossiers`/`sync_conflicts` restent jusqu'à S9. |
 | S2 | Moteur pur | L | S0 | à faire | |
 | S3 | Droits | S | S2 | à faire | |
 | S4 | Adaptateur et exécution | L | S1, S2 | à faire | |
