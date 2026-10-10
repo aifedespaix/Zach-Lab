@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
-import { FilePlus2, Files, FolderTree, GitCompareArrows, LogOut, ScrollText } from 'lucide-react'
-import { Login } from './components/Login'
+import { FilePlus2, Files, FolderTree, GitCompareArrows, ScrollText } from 'lucide-react'
 import { LibraryView } from './components/LibraryView'
 import { NewMapView } from './components/NewMapView'
 import { ConflictsView } from './components/ConflictsView'
 import { DuplicatesView } from './components/DuplicatesView'
 import { LogsView } from './components/LogsView'
-import { currentUser, logout, type AdminUser } from './lib/pb'
+import { currentUser } from './lib/pb'
 import { openConflictCount, useLibrary } from './state/useLibrary'
 import { Badge } from '@/ui/primitives'
+import { Protected } from '../shell/Protected'
+import { AppShell } from '../shell/AppShell'
 
 /**
  * La coque : qui est connecté, et quel onglet est ouvert.
@@ -36,8 +37,23 @@ function tabFromHash(): TabId {
   return TABS.some(tab => tab.id === raw) ? (raw as TabId) : 'fichiers'
 }
 
+/** La page est derrière `Protected` : seul un prof arrive jusqu'au contenu. */
 export function BibliothequeApp() {
-  const [user, setUser] = useState<AdminUser | null>(currentUser)
+  return (
+    <Protected page="bibliotheque">
+      {session => (
+        <AppShell session={session} page="bibliotheque" title="Bibliothèque">
+          <Bibliotheque />
+        </AppShell>
+      )}
+    </Protected>
+  )
+}
+
+function Bibliotheque() {
+  // Calculé une fois : la session ne change pas pendant la vie de la page
+  // (se déconnecter recharge vers /login/).
+  const [user] = useState(currentUser)
   const [tab, setTab] = useState<TabId>(tabFromHash)
   const { conflicts, refreshAll } = useLibrary()
 
@@ -52,35 +68,45 @@ export function BibliothequeApp() {
     void refreshAll()
   }, [user, refreshAll])
 
-  if (user === null) return <Login onSignedIn={setUser} />
+  // Protected garantit un prof ; si le magasin dit autre chose, ne rien rendre
+  // vaut mieux qu'un écran dont chaque bouton répondrait « 403 ».
+  if (user === null) return null
 
   const openConflicts = openConflictCount(conflicts)
 
   return (
-    <div className="flex h-dvh flex-col">
-      <header className="safe-top flex items-center gap-3 border-b border-ink-850 px-4 pb-2">
-        <h1 className="min-w-0 flex-1 truncate text-sm font-semibold">
-          Zachar’t Mentale <span className="font-normal text-ink-500">· espace professeur</span>
-        </h1>
-        <span className="truncate text-xs text-ink-500">{user.username}</span>
-        <button
-          type="button"
-          onClick={() => {
-            logout()
-            setUser(null)
-          }}
-          aria-label="Se déconnecter"
-          title="Se déconnecter"
-          className="tap grid w-10 shrink-0 place-items-center rounded-xl text-ink-500 transition-colors hover:bg-ink-850 hover:text-ink-100"
-        >
-          <LogOut size={18} />
-        </button>
-      </header>
+    <div className="flex flex-col gap-4">
+      {/* Les onglets sont en haut, à toutes les largeurs : la barre du bas
+          appartient maintenant à la navigation du site. */}
+      <nav aria-label="Onglets de la bibliothèque" className="flex border-b border-ink-850">
+        {TABS.map(entry => {
+          const Icon = entry.icon
+          const active = tab === entry.id
+          return (
+            <a
+              key={entry.id}
+              href={`#/${entry.id}`}
+              aria-current={active ? 'page' : undefined}
+              className={`tap relative flex flex-1 flex-col items-center justify-center gap-0.5 pb-2 text-[11px] transition-colors ${
+                active ? 'text-accent' : 'text-ink-500'
+              }`}
+            >
+              <Icon size={20} />
+              {entry.label}
+              {entry.id === 'conflits' && openConflicts > 0 && (
+                <span className="absolute right-[22%] top-0">
+                  <Badge tone="danger">{openConflicts}</Badge>
+                </span>
+              )}
+            </a>
+          )
+        })}
+      </nav>
 
       {/* Chaque onglet garde son état monté : revenir aux fichiers depuis les
           conflits ne doit pas replier l'arbre ni reperdre une recherche en
           cours — c'est l'aller-retour le plus fréquent de tout l'outil. */}
-      <main className="min-h-0 flex-1">
+      <div className="min-h-0 flex-1">
         <Pane active={tab === 'fichiers'}>
           <LibraryView user={user} />
         </Pane>
@@ -96,32 +122,7 @@ export function BibliothequeApp() {
         <Pane active={tab === 'journal'}>
           <LogsView />
         </Pane>
-      </main>
-
-      <nav className="safe-bottom flex border-t border-ink-850 bg-ink-950">
-        {TABS.map(entry => {
-          const Icon = entry.icon
-          const active = tab === entry.id
-          return (
-            <a
-              key={entry.id}
-              href={`#/${entry.id}`}
-              aria-current={active ? 'page' : undefined}
-              className={`tap relative flex flex-1 flex-col items-center justify-center gap-0.5 pt-2 text-[11px] transition-colors ${
-                active ? 'text-accent' : 'text-ink-500'
-              }`}
-            >
-              <Icon size={20} />
-              {entry.label}
-              {entry.id === 'conflits' && openConflicts > 0 && (
-                <span className="absolute right-[22%] top-1">
-                  <Badge tone="danger">{openConflicts}</Badge>
-                </span>
-              )}
-            </a>
-          )
-        })}
-      </nav>
+      </div>
     </div>
   )
 }

@@ -1,21 +1,13 @@
-import PocketBase from 'pocketbase'
 import type { UserRole } from '@app/types/card'
+import { pb } from '../../session/pb'
 
 /**
- * Le client PocketBase de l'interface d'administration.
- *
- * L'URL est celle de la page elle-même, et ce n'est pas un raccourci : le SPA
- * est déposé dans le `/pb_public` du serveur PocketBase, donc il est servi par
- * l'API qu'il appelle. Même origine, donc pas de CORS à ouvrir, pas d'URL à
- * configurer, et aucun moyen de pointer par erreur sur le serveur de quelqu'un
- * d'autre.
- *
- * La session vit dans le `localStorage` (le magasin par défaut du SDK, qui
- * existe ici — contrairement à la webview Tauri de l'application de bureau, qui
- * a dû s'en écrire un). Recharger la page, ou revenir le lendemain, ne demande
- * donc pas de se reconnecter.
+ * Le client PocketBase de la bibliothèque est CELUI DU SITE (`session/pb.ts`).
+ * Deux instances du SDK sur la même clé `localStorage` se désynchroniseraient
+ * dès qu'une seule rafraîchit son jeton : il n'y en a donc qu'une, et la
+ * connexion/déconnexion se font ailleurs (page /login/, coque du site).
  */
-export const pb = new PocketBase(typeof window === 'undefined' ? '/' : window.location.origin)
+export { pb }
 
 export interface AdminUser {
   id: string
@@ -46,59 +38,12 @@ export function currentUser(): AdminUser | null {
   }
 }
 
-/** Ce que la connexion peut refuser, en français, sans jamais dire lequel des deux champs est faux. */
-export class LoginError extends Error {}
-
-/**
- * Connecte un compte, et REFUSE tout ce qui n'est pas un prof.
- *
- * Ce refus est une politesse, pas une sécurité : l'interface n'a d'utilité que
- * pour un prof, et laisser entrer un élève dans un écran où chaque bouton
- * répondra « 403 » serait une mauvaise expérience. La vraie protection est
- * ailleurs — dans les règles de PocketBase, qui ne consultent rien de ce que
- * ce code décide (voir `infra/pocketbase-schema.mjs`). Un élève qui
- * contournerait cet écran n'obtiendrait toujours que ses propres droits.
- */
-export async function login(username: string, password: string): Promise<AdminUser> {
-  try {
-    await pb.collection('users').authWithPassword(username.trim(), password)
-  } catch (error) {
-    throw new LoginError(describeAuthError(error))
-  }
-  const user = currentUser()
-  if (user === null) {
-    throw new LoginError('Connexion acceptée mais session illisible. Réessayez.')
-  }
-  if (user.role !== 'prof') {
-    pb.authStore.clear()
-    throw new LoginError(
-      'Ce compte est un compte élève. L’espace d’administration est réservé aux comptes professeur.'
-    )
-  }
-  return user
-}
-
-export function logout(): void {
-  pb.authStore.clear()
-}
-
 function statusOf(error: unknown): number {
   if (error !== null && typeof error === 'object' && 'status' in error) {
     const status = (error as { status?: unknown }).status
     if (typeof status === 'number') return status
   }
   return 0
-}
-
-function describeAuthError(error: unknown): string {
-  const status = statusOf(error)
-  // 0 = la requête n'a jamais atteint le serveur. C'est la panne la plus
-  // fréquente sur un téléphone, et la seule que l'utilisateur peut corriger
-  // lui-même — elle mérite donc sa propre phrase.
-  if (status === 0) return 'Serveur injoignable. Vérifiez votre connexion.'
-  if (status === 400) return 'Pseudo ou mot de passe incorrect.'
-  if (status === 403) return 'Ce compte n’a pas le droit de se connecter ici.'
-  return `La connexion a échoué (erreur ${status}).`
 }
 
 /**

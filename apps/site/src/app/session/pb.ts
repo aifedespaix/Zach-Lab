@@ -6,7 +6,7 @@ import PocketBase from 'pocketbase'
  * le `localStorage` du SDK (clé `pocketbase_auth`), partagée par toutes les
  * pages du site.
  *
- * La bibliothèque a encore sa propre instance (`bibliotheque/lib/pb.ts`) sur la
- * même clé : la Task 13 les fusionnera.
+ * La bibliothèque ré-exporte ce client (`bibliotheque/lib/pb.ts`) : une seule
+ * instance, donc pas de désynchronisation du jeton.
  */
 export const pb = new PocketBase(window.location.origin)

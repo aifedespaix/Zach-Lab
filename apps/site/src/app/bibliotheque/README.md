@@ -65,9 +65,9 @@ Depuis la racine du dépôt : `bun run admin:dev`, `bun run test:admin`,
 ## Architecture, en trois points
 
 - **Pas de backend.** Le SPA parle directement à l'API REST de PocketBase, avec
-  la session du professeur. Les droits sont ceux du serveur ; l'écran de
-  connexion qui refuse les comptes élèves est une politesse, pas une sécurité
-  (voir `src/lib/pb.ts`).
+  la session du professeur. Les droits sont ceux du serveur ; la page
+  est réservée aux profs par `Protected` (session du site), ce qui est une
+  politesse, pas une sécurité.
 - **Le code des cartes n'est pas recopié.** L'alias `@app` pointe sur le `src/`
   de l'application de bureau : types, validation, sérialisation et chemins sont
   importés. Un validateur recopié finirait par accepter ce que l'application
