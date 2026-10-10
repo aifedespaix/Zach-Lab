@@ -46,3 +46,7 @@ FROM ghcr.io/muchobien/pocketbase:0.40.3
 
 # Servi à la racine du domaine pour tout ce qui n'est pas `/api/…` ni `/_/…`.
 COPY --from=build /build/apps/site/dist /pb_public
+
+# Les hooks JavaScript de PocketBase (inscription par code, garde de suppression).
+# `--hooksDir=/pb_hooks` dans l'entrypoint.sh de l'image de base.
+COPY infra/pb_hooks /pb_hooks

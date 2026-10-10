@@ -64,5 +64,9 @@ describe('users', () => {
     expect(users.rules.updateRule).toContain('@request.body.role:isset = false')
     expect(users.rules.updateRule).toContain('@request.body.teacher:isset = false')
     expect(users.rules.updateRule).toContain('@request.body.invite_code:isset = false')
+    // Les DEUX branches de updateRule (soi-même, élève du prof) et la création.
+    const occurrences = rule => rule.split('@request.body.invite_code:isset = false').length - 1
+    expect(occurrences(users.rules.updateRule)).toBe(2)
+    expect(occurrences(users.rules.createRule)).toBe(1)
   })
 })

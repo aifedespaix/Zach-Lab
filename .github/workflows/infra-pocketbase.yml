@@ -56,6 +56,7 @@ jobs:
           docker run -d --name pocketbase -p 8090:8090 \
             -e PB_ADMIN_EMAIL \
             -e PB_ADMIN_PASSWORD \
+            -v "${{ github.workspace }}/infra/pb_hooks:/pb_hooks:ro" \
             ghcr.io/muchobien/pocketbase:${{ steps.pocketbase.outputs.version }}
 
       - name: wait for the API to answer
@@ -108,6 +109,9 @@ jobs:
         run: |
           bun run infra/setup-pocketbase.mjs --add-user 'eleve1:eleve:MotDePasse1234!'
           bun run infra/setup-pocketbase.mjs --verify 'eleve1:MotDePasse1234!'
+
+      - name: accounts, invite codes and hooks behave
+        run: bun run infra/integration.mjs
 
       - name: a backup can be taken and downloaded
         run: |

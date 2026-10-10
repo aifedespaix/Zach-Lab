@@ -304,10 +304,10 @@ export const USERS_RULES = {
   listRule: `id = @request.auth.id || (${OWN_STUDENT})`,
   viewRule: `id = @request.auth.id || (${OWN_STUDENT})`,
   createRule:
-    '@request.auth.role = "prof" && @request.body.role = "eleve" && @request.body.teacher = @request.auth.id',
+    '@request.auth.role = "prof" && @request.body.role = "eleve" && @request.body.teacher = @request.auth.id && @request.body.invite_code:isset = false',
   updateRule:
     '(id = @request.auth.id && @request.body.role:isset = false && @request.body.teacher:isset = false && @request.body.invite_code:isset = false)' +
-    ` || (${OWN_STUDENT} && @request.body.role:isset = false && @request.body.teacher:isset = false)`,
+    ` || (${OWN_STUDENT} && @request.body.role:isset = false && @request.body.teacher:isset = false && @request.body.invite_code:isset = false)`,
   deleteRule: OWN_STUDENT,
   manageRule: OWN_STUDENT,
 }
