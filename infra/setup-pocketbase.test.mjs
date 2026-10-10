@@ -19,6 +19,7 @@ import {
   ASSETS_COLLECTION,
   DEFAULT_BACKUP_CRON,
   FOLDERS_COLLECTION,
+  INVITE_CODES_COLLECTION,
   SYNC_CONFLICTS_COLLECTION,
   SYNC_EVENTS_COLLECTION,
   DEFAULT_BACKUP_KEEP,
@@ -215,6 +216,7 @@ describe('export du schéma', () => {
       ASSETS_COLLECTION,
       MIND_MAPS_COLLECTION,
       FOLDERS_COLLECTION,
+      INVITE_CODES_COLLECTION,
       SYNC_CONFLICTS_COLLECTION,
       SYNC_EVENTS_COLLECTION,
       USERS_COLLECTION,
@@ -480,8 +482,10 @@ describe('planCollection', () => {
   })
 
   it('describes closing a public sign-up rule as superusers-only, not the other way round', () => {
-    const desired = desiredCollections().find(entry => entry.name === USERS_COLLECTION)
-    const current = { id: 'id-3', name: USERS_COLLECTION, fields: [], indexes: [], createRule: '' }
+    // `users.createRule` n'est plus « superutilisateurs » (un prof crée ses élèves) :
+    // le libellé se vérifie sur `invite_codes`, resté fermé à tous.
+    const desired = desiredCollections().find(entry => entry.name === INVITE_CODES_COLLECTION)
+    const current = { id: 'id-3', name: INVITE_CODES_COLLECTION, fields: [], indexes: [], createRule: '' }
     expect(planCollection(current, desired).changes).toContain('règle createRule → superutilisateurs uniquement')
   })
 })
@@ -494,11 +498,12 @@ describe('runSetup', () => {
     expect(client.auth).toHaveBeenCalled()
     // Tout ce que le script possède sauf `users`, qui EXISTE déjà sur un
     // PocketBase vierge et n'est donc jamais créée, seulement complétée.
-    expect(client.createCollection).toHaveBeenCalledTimes(5)
+    expect(client.createCollection).toHaveBeenCalledTimes(6)
     expect(client.updateCollection).toHaveBeenCalledTimes(1) // users only
     expect(report.collections.map(entry => [entry.name, entry.status])).toEqual([
       [MIND_MAPS_COLLECTION, 'created'],
       [ASSETS_COLLECTION, 'created'],
+      [INVITE_CODES_COLLECTION, 'created'],
       [USERS_COLLECTION, 'updated'],
       [FOLDERS_COLLECTION, 'created'],
       [SYNC_EVENTS_COLLECTION, 'created'],

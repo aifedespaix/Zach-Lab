@@ -219,6 +219,99 @@ export const ROLE_FIELD = {
   values: ['eleve', 'prof'],
 }
 
+/** Le champ qui rattache un élève à son prof (1 élève = 1 prof, chantier Synchro S0). `_pb_users_auth_` est l'id de la collection `users` intégrée de PocketBase. */
+export const TEACHER_FIELD = {
+  name: 'teacher',
+  type: 'relation',
+  required: false,
+  collectionId: '_pb_users_auth_',
+  maxSelect: 1,
+  cascadeDelete: false,
+  help: 'Le prof auquel cet élève est rattaché. Vide pour un prof.',
+}
+
+/**
+ * Le code avec lequel un prof s'est inscrit. Du TEXTE, pas une relation : une
+ * relation exigerait l'id généré de `invite_codes`, que le schéma-comme-donnée ne
+ * connaît pas, et le code est de toute façon unique.
+ */
+export const INVITE_CODE_REF_FIELD = {
+  name: 'invite_code',
+  type: 'text',
+  required: false,
+  max: 32,
+  help: 'Le code d’inscription utilisé (prof inscrit par code). Vide sinon.',
+}
+
+export const INVITE_CODES_COLLECTION = 'invite_codes'
+
+/** Sans 0, O, 1, I, L : un code se dicte à voix haute ou se lit sur une feuille. */
+export const INVITE_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
+export const INVITE_CODE_LENGTH = 10
+
+export const INVITE_CODE_FIELDS = [
+  {
+    name: 'code',
+    type: 'text',
+    required: true,
+    min: INVITE_CODE_LENGTH,
+    max: INVITE_CODE_LENGTH,
+    pattern: `^[${INVITE_CODE_ALPHABET}]{${INVITE_CODE_LENGTH}}$`,
+    help: 'Le code à donner au professeur (10 caractères).',
+  },
+  {
+    name: 'kind',
+    type: 'select',
+    required: true,
+    maxSelect: 1,
+    values: ['unique', 'duree'],
+    help: 'unique = une seule inscription. duree = valable jusqu’à expires_at, pour plusieurs inscriptions.',
+  },
+  { name: 'expires_at', type: 'date', required: false, help: 'Obligatoire pour un code « duree ».' },
+  { name: 'revoked', type: 'bool', required: false, help: 'Coché : le code ne marche plus.' },
+  { name: 'note', type: 'text', required: false, max: 255, help: 'Pour s’y retrouver (ex. « équipe de maths »).' },
+  CREATED_FIELD,
+  UPDATED_FIELD,
+]
+
+export const INVITE_CODE_INDEXES = [
+  'CREATE UNIQUE INDEX `idx_invite_codes_code` ON `invite_codes` (`code`)',
+]
+
+/** Tout à `null` : seul le superutilisateur y touche, personne ne peut énumérer les codes. */
+export const INVITE_CODE_RULES = {
+  listRule: null,
+  viewRule: null,
+  createRule: null,
+  updateRule: null,
+  deleteRule: null,
+}
+
+const OWN_STUDENT = '@request.auth.role = "prof" && teacher = @request.auth.id'
+
+/**
+ * Les droits sur `users`.
+ *
+ * - Un prof voit, crée, modifie et supprime SES élèves, et eux seulement.
+ * - `manageRule` est ce qui lui permet de fixer le mot de passe d'un élève sans
+ *   connaître l'ancien (réinitialisation).
+ * - Personne, prof compris, ne change son propre `role`, `teacher` ou `invite_code`.
+ * - `createRule` n'ouvre que la création d'un ÉLÈVE rattaché au prof qui la fait.
+ *   Un prof naît par le hook d'inscription (qui contourne les règles) ou par le
+ *   superutilisateur, jamais par l'API publique.
+ */
+export const USERS_RULES = {
+  listRule: `id = @request.auth.id || (${OWN_STUDENT})`,
+  viewRule: `id = @request.auth.id || (${OWN_STUDENT})`,
+  createRule:
+    '@request.auth.role = "prof" && @request.body.role = "eleve" && @request.body.teacher = @request.auth.id',
+  updateRule:
+    '(id = @request.auth.id && @request.body.role:isset = false && @request.body.teacher:isset = false && @request.body.invite_code:isset = false)' +
+    ` || (${OWN_STUDENT} && @request.body.role:isset = false && @request.body.teacher:isset = false)`,
+  deleteRule: OWN_STUDENT,
+  manageRule: OWN_STUDENT,
+}
+
 export const MIND_MAP_INDEXES = [
   'CREATE UNIQUE INDEX `idx_cartes_mentales_file_id` ON `cartes_mentales` (`file_id`)',
 ]
@@ -254,16 +347,23 @@ export function desiredCollections() {
       rules: ASSET_RULES,
     },
     {
+      name: INVITE_CODES_COLLECTION,
+      kind: 'base',
+      fields: INVITE_CODE_FIELDS,
+      indexes: INVITE_CODE_INDEXES,
+      rules: INVITE_CODE_RULES,
+    },
+    {
       name: USERS_COLLECTION,
       kind: 'auth',
-      fields: [USERNAME_FIELD, EMAIL_FIELD_OVERRIDE, ROLE_FIELD],
+      fields: [USERNAME_FIELD, EMAIL_FIELD_OVERRIDE, ROLE_FIELD, TEACHER_FIELD, INVITE_CODE_REF_FIELD],
       indexes: USERNAME_INDEX,
       // The app signs in with the username, never an email address.
       auth: { passwordAuth: { enabled: true, identityFields: ['username'] } },
-      // PocketBase ships this rule as "" — i.e. ANYONE may create an account
-      // over the API. The app has no sign-up screen, so the script closes it:
-      // accounts come from here, or from the dashboard.
-      rules: { createRule: null },
+      // PocketBase ships createRule as "" (anyone may create an account over the
+      // API); USERS_RULES closes it: only a teacher creates a student, attached to
+      // themselves. Teachers are born by the sign-up hook or the superuser.
+      rules: USERS_RULES,
     },
     // L'espace du professeur. Ajouté APRÈS les trois collections ci-dessus, et
     // séparément : un serveur qui ne les a pas encore synchronise exactement
