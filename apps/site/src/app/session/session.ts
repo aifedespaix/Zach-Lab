@@ -35,6 +35,9 @@ export function currentSession(): Session | null {
 
 export class LoginError extends Error {}
 
+/** Dit une seule fois, ici : `loginAny` le lève, la page de connexion l'affiche pour une session élève périmée. */
+export const STUDENT_REFUSED_MESSAGE = 'Les comptes élèves se connectent dans l’application de bureau, pas sur le site.'
+
 function describeAuthError(error: unknown): string {
   const status = typeof error === 'object' && error !== null && 'status' in error ? Number((error as { status: unknown }).status) : 0
   if (status === 0) return 'Serveur injoignable. Vérifiez votre connexion.'
@@ -68,7 +71,7 @@ export async function loginAny(identity: string, password: string): Promise<Sess
   }
   if (session.kind === 'eleve') {
     pb.authStore.clear()
-    throw new LoginError('Les comptes élèves se connectent dans l’application de bureau, pas sur le site.')
+    throw new LoginError(STUDENT_REFUSED_MESSAGE)
   }
   return session
 }

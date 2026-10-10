@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { BrainCircuit, LogIn } from 'lucide-react'
-import { currentSession, loginAny, LoginError } from '../session/session'
+import { currentSession, loginAny, LoginError, logout, STUDENT_REFUSED_MESSAGE } from '../session/session'
 import { guard, homeFor } from '../session/guards'
 import { Button, Field, inputClass } from '@/ui/primitives'
 
@@ -16,9 +16,16 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
-  // Déjà connecté : inutile de montrer le formulaire.
+  // Déjà connecté : inutile de montrer le formulaire. Une session élève périmée
+  // (ouverte avant ce refus) est fermée ici, sinon l'élève resterait coincé sans explication.
   useEffect(() => {
-    const target = guard(currentSession(), 'login')
+    const session = currentSession()
+    if (session?.kind === 'eleve') {
+      logout()
+      setError(STUDENT_REFUSED_MESSAGE)
+      return
+    }
+    const target = guard(session, 'login')
     if (target !== null) window.location.replace(target)
   }, [])
 

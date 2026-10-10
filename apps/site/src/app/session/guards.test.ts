@@ -44,6 +44,12 @@ describe('guard', () => {
       expect(guard(prof, page)).toBeNull()
     }
   })
+  it('laisse un élève sur /login/ et /inscription/ (pas de boucle de redirection)', () => {
+    expect(guard(eleve, 'login')).toBeNull()
+    expect(guard(eleve, 'inscription')).toBeNull()
+    // Son « accueil » est /login/, où il peut rester : aucune redirection ne boucle.
+    expect(homeFor(eleve)).toBe('/login/')
+  })
   it("n'ouvre rien à un élève", () => {
     for (const page of ['gestion', 'dashboard', 'eleves', 'compte', 'bibliotheque'] as const) {
       expect(guard(eleve, page)).toBe('/login/')
