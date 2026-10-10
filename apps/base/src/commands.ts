@@ -7,7 +7,7 @@ import { defineCommandCatalog, standardCommands, STANDARD_CATEGORIES, createType
  * handlers with `useCommand`.
  */
 export const COMMANDS = [
-  ...standardCommands(['app.palette', 'app.settings', 'app.shortcuts', 'app.toggleTheme', 'view.zoomOut', 'view.zoomIn', 'view.zoomReset', 'view.toggleDensity']),
+  ...standardCommands(['app.palette', 'app.settings', 'app.shortcuts', 'app.toggleTheme', 'view.zoomOut', 'view.zoomIn', 'view.zoomReset', 'view.toggleDensity', 'settings.open.appearance', 'settings.open.toolbar', 'settings.open.updates']),
 ] as const
 
 export type CommandId = (typeof COMMANDS)[number]['id']

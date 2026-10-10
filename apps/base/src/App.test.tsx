@@ -64,8 +64,21 @@ describe('App base', () => {
     expect(within(dialog).getByRole('option', { name: /Paramètres/ })).toBeInTheDocument()
   })
 
-  it('le bouton de thème bascule le thème sombre, et le choix est retenu', async () => {
+  it('la barre n’a pas de bouton de thème par défaut ; l’onglet « Boutons » le remet', async () => {
     const user = userEvent.setup()
+    render(<App />)
+    expect(screen.queryByRole('button', { name: /Basculer le thème/ })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Paramètres/ }))
+    const dialog = await screen.findByRole('dialog', { name: 'Paramètres' })
+    await user.click(within(dialog).getByRole('tab', { name: /Boutons/ }))
+    await user.click(await within(dialog).findByRole('switch', { name: /Basculer le thème/ }))
+    await user.click(within(dialog).getByRole('button', { name: 'Annuler' }))
+    expect(await screen.findByRole('button', { name: /Basculer le thème/ })).toBeInTheDocument()
+  })
+
+  it('le bouton de thème, une fois activé, bascule le thème sombre, et le choix est retenu', async () => {
+    const user = userEvent.setup()
+    localStorage.setItem('base:toolbar-hidden', '[]')
     render(<App />)
     expect(document.documentElement).not.toHaveClass('dark')
     await user.click(screen.getByRole('button', { name: /Basculer le thème/ }))
@@ -81,11 +94,13 @@ describe('App base', () => {
     await user.click(screen.getByRole('button', { name: /Paramètres/ }))
     const dialog = await screen.findByRole('dialog', { name: 'Paramètres' })
     const tabs = within(dialog).getAllByRole('tab')
-    expect(tabs).toHaveLength(3)
+    expect(tabs).toHaveLength(4)
     expect(tabs[0]).toHaveTextContent('Raccourcis')
     expect(tabs[1]).toHaveTextContent('Apparence')
-    expect(tabs[2]).toHaveTextContent('Mises à jour')
-    await user.click(tabs[2])
+    expect(tabs[2]).toHaveTextContent('Boutons')
+    expect(tabs[3]).toHaveTextContent('Mises à jour')
+    expect(tabs[2]).toHaveTextContent('F4')
+    await user.click(tabs[3])
     expect(await within(dialog).findByRole('button', { name: 'Rechercher les mises à jour' })).toBeInTheDocument()
   })
 

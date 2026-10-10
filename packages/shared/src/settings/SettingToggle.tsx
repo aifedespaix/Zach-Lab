@@ -5,6 +5,8 @@ interface SettingToggleProps {
   description?: string
   checked: boolean
   onCheckedChange: (checked: boolean) => void
+  /** Greyed and inert: a choice the user cannot make (a locked bar item stays on). */
+  disabled?: boolean
 }
 
 /**
@@ -12,7 +14,7 @@ interface SettingToggleProps {
  * which is the behaviour people expect from a settings list — clicking the
  * explanation toggles the switch instead of doing nothing.
  */
-export function SettingToggle({ label, description, checked, onCheckedChange }: SettingToggleProps) {
+export function SettingToggle({ label, description, checked, onCheckedChange, disabled = false }: SettingToggleProps) {
   return (
     <label
       style={{
@@ -23,7 +25,8 @@ export function SettingToggle({ label, description, checked, onCheckedChange }: 
         borderRadius: 10,
         border: '1px solid var(--border)',
         marginBottom: 8,
-        cursor: 'pointer',
+        cursor: disabled ? 'default' : 'pointer',
+        opacity: disabled ? 0.6 : 1,
       }}
     >
       <span style={{ flex: 1 }}>
@@ -34,7 +37,7 @@ export function SettingToggle({ label, description, checked, onCheckedChange }: 
           </span>
         )}
       </span>
-      <Switch checked={checked} onCheckedChange={onCheckedChange} />
+      <Switch checked={checked} onCheckedChange={onCheckedChange} disabled={disabled} />
     </label>
   )
 }

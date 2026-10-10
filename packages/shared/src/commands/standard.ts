@@ -30,6 +30,30 @@ const DEFINITIONS = {
     description: 'Ouvre la liste des raccourcis, pour les consulter ou les modifier.',
     category: 'app',
     defaultBinding: 'F1',
+    allowInEditable: true,
+  },
+  // Un onglet des réglages, directement : F1 est `app.shortcuts`, F2 est réservé au renommage (L8),
+  // F5 est `tree.refresh` — les mises à jour prennent F6.
+  'settings.open.appearance': {
+    label: 'Réglages : Apparence',
+    description: 'Ouvre les paramètres sur l’onglet Apparence, ou y bascule s’ils sont ouverts.',
+    category: 'app',
+    defaultBinding: 'F3',
+    allowInEditable: true,
+  },
+  'settings.open.toolbar': {
+    label: 'Réglages : Boutons de la barre',
+    description: 'Ouvre les paramètres sur l’onglet Boutons, ou y bascule s’ils sont ouverts.',
+    category: 'app',
+    defaultBinding: 'F4',
+    allowInEditable: true,
+  },
+  'settings.open.updates': {
+    label: 'Réglages : Mises à jour',
+    description: 'Ouvre les paramètres sur l’onglet Mises à jour, ou y bascule s’ils sont ouverts.',
+    category: 'app',
+    defaultBinding: 'F6',
+    allowInEditable: true,
   },
   'app.toggleTheme': {
     label: 'Basculer le thème',

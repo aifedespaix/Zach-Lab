@@ -24,7 +24,7 @@ import { useAppStatusStore } from './useAppStatus'
 
 defineCommandCatalog({
   categories: [...STANDARD_CATEGORIES],
-  commands: standardCommands(['app.palette', 'app.settings', 'app.shortcuts', 'app.toggleTheme', 'view.zoomOut', 'view.zoomIn', 'view.zoomReset', 'view.toggleDensity']),
+  commands: standardCommands(['app.palette', 'app.settings', 'app.shortcuts', 'app.toggleTheme', 'view.zoomOut', 'view.zoomIn', 'view.zoomReset', 'view.toggleDensity', 'settings.open.appearance', 'settings.open.toolbar', 'settings.open.updates']),
 })
 
 const mark = {
@@ -79,10 +79,56 @@ describe('SuiteApp', () => {
     expect(tabs.map(tab => tab.textContent)).toEqual([
       expect.stringContaining('Raccourcis'),
       expect.stringContaining('Apparence'),
+      expect.stringContaining('Boutons'),
       expect.stringContaining('Quiz'),
       expect.stringContaining('Mises à jour'),
     ])
     expect(tabs[0]).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('le thème n’est plus dans la barre par défaut, mais sa commande répond ; l’onglet « Boutons » le rend', async () => {
+    const user = userEvent.setup()
+    render(<SuiteApp app={makeApp({ id: 'theme' })}><main /></SuiteApp>)
+    await act(async () => {})
+    expect(screen.queryByRole('button', { name: /Basculer le thème/ })).not.toBeInTheDocument()
+    const before = document.documentElement.classList.contains('dark')
+    act(() => void runCommand('app.toggleTheme'))
+    await waitFor(() => expect(document.documentElement.classList.contains('dark')).toBe(!before))
+
+    act(() => void runCommand('settings.open.toolbar'))
+    const dialog = await screen.findByRole('dialog', { name: 'Paramètres' })
+    await user.click(within(dialog).getByRole('switch', { name: /Basculer le thème/ }))
+    await user.click(within(dialog).getByRole('button', { name: 'Annuler' }))
+    expect(screen.getByRole('button', { name: /Basculer le thème/ })).toBeInTheDocument()
+  })
+
+  it('un bouton masqué reste une commande : la palette s’ouvre encore', async () => {
+    localStorage.setItem('mask:toolbar-hidden', '["app.palette"]')
+    render(<SuiteApp app={makeApp({ id: 'mask' })}><main /></SuiteApp>)
+    await act(async () => {})
+    expect(screen.queryByRole('button', { name: 'Palette de commandes' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Paramètres' })).toBeInTheDocument()
+    act(() => void runCommand('app.palette'))
+    expect(await screen.findByRole('dialog')).toBeInTheDocument()
+  })
+
+  it('le raccourci d’un onglet : fenêtre fermée, l’ouvre dessus ; ouverte, y bascule', async () => {
+    const user = userEvent.setup()
+    render(<SuiteApp app={makeApp({ id: 'tabs' })}><main /></SuiteApp>)
+    await act(async () => {})
+    act(() => void runCommand('settings.open.appearance'))
+    const dialog = await screen.findByRole('dialog', { name: 'Paramètres' })
+    expect(within(dialog).getByRole('tab', { name: /Apparence/ })).toHaveAttribute('aria-selected', 'true')
+    expect(within(dialog).getByRole('tab', { name: /Apparence/ })).toHaveAttribute('aria-keyshortcuts', 'F3')
+
+    await user.click(within(dialog).getByRole('tab', { name: /Raccourcis/ }))
+    act(() => void runCommand('settings.open.toolbar'))
+    await waitFor(() => expect(within(dialog).getByRole('tab', { name: /Boutons/ })).toHaveAttribute('aria-selected', 'true'))
+    // Redemander le même onglet après un clic ailleurs y revient.
+    await user.click(within(dialog).getByRole('tab', { name: /Raccourcis/ }))
+    act(() => void runCommand('settings.open.toolbar'))
+    await waitFor(() => expect(within(dialog).getByRole('tab', { name: /Boutons/ })).toHaveAttribute('aria-selected', 'true'))
+    expect(screen.getAllByRole('dialog')).toHaveLength(1)
   })
 
   it('`toolbar.hide` retire un item standard, et l\'app pose les siens dans la zone `app`', async () => {

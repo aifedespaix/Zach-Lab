@@ -1,3 +1,4 @@
+import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 /** The seven zones of the top bar, left to right. The order is the suite's, not the app's. */
@@ -28,6 +29,10 @@ export interface ToolbarItem {
   menu?: ReactNode
   /** Overrides the zone's priority. */
   priority?: number
+  /** What the « Boutons de la barre » panel calls it. Default: the label of the command of the same id. */
+  label?: string
+  /** Its icon in that panel. */
+  icon?: LucideIcon
 }
 
 /**

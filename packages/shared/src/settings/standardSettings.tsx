@@ -1,8 +1,10 @@
-import { Download, Keyboard, Palette } from 'lucide-react'
+import { Download, Keyboard, Palette, PanelTop } from 'lucide-react'
 import { useShortcutSettingsStore } from '../commands/useShortcutSettingsStore'
+import type { ToolbarEntry } from '../shell'
 import { AppearanceSettingsPanel, type ViewOptions } from '../view'
 import { UpdateSettingsSection, type UpdateCheckHandle } from '../update'
 import { ShortcutSettingsPanel } from './ShortcutSettingsPanel'
+import { ToolbarSettingsPanel } from './ToolbarSettingsPanel'
 import type { SettingsPanelDef, SettingsSource } from './SettingsDialog'
 
 /** The panels and sources of a settings window. */
@@ -16,6 +18,8 @@ export interface StandardSettingsOptions {
   shortcuts?: boolean
   /** The « Apparence » panel: zoom, density, font — each on unless set to `false`. Left out, no panel. */
   appearance?: ViewOptions
+  /** The « Boutons » panel: which items of the top bar are drawn (`toolbarEntries(app.toolbar)`). Left out, no panel. */
+  toolbar?: { appId: string; entries: readonly ToolbarEntry[] }
   /** The « Mises à jour » panel, fed by the app's updater. Left out, no panel. */
   updates?: UpdateCheckHandle
 }
@@ -34,9 +38,9 @@ const shortcutsSource: SettingsSource<ReturnType<ReturnType<typeof useShortcutSe
 
 /**
  * The panels every app of the suite has: « Raccourcis » first and « Mises à jour » last
- * (`mergeSettings` puts the app's own between them); « Apparence » follows « Raccourcis ».
+ * (`mergeSettings` puts the app's own between them); « Apparence » and « Boutons » follow « Raccourcis ».
  */
-export function standardSettings({ shortcuts = true, appearance, updates }: StandardSettingsOptions = {}): SettingsParts & {
+export function standardSettings({ shortcuts = true, appearance, toolbar, updates }: StandardSettingsOptions = {}): SettingsParts & {
   /** Where `mergeSettings` places each standard panel. */
   placement: Readonly<Record<string, 'start' | 'end'>>
 } {
@@ -48,6 +52,7 @@ export function standardSettings({ shortcuts = true, appearance, updates }: Stan
       label: 'Raccourcis',
       hint: 'Toutes les actions',
       icon: Keyboard,
+      shortcutCommand: 'app.shortcuts',
       render: () => <ShortcutSettingsPanel />,
     })
     placement.shortcuts = 'start'
@@ -58,9 +63,21 @@ export function standardSettings({ shortcuts = true, appearance, updates }: Stan
       label: 'Apparence',
       hint: 'Zoom, densité, police',
       icon: Palette,
+      shortcutCommand: 'settings.open.appearance',
       render: () => <AppearanceSettingsPanel view={appearance} />,
     })
     placement.appearance = 'start'
+  }
+  if (toolbar !== undefined) {
+    panels.push({
+      id: 'toolbar',
+      label: 'Boutons',
+      hint: 'Barre du haut',
+      icon: PanelTop,
+      shortcutCommand: 'settings.open.toolbar',
+      render: () => <ToolbarSettingsPanel appId={toolbar.appId} entries={toolbar.entries} />,
+    })
+    placement.toolbar = 'start'
   }
   if (updates !== undefined) {
     panels.push({
@@ -68,6 +85,7 @@ export function standardSettings({ shortcuts = true, appearance, updates }: Stan
       label: 'Mises à jour',
       hint: 'Nouvelle version',
       icon: Download,
+      shortcutCommand: 'settings.open.updates',
       render: () => (
         <UpdateSettingsSection
           status={updates.status}

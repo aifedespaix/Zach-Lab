@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { ShortcutHint } from '../commands/ShortcutHint'
+import { useBinding } from '../commands/useCommand'
 import type { LucideIcon } from 'lucide-react'
 import {
   Button,
@@ -17,6 +19,11 @@ export interface SettingsPanelDef {
   /** A few words under the label — what the tab is about. */
   hint?: string
   icon: LucideIcon
+  /**
+   * The command that opens the window on this tab (`settings.open.<id>`, `app.shortcuts`): its LIVE binding
+   * is printed on the tab, so a rebinding shows. Left out, or absent from the catalogue, nothing is printed.
+   */
+  shortcutCommand?: string
   /**
    * The tab's content. `markDirty` tells the window that a setting was edited,
    * so it offers « Enregistrer ». A panel that writes straight into a
@@ -61,8 +68,52 @@ interface SettingsDialogProps {
   sources?: readonly SettingsSource<any>[]
   /** Which tab the window opens on — a menu entry can land straight on its own. Defaults to the first. */
   initialPanel?: string
+  /**
+   * Asks for a tab while the window is OPEN (a shortcut of a tab): switches to it, without taking a new
+   * snapshot. A new `key` is a new request, so the same tab can be asked for again after clicking away.
+   */
+  focusPanel?: { id: string; key: number }
   title?: string
   description?: string
+}
+
+/** One tab: icon, label, hint, and the live binding of the command that opens it. */
+function SettingsTab({ panel, selected, onSelect }: { panel: SettingsPanelDef; selected: boolean; onSelect: () => void }) {
+  const { id, label, icon: Icon, hint, shortcutCommand } = panel
+  const binding = useBinding(shortcutCommand ?? '')
+  return (
+    <button
+      type="button"
+      role="tab"
+      id={`settings-tab-${id}`}
+      aria-selected={selected}
+      aria-controls={`settings-panel-${id}`}
+      aria-keyshortcuts={binding ?? undefined}
+      onClick={onSelect}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        textAlign: 'left',
+        padding: '9px 11px',
+        borderRadius: 10,
+        border: '1px solid transparent',
+        background: selected ? 'var(--muted)' : 'transparent',
+        borderColor: selected ? 'var(--border)' : 'transparent',
+        color: selected ? 'inherit' : 'var(--muted-foreground)',
+        fontWeight: selected ? 700 : 500,
+        cursor: 'pointer',
+        transition: 'background 0.12s ease, color 0.12s ease',
+      }}
+    >
+      <Icon size={16} aria-hidden style={{ flexShrink: 0 }} />
+      <span style={{ minWidth: 0, flex: 1 }}>
+        <span style={{ display: 'block', fontSize: 13 }}>{label}</span>
+        {hint !== undefined && <span style={{ display: 'block', fontSize: 10.5, opacity: 0.7, fontWeight: 500 }}>{hint}</span>}
+      </span>
+      {shortcutCommand !== undefined && <ShortcutHint binding={binding} />}
+    </button>
+  )
 }
 
 /**
@@ -82,6 +133,7 @@ export function SettingsDialog({
   panels,
   sources = [],
   initialPanel,
+  focusPanel,
   title = 'Paramètres',
   description = 'Les changements s\'affichent tout de suite. Ils ne sont conservés qu\'après « Enregistrer ».',
 }: SettingsDialogProps) {
@@ -94,6 +146,8 @@ export function SettingsDialog({
   const sourcesRef = useRef(sources)
   sourcesRef.current = sources
   const snapshots = useRef<unknown[]>([])
+  const initialPanelRef = useRef(initialPanel)
+  initialPanelRef.current = initialPanel
 
   // Re-snapshot on every OPEN, not once on mount: the window is reopened many
   // times per session, and a snapshot from the first open would revert edits
@@ -102,7 +156,7 @@ export function SettingsDialog({
     if (!open) return
     const current = sourcesRef.current
     snapshots.current = current.map(source => source.snapshot())
-    setPanelId(initialPanel)
+    setPanelId(initialPanelRef.current)
     setDirty(false)
     setSaveFailed(false)
 
@@ -113,7 +167,11 @@ export function SettingsDialog({
       }),
     )
     return () => unsubscribers.forEach(unsubscribe => unsubscribe?.())
-  }, [open, initialPanel])
+  }, [open])
+
+  useEffect(() => {
+    if (open && focusPanel !== undefined) setPanelId(focusPanel.id)
+  }, [open, focusPanel])
 
   const markDirty = useCallback(() => setDirty(true), [])
 
@@ -181,43 +239,9 @@ export function SettingsDialog({
                 aria-orientation="vertical"
                 style={{ display: 'flex', flexDirection: 'column', gap: 4, width: 176, flexShrink: 0 }}
               >
-                {panels.map(({ id, label, icon: Icon, hint }) => {
-                  const selected = active.id === id
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      role="tab"
-                      id={`settings-tab-${id}`}
-                      aria-selected={selected}
-                      aria-controls={`settings-panel-${id}`}
-                      onClick={() => setPanelId(id)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 10,
-                        textAlign: 'left',
-                        padding: '9px 11px',
-                        borderRadius: 10,
-                        border: '1px solid transparent',
-                        background: selected ? 'var(--muted)' : 'transparent',
-                        borderColor: selected ? 'var(--border)' : 'transparent',
-                        color: selected ? 'inherit' : 'var(--muted-foreground)',
-                        fontWeight: selected ? 700 : 500,
-                        cursor: 'pointer',
-                        transition: 'background 0.12s ease, color 0.12s ease',
-                      }}
-                    >
-                      <Icon size={16} aria-hidden style={{ flexShrink: 0 }} />
-                      <span style={{ minWidth: 0 }}>
-                        <span style={{ display: 'block', fontSize: 13 }}>{label}</span>
-                        {hint !== undefined && (
-                          <span style={{ display: 'block', fontSize: 10.5, opacity: 0.7, fontWeight: 500 }}>{hint}</span>
-                        )}
-                      </span>
-                    </button>
-                  )
-                })}
+                {panels.map(panel => (
+                  <SettingsTab key={panel.id} panel={panel} selected={active.id === panel.id} onSelect={() => setPanelId(panel.id)} />
+                ))}
               </nav>
 
               <div

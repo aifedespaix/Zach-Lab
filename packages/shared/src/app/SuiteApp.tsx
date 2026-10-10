@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useStore } from 'zustand'
 import { CommandPalette, useCommand, useGlobalShortcuts, useShortcutSettingsStore } from '../commands'
 import { SettingsDialog, mergeSettings, standardSettings } from '../settings'
-import { AnimatedMark, AppBoot, AppShell, AppToolbar, ResizablePanel, createPanelWidthStorage, type ToolbarFile } from '../shell'
+import { AnimatedMark, AppBoot, AppShell, AppToolbar, ResizablePanel, createPanelWidthStorage, toolbarEntries, toolbarHiddenStore, type ToolbarFile } from '../shell'
 import { useThemeDomSync, useToggleTheme } from '../theme'
 import { AppIdProvider, useApplyView, viewStores, ZOOM_STEP } from '../view'
 import { TooltipProvider } from '../ui'
@@ -57,6 +58,9 @@ export function SuiteApp({
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [settingsPanel, setSettingsPanel] = useState<string | undefined>()
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settingsFocus, setSettingsFocus] = useState<{ id: string; key: number } | undefined>()
+  const hiddenItems = useStore(toolbarHiddenStore(app.id), state => state.value)
+  const hidden = useMemo(() => new Set(hiddenItems), [hiddenItems])
 
   useEffect(() => {
     void useShortcutSettingsStore.getState().init()
@@ -85,30 +89,26 @@ export function SuiteApp({
     return () => remove(UPDATE_BANNER_ID)
   }, [updateReady, dismissed, push, remove])
 
+  // Window closed: opens it on the tab. Open: switches to the tab, without retaking the snapshots.
   const openSettings = (panel?: string) => {
+    if (settingsOpen && panel !== undefined) {
+      setSettingsFocus(previous => ({ id: panel, key: (previous?.key ?? 0) + 1 }))
+      return
+    }
     setSettingsPanel(panel)
     setSettingsOpen(true)
   }
   useCommand('app.palette', () => setPaletteOpen(true))
   useCommand('app.settings', () => openSettings())
   useCommand('app.shortcuts', () => openSettings('shortcuts'))
+  useCommand('settings.open.appearance', () => openSettings('appearance'))
+  useCommand('settings.open.toolbar', () => openSettings('toolbar'))
+  useCommand('settings.open.updates', () => openSettings('updates'))
   useCommand('app.toggleTheme', () => toggleTheme())
   useCommand('view.zoomOut', () => stores.zoom.getState().set(current => current - ZOOM_STEP), view?.zoom !== false)
   useCommand('view.zoomIn', () => stores.zoom.getState().set(current => current + ZOOM_STEP), view?.zoom !== false)
   useCommand('view.zoomReset', () => stores.zoom.getState().reset(), view?.zoom !== false)
   useCommand('view.toggleDensity', () => stores.compact.getState().set(current => !current), view?.density !== false)
-
-  const settings = useMemo(
-    () => mergeSettings(standardSettings({ appearance: app.view ?? {}, updates: updater }), app.settings),
-    // `updater` changes on every status tick: the panels read it when rendered, not here.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [app.settings, app.view, updater.status, updater.updateReady, updater.checkNow, updater.applyUpdate],
-  )
-
-  const leftBounds = app.panels?.left ?? LEFT_BOUNDS
-  const rightBounds = app.panels?.right ?? RIGHT_BOUNDS
-  const leftStorage = useMemo(() => createPanelWidthStorage({ key: `${app.id}:left-width`, ...leftBounds }), [app.id, leftBounds])
-  const rightStorage = useMemo(() => createPanelWidthStorage({ key: `${app.id}:right-width`, ...rightBounds }), [app.id, rightBounds])
 
   // A preference the app turns off has no button on the bar either.
   const toolbar = useMemo(() => {
@@ -117,6 +117,20 @@ export function SuiteApp({
     if (view?.density === false) hide.push('view.density')
     return { ...app.toolbar, hide }
   }, [app.toolbar, view?.zoom, view?.density])
+
+  const toolbarPanel = useMemo(() => ({ appId: app.id, entries: toolbarEntries(toolbar) }), [app.id, toolbar])
+
+  const settings = useMemo(
+    () => mergeSettings(standardSettings({ appearance: app.view ?? {}, toolbar: toolbarPanel, updates: updater }), app.settings),
+    // `updater` changes on every status tick: the panels read it when rendered, not here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [app.settings, app.view, toolbarPanel, updater.status, updater.updateReady, updater.checkNow, updater.applyUpdate],
+  )
+
+  const leftBounds = app.panels?.left ?? LEFT_BOUNDS
+  const rightBounds = app.panels?.right ?? RIGHT_BOUNDS
+  const leftStorage = useMemo(() => createPanelWidthStorage({ key: `${app.id}:left-width`, ...leftBounds }), [app.id, leftBounds])
+  const rightStorage = useMemo(() => createPanelWidthStorage({ key: `${app.id}:right-width`, ...rightBounds }), [app.id, rightBounds])
 
   return (
     <AppIdProvider id={app.id}>
@@ -146,7 +160,7 @@ export function SuiteApp({
             right
           )
         }
-        toolbar={<AppToolbar toolbar={toolbar} file={file} />}
+        toolbar={<AppToolbar toolbar={toolbar} file={file} hidden={hidden} />}
         overlays={
           <>
             <AppBoot ready={ready} floorMs={app.bootFloorMs ?? 1300}>
@@ -158,6 +172,7 @@ export function SuiteApp({
               open={settingsOpen}
               onOpenChange={setSettingsOpen}
               initialPanel={settingsPanel}
+              focusPanel={settingsFocus}
               panels={settings.panels}
               sources={settings.sources}
             />

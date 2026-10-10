@@ -72,7 +72,9 @@ ranking.
   replaced in place); « Mise à jour prête » is one entry of it. Shell: `AnimatedMark` (`MarkConfig`: 4 `points`, `colors`, ≤3 `segments`
   as polylines, optional `origins` for where dots 2–4 slide in from; CSS `.animated-mark*` in `theme.css`; modes `draw-fade` / `draw-pulse`),
   `AppBoot` (`ready` + `floorMs`), `StatusBanner`. Theme: `useToggleTheme()` (origin = click if given, else top centre), `ThemeToggle`.
-  Settings: `standardSettings({ shortcuts?, updates })` → `{ panels, sources, placement }`, `mergeSettings(standard, app)` puts the app's
+  Settings tabs have a shortcut (A2): `SettingsPanelDef.shortcutCommand` prints the command's LIVE binding in the tab and sets `aria-keyshortcuts`; `app.shortcuts` F1,
+  `settings.open.appearance` F3, `settings.open.toolbar` F4, `settings.open.updates` F6 (standard commands; F2 = rename, F5 = `tree.refresh`). Window closed → opens on
+  the tab; open → switches (`SettingsDialog` `focusPanel`, no new snapshot). Settings: `standardSettings({ shortcuts?, appearance?, toolbar?, updates })` → `{ panels, sources, placement }`, `mergeSettings(standard, app)` puts the app's
   panels between « Raccourcis » (first) and « Mises à jour » (last); an app panel with a standard id replaces it. Maths and Mentale still wire
   all of this by hand (and keep their own `AnimatedLogo`) until their L3 migration (chantier 3). `apps/base/src/App.tsx` is 12 lines.
 - Top bar (`@suite/shared/shell`, chantier L4): `<SuiteApp file?>` draws `<AppToolbar toolbar={app.toolbar} file>` on an `OverflowToolbar`. Seven
@@ -82,7 +84,12 @@ ranking.
   `file.reveal`, `file.close/delete`), `edit.undo`, `edit.redo` (enabled by the app's `useCommand`), `title` (`FileTitle`, from `file = { open, name, path,
   status: 'saved'|'saving'|'error' }`), `app.palette`, `app.toggleTheme` (`ThemeToggle`), `app.settings`. The app declares its own with
   `defineApp({ toolbar: defineToolbar({ items: [{ id, zone: 'app', node, menu?, priority? }], hide: ['file.menu'] }) })`. `panels` and `view` stay
-  empty until L7 / L5. Buttons are `ghost` + `icon-sm`. Maths and Mentale still draw their own bar until their L4 migration (chantier 3).
+  empty until L7 / L5. Buttons are `ghost` + `icon-sm`, except « Fermer » (`file.close`), the one solid dark button (`variant="default"`), the same in every app.
+  Chantier A2: `app.toggleTheme` is hidden by default (it lives in « Apparence »; it stays a command). « Boutons » panel (`ToolbarSettingsPanel`,
+  `standardSettings({ toolbar: { appId, entries: toolbarEntries(toolbar) } })`): one switch per item, by zone, applied at once; locked
+  (`LOCKED_TOOLBAR_ITEMS`: `file.newOrClose`, `file.menu`, `edit.undo`, `edit.redo`, `app.settings`) are ticked and greyed. Stored in
+  `<id>:toolbar-hidden` (`toolbarHiddenStore(id)`, `persistedSet`, default `['app.toggleTheme']`); `visibleToolbarItems(items, hidden)` never
+  removes a locked one; an unknown id is ignored. A hidden button stays a command. An app item may carry `label` / `icon` for that panel. Maths and Mentale still draw their own bar until their L4 migration (chantier 3).
 - View (`@suite/shared/view`, chantier L5): `<SuiteApp>` applies and offers the interface zoom, the density and the font (`defineApp({ view?: { zoom?, density?, font? } })`,
   all on; `false` = no command, no bar button, no settings row, no effect — Mentale may turn the zoom off until its canvas is checked, S1). Voie A (CSS): `useApplyView`
   writes `documentElement.style.zoom`, `--app-zoom`, `--app-height` (read by `AppShell`) and `--font-sans`; the Radix popover rule is in `theme.css`, never in an app.

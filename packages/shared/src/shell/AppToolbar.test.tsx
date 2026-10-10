@@ -84,4 +84,22 @@ describe('FileTitle', () => {
     rerender(<FileTitle name="a" status="saved" />)
     expect(screen.getByRole('status')).toHaveTextContent('Enregistré')
   })
+
+  it('« Fermer » est le bouton plein sombre de la barre, « Nouveau » reste discret', async () => {
+    const { unmount } = mount({ file: { open: false } })
+    await act(async () => {})
+    expect(screen.getByRole('button', { name: 'Nouveau fichier' }).className).not.toMatch(/bg-primary/)
+    unmount()
+    mount({ file: { open: true, name: 'a' } })
+    await act(async () => {})
+    const close = screen.getByRole('button', { name: 'Fermer' })
+    expect(close.className).toMatch(/bg-primary/)
+  })
+
+  it('`hidden` retire un item de la barre mais jamais un item verrouillé', async () => {
+    mount({ hidden: new Set(['app.palette', 'app.settings']) })
+    await act(async () => {})
+    expect(names()).not.toContain('Palette de commandes')
+    expect(names()).toContain('Paramètres')
+  })
 })

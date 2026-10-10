@@ -121,7 +121,7 @@ export default function App() {
   const toolbarItems: OverflowItem[] = [
     // Les deux se remplacent : fermer quand une fiche est ouverte, créer sinon.
     sheetOpen
-      ? { id: 'sheet', node: <CommandButton command="sheet.close" icon={X} variant="ghost" size="icon-sm" className="text-destructive hover:bg-destructive/10 hover:text-destructive" />, menu: <CommandDropdownItem command="sheet.close" icon={X} />, priority: 10 }
+      ? { id: 'sheet', node: <CommandButton command="sheet.close" icon={X} variant="default" size="icon-sm" />, menu: <CommandDropdownItem command="sheet.close" icon={X} />, priority: 10 }
       : { id: 'sheet', node: <CommandButton command="sheet.new" icon={FilePlus} variant="ghost" size="icon-sm" className="text-primary hover:bg-primary/10 hover:text-primary" />, menu: <CommandDropdownItem command="sheet.new" icon={FilePlus} />, priority: 10 },
     { id: 'undo', node: button('edit.undo', Undo2), menu: <CommandDropdownItem command="edit.undo" icon={Undo2} />, priority: 9 },
     { id: 'redo', node: button('edit.redo', Redo2), menu: <CommandDropdownItem command="edit.redo" icon={Redo2} />, priority: 9 },

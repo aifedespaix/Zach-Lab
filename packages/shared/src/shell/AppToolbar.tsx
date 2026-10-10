@@ -5,7 +5,8 @@ import { ThemeToggle } from '../theme'
 import { DensityToggle, ZoomControls } from '../view'
 import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui'
 import { OverflowToolbar } from './OverflowToolbar'
-import { arrangeToolbar, type ToolbarDefinition, type ToolbarItem } from './toolbarZones'
+import { arrangeToolbar, type ToolbarDefinition, type ToolbarItem, type ToolbarZone } from './toolbarZones'
+import { isToolbarItemLocked, visibleToolbarItems } from './toolbarVisibility'
 
 export type SaveStatus = 'saved' | 'saving' | 'error'
 
@@ -118,7 +119,8 @@ function standardItems(file: ToolbarFile | undefined): ToolbarItem[] {
     has(slot) && {
       id: 'file.newOrClose',
       zone: 'file',
-      node: <CommandButton command={slot} icon={open ? X : FilePlus} variant="ghost" size="icon-sm" />,
+      // « Fermer » is the one solid dark button of the bar, the same everywhere; « Nouveau » stays a ghost.
+      node: <CommandButton command={slot} icon={open ? X : FilePlus} variant={open ? 'default' : 'ghost'} size="icon-sm" />,
       menu: <CommandDropdownItem command={slot} icon={open ? X : FilePlus} />,
     },
   )
@@ -211,12 +213,73 @@ function standardItems(file: ToolbarFile | undefined): ToolbarItem[] {
  * palette, theme, settings) and the app's own, in the fixed order of the zones, on an
  * `OverflowToolbar` so nothing ever overflows. An item the catalogue has no command for is not drawn.
  */
-export function AppToolbar({ toolbar, file }: { toolbar?: ToolbarDefinition; file?: ToolbarFile }): ReactNode {
+export function AppToolbar({
+  toolbar,
+  file,
+  hidden: userHidden,
+}: {
+  toolbar?: ToolbarDefinition
+  file?: ToolbarFile
+  /** Ids the user turned off (« Boutons de la barre »); a locked item stays. They remain commands. */
+  hidden?: ReadonlySet<string>
+}): ReactNode {
   const hidden = new Set<string>(toolbar?.hide ?? [])
-  const items = arrangeToolbar([...standardItems(file).filter(item => !hidden.has(item.id)), ...(toolbar?.items ?? [])])
+  const drawn = [...standardItems(file).filter(item => !hidden.has(item.id)), ...(toolbar?.items ?? [])]
+  const items = arrangeToolbar(userHidden === undefined ? drawn : visibleToolbarItems(drawn, userHidden))
   return (
     <OverflowToolbar
       items={items.map(item => ({ id: item.id, node: item.node, menu: item.menu ?? null, priority: item.priority }))}
     />
   )
+}
+
+/** One row of the « Boutons de la barre » panel. */
+export interface ToolbarEntry {
+  id: string
+  zone: ToolbarZone
+  label: string
+  /** The command of the same id, for its shortcut; `undefined` for an item that is not one. */
+  command?: string
+  icon?: LucideIcon
+  locked: boolean
+}
+
+const STANDARD_LABELS: Record<string, string> = {
+  'file.newOrClose': 'Nouveau / Fermer',
+  'file.menu': 'Menu « Fichier »',
+  'view.zoom': 'Zoom',
+  'view.density': 'Densité',
+}
+
+const STANDARD_ICONS: Record<string, LucideIcon> = {
+  'file.newOrClose': FilePlus,
+  'edit.undo': Undo2,
+  'edit.redo': Redo2,
+  'view.zoom': Plus,
+  'view.density': Rows3,
+  'app.palette': Search,
+  'app.toggleTheme': Moon,
+  'app.settings': Settings,
+}
+
+/**
+ * What the user can switch on the bar: the suite's items (the catalogue has their command) and the
+ * app's, by zone order. The title is not one: it is the file's name, not a button.
+ */
+export function toolbarEntries(toolbar?: ToolbarDefinition): ToolbarEntry[] {
+  const hidden = new Set<string>(toolbar?.hide ?? [])
+  const items = [...standardItems(undefined).filter(item => !hidden.has(item.id)), ...(toolbar?.items ?? [])]
+  return arrangeToolbar(items)
+    .filter(item => item.id !== 'title')
+    .map(item => {
+      const command = commandById(item.id)
+      return {
+        id: item.id,
+        zone: item.zone,
+        label: item.label ?? STANDARD_LABELS[item.id] ?? command?.label ?? item.id,
+        command: command === undefined ? undefined : item.id,
+        icon: item.icon ?? STANDARD_ICONS[item.id],
+        locked: isToolbarItemLocked(item.id),
+      }
+    })
 }
