@@ -83,7 +83,9 @@ export async function listCodes(client: Client = pb): Promise<CodeRow[]> {
  * (sinon le 400 serait pris pour un code en double et retenté pour rien).
  */
 export function toPocketBaseDate(value: string): string {
-  const date = new Date(value)
+  // Le format PocketBase a une espace au lieu du « T » : hors du format ECMAScript, que
+  // seul V8 tolère. On normalise (première espace seulement, après trim) pour tout moteur.
+  const date = new Date(value.trim().replace(' ', 'T'))
   if (Number.isNaN(date.getTime())) throw new Error('Date d’expiration invalide.')
   return date.toISOString().replace('T', ' ')
 }

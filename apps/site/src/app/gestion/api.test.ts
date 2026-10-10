@@ -87,6 +87,18 @@ describe('toPocketBaseDate / expiration', () => {
   it('laisse passer une date déjà au format PocketBase', () => {
     expect(toPocketBaseDate('2026-10-20 00:00:00.000Z')).toBe('2026-10-20 00:00:00.000Z')
   })
+  it('convertit exactement une date PocketBase en UTC', () => {
+    expect(toPocketBaseDate('2026-10-20 00:00:00.000Z')).toBe('2026-10-20 00:00:00.000Z')
+  })
+  it('lit la forme à espace sans fuseau comme heure locale', () => {
+    expect(toPocketBaseDate('2026-10-20 14:30:00')).toBe(new Date('2026-10-20T14:30:00').toISOString().replace('T', ' '))
+  })
+  it('refuse une chaîne vide', () => {
+    expect(() => toPocketBaseDate('')).toThrow('Date d’expiration invalide.')
+  })
+  it('ignore les espaces autour de la valeur', () => {
+    expect(toPocketBaseDate(' 2026-10-20T14:30 ')).toBe(new Date('2026-10-20T14:30').toISOString().replace('T', ' '))
+  })
   it('refuse une date illisible', () => {
     expect(() => toPocketBaseDate('demain')).toThrow('Date d’expiration invalide.')
   })
