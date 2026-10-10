@@ -6,14 +6,17 @@ import css from './index.css?raw'
 // No Tauri runtime under jsdom: the first launch of a real install finds nothing
 // on disk, so that is what the plugins answer.
 vi.mock('@tauri-apps/plugin-updater', () => ({ check: vi.fn(async () => null) }))
+// A disk in memory: the first launch of a real install finds nothing, and what the app writes is read back.
+const disk = vi.hoisted(() => new Map<string, string>())
 vi.mock('@tauri-apps/plugin-fs', () => ({
-  exists: vi.fn(async () => false),
-  readTextFile: vi.fn(),
-  writeTextFile: vi.fn(async () => {}),
+  exists: vi.fn(async (path: string) => disk.has(path) || path === '/documents/Base'),
+  readTextFile: vi.fn(async (path: string) => disk.get(path) ?? ''),
+  writeTextFile: vi.fn(async (path: string, text: string) => void disk.set(path, text)),
   mkdir: vi.fn(async () => {}),
 }))
 vi.mock('@tauri-apps/api/path', () => ({
   appConfigDir: vi.fn(async () => '/config'),
+  documentDir: vi.fn(async () => '/documents'),
   join: vi.fn(async (...parts: string[]) => parts.join('/')),
 }))
 
@@ -22,6 +25,7 @@ import App from './App'
 describe('App base', () => {
   beforeEach(() => {
     localStorage.clear()
+    disk.clear()
     document.documentElement.classList.remove('dark')
   })
 
@@ -96,6 +100,32 @@ describe('App base', () => {
     await screen.findByRole('dialog')
     await user.keyboard('{Escape}')
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  })
+})
+
+describe('document texte', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    disk.clear()
+  })
+
+  it('Ctrl+N crée un fichier, la frappe est enregistrée, annuler la défait, Fermer revient à l\'accueil', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await act(async () => {})
+    await user.keyboard('{Control>}n{/Control}')
+    const field = await screen.findByLabelText('Contenu du fichier')
+    expect([...disk.keys()]).toEqual(['/documents/Base/Sans titre.txt'])
+    await user.type(field, 'bonjour')
+    await user.click(screen.getByRole('button', { name: 'Fermer' }))
+    await waitFor(() => expect(screen.queryByLabelText('Contenu du fichier')).not.toBeInTheDocument())
+    expect(disk.get('/documents/Base/Sans titre.txt')).toBe('bonjour')
+    // Le fichier est dans les récents de l'accueil.
+    await user.click(await screen.findByRole('button', { name: /Sans titre\.txt/ }))
+    expect(await screen.findByLabelText('Contenu du fichier')).toHaveValue('bonjour')
+    await user.type(screen.getByLabelText('Contenu du fichier'), '!')
+    await user.click(screen.getByRole('button', { name: 'Annuler' }))
+    expect(screen.getByLabelText('Contenu du fichier')).toHaveValue('bonjour')
   })
 })
 

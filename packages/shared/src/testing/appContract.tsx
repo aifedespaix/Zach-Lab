@@ -42,7 +42,6 @@ export interface AppContractOptions {
 export const PLANNED_CHECKS: readonly { lot: string; check: string }[] = [
   { lot: 'L1', check: 'la palette liste aussi app.toggleTheme dans toutes les apps' },
   { lot: 'L2', check: 'les clés de stockage de l\'app sont préfixées et relues avec leurs alias' },
-  { lot: 'L6', check: 'fermer / nouveau / annuler / rétablir sont présents et activés selon l\'état' },
   { lot: 'L7', check: 'les panneaux latéraux se replient au raccourci et mémorisent leur état' },
   { lot: 'L8', check: 'l\'arbre de fichiers crée, renomme, déplace et supprime' },
   { lot: 'L9', check: 'les blocs de contenu s\'éditent et s\'enregistrent' },
@@ -202,6 +201,23 @@ export function describeAppContract(renderApp: () => ReactElement, options: AppC
       act(() => {
         runCommand('view.toggleDensity')
       })
+    })
+
+    lot('L6')('L6 — un fichier se crée, s\'ouvre, annuler est grisé tant que rien n\'a changé, et se ferme', async () => {
+      render(renderApp())
+      await act(async () => {})
+      const button = (command: string) => screen.queryByRole('button', { name: commandById(command)!.label })
+      expect(button('file.close')).not.toBeInTheDocument()
+      act(() => {
+        runCommand('file.new')
+      })
+      await waitFor(() => expect(button('file.close')).toBeInTheDocument())
+      expect(button('edit.undo')).toBeDisabled()
+      expect(button('edit.redo')).toBeDisabled()
+      act(() => {
+        runCommand('file.close')
+      })
+      await waitFor(() => expect(button('file.new')).toBeInTheDocument())
     })
 
     it('la palette s\'ouvre au raccourci et liste les paramètres', async () => {

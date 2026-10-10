@@ -43,7 +43,7 @@ what is theirs by props, slots, options, or by registering it — the command
 catalogue (`defineCommandCatalog`), the settings panels and sources, the search
 ranking.
 
-- Public entry points only: `@suite/shared/{app,ui,theme,update,shell,commands,settings,search,math,tree,equation,storage,view,testing}`
+- Public entry points only: `@suite/shared/{app,ui,theme,update,shell,commands,settings,search,math,tree,equation,storage,view,history,files,testing}`
   and `@suite/shared/theme.css`. Never import a file inside a sub-path.
 - Sources are consumed as TypeScript, with no build step. Inside `shared`, imports
   are **relative**, never `@suite/shared/…`.
@@ -91,6 +91,18 @@ ranking.
   `view.zoomOut/zoomIn/zoomReset/toggleDensity` (standard; registered by `SuiteApp`, the app declares them in its catalogue); bar items `view.zoom` (`ZoomControls`) and
   `view.density` (`DensityToggle`) in the `view` zone when the catalogue has the commands; « Apparence » panel (`AppearanceSettingsPanel`, `standardSettings({ appearance })`,
   applied at once, no draft). Maths and Mentale still use their own zoom/compact/font code until their L5 migration (chantier 3).
+- Files and history (`@suite/shared/history` + `files`, chantier L6): `createHistoryStore<T>({ limit = 200, groupMs = 700 })` is a zustand store
+  `{ present, past, future, reset, commit(next, groupKey?), undo, redo }` (whole snapshots; same `groupKey` within `groupMs` = one step; a commit clears the
+  redo); `useHistoryCommands(store)` registers `edit.undo/redo`. `DocumentPort<T>` = `{ read (null = gone), write, validate?, repair?, create? }`.
+  `useFileSession(port, { session?, history?, delay? })` → `{ status: idle|opening|ready, path, doc, saveStatus, saveError, failure, prompt, open, close, create,
+  relocate(from, to), flush, edit(next, groupKey?), undo, redo, canUndo, canRedo }` and registers `file.close`, `file.save`, `edit.undo`, `edit.redo` (the app
+  registers `file.new`). The order is the rule: a path is left only after `flush` wrote what was pending; autosave is armed only for the file actually loaded;
+  a failed open (missing / unreadable / invalid) leaves the previous file open (`failure`); a failed flush before open/close asks (`prompt`, shown by
+  `SaveFailedDialog`); `relocate` (a sync renamed the open file) flushes to the OLD path first. `useAutosave({ save, version, enabled, delay = 600 })` is armed by
+  `version` bumps (edits), never by a load. `createSessionStore(appId)` keeps `<id>:session` (`currentFilePath`, `expandedPaths`, `recentFiles` ≤ 10), reads
+  Maths' and Mentale's old formats, writes the superset. `useWindowTitle(appName, fileName)`, `HomeScreen` (+ `recentItem`), `UnreadableFileDialog`.
+  `apps/base` shows it: `textFiles.ts` (the port, `Documents/Base/*.txt`), `TextDocument`. Maths and Mentale keep their own engines until their L6 migration
+  (chantier 3); `useUnsavedChangesGuard`, `useLaunchFile`, `useFileDropZone`, `NewFileDialog` are not extracted yet (see `chantier/suivi.md`).
 - Persistence (`@suite/shared/storage`, chantier L2): the ONLY place that touches `localStorage` (`boundary.test.ts`).
   `readStored`/`writeStored` never throw and fall back to memory. `defineAppStorage('zachart-maths').key('zoom')` →
   `zachart-maths:zoom` (existing keys are kept as they are). `createPersisted({ key, fallback, parse, serialize?, migrate?, normalize? })`
