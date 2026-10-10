@@ -207,10 +207,9 @@ export function FileTreeRow({
   const [namingAction, setNamingAction] = useState<NamingAction | null>(null)
   /** The « Propriétés » sheet — one per row, opened from either context menu. */
   const [propertiesOpen, setPropertiesOpen] = useState(false)
-  // Set right before the deferred `setRenaming(true)` below, and consumed by
-  // this row's `onCloseAutoFocus` handlers so the close-focus-restore
-  // suppression they need for the rename race doesn't also apply to every
-  // other menu close (Escape, another item, clicking outside).
+  // Set when « Renommer » is chosen, consumed by `finishMenuClose` once the menu
+  // has closed — so the rename does not also start on every other menu close
+  // (Escape, another item, clicking outside).
   const renamingViaMenuRef = useRef(false)
 
   const formatValid = useMindMapFormatValid(node.type === 'mindmap' ? node.path : null)
@@ -318,19 +317,24 @@ export function FileTreeRow({
   useEffect(() => cancelPendingToggle, [])
 
   /**
-   * Entering rename mode from a menu item, not a double-click, needs a tick
-   * of delay: Radix's context menu still owns focus (via its roving focus
-   * group) at the moment `onSelect` fires, and closing the menu synchronously
-   * afterward steals focus right back from the just-mounted, `autoFocus`ed
-   * rename `<input>` — firing its `onBlur` (which submits/cancels the
-   * rename) before the user ever sees it. Deferring past that lets the menu
-   * finish closing first. In tests, this relies on `@testing-library/user-event`'s
-   * handling of pending timers to observe the rename input after the deferred call.
+   * Entering rename mode from a menu item waits for the menu to be GONE, not
+   * for a tick: the menu plays an exit animation and keeps its focus trap until
+   * it ends, so a field mounted earlier is refocused away at once — its `onBlur`
+   * then cancels the rename (the « flash »). `onCloseAutoFocus` fires once the
+   * menu has unmounted; `finishMenuClose` starts the rename there, and keeps
+   * Radix from handing the focus back to the row over the new field. Any other
+   * way of closing the menu leaves the flag unset and the default focus return.
    */
   function startRenaming() {
     cancelPendingToggle()
     renamingViaMenuRef.current = true
-    setTimeout(() => setRenaming(true), 0)
+  }
+
+  function finishMenuClose(event: Event) {
+    if (!renamingViaMenuRef.current) return
+    event.preventDefault()
+    renamingViaMenuRef.current = false
+    setRenaming(true)
   }
 
   /**
@@ -612,12 +616,7 @@ export function FileTreeRow({
             </div>
           </ContextMenuTrigger>
           <ContextMenuContent
-            onCloseAutoFocus={e => {
-              if (renamingViaMenuRef.current) {
-                e.preventDefault()
-                renamingViaMenuRef.current = false
-              }
-            }}
+            onCloseAutoFocus={finishMenuClose}
           >
             {folderCreationItems}
             {!isRoot && (
@@ -788,12 +787,7 @@ export function FileTreeRow({
             </div>
           </ContextMenuTrigger>
           <ContextMenuContent
-            onCloseAutoFocus={e => {
-              if (renamingViaMenuRef.current) {
-                e.preventDefault()
-                renamingViaMenuRef.current = false
-              }
-            }}
+            onCloseAutoFocus={finishMenuClose}
           >
             {publishable && (
               <>

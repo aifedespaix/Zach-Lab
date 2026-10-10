@@ -1,6 +1,6 @@
-import { render as rtlRender, screen, waitFor, fireEvent } from '@testing-library/react'
+import { render as rtlRender, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { FileTreeRow, RENAME_CLICK_GRACE_MS } from './FileTreeRow'
 import { useWorkspaceStore, createWorkspaceStore } from '../../state/useWorkspaceStore'
 import type { FileTreeNode } from '../../types/workspace'
@@ -520,6 +520,56 @@ describe('FileTreeRow', () => {
     await user.type(input, 'chapitre1-v2{Enter}')
 
     expect(renamePath).toHaveBeenCalledWith('/cours/chapitre1.json', '/cours/chapitre1-v2.json')
+  })
+
+  // Real browsers play the menu's 100 ms exit animation (`data-closed:animate-out`)
+  // and keep the menu — and its focus trap — mounted until it ends; jsdom plays
+  // none, which hid the bug: the field mounted under the still-trapped menu,
+  // lost focus at once, and its blur cancelled the rename (« flash »).
+  describe('with the menu exit animation playing', () => {
+    const realGetComputedStyle = window.getComputedStyle.bind(window)
+    beforeEach(() => {
+      vi.spyOn(globalThis, 'getComputedStyle').mockImplementation((element, pseudo) => {
+        const style = realGetComputedStyle(element, pseudo)
+        if (!(element instanceof HTMLElement) || element.getAttribute('role') !== 'menu') return style
+        // Read lazily: Radix keeps this object and re-reads it as the state flips.
+        return new Proxy(style, {
+          get: (target, prop) =>
+            prop === 'animationName' ? (element.getAttribute('data-state') === 'closed' ? 'exit' : 'none') : Reflect.get(target, prop),
+        })
+      })
+    })
+    afterEach(() => vi.restoreAllMocks())
+
+    for (const [kind, node, label] of [
+      ['folder', { type: 'folder', name: 'chimie', path: '/cours/chimie', children: [] }, /renommer chimie/i],
+      ['file', { type: 'mindmap', name: 'chapitre1.json', path: '/cours/chapitre1.json' }, /renommer chapitre1.json/i],
+    ] as const) {
+      it(`keeps the focus in the rename field of a ${kind} chosen from the context menu`, async () => {
+        const user = userEvent.setup()
+        vi.mocked(renamePath).mockResolvedValue(undefined)
+        vi.mocked(scanFolder).mockResolvedValue([])
+        render(<FileTreeRow node={node as FileTreeNode} depth={0} onOpenFile={() => {}} />)
+
+        openMenu(node.type === 'folder' ? /chimie/i : 'chapitre1')
+        await user.click(await screen.findByRole('menuitem', { name: 'Renommer' }))
+        // The menu is still animating out: let it finish, as the browser does.
+        await new Promise(resolve => setTimeout(resolve, 50))
+        const menu = document.querySelector('[role="menu"]')
+        if (menu) {
+          // jsdom has no AnimationEvent: build the one Radix reads by hand.
+          const end = new Event('animationend', { bubbles: true })
+          Object.defineProperty(end, 'animationName', { value: 'exit' })
+          act(() => void menu.dispatchEvent(end))
+        }
+
+        const input = await screen.findByRole('textbox', { name: label })
+        await waitFor(() => expect(input).toHaveFocus())
+        await user.clear(input)
+        await user.type(input, 'nouveau{Enter}')
+        expect(renamePath).toHaveBeenCalledTimes(1)
+      })
+    }
   })
 
   it('updates the current file path when renaming the file that is currently open', async () => {
