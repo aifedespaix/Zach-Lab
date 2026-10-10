@@ -48,18 +48,25 @@ type RandomBytes = (count: number) => Uint8Array
 const cryptoBytes: RandomBytes = count => crypto.getRandomValues(new Uint8Array(count))
 
 /**
- * Tire un code par échantillonnage avec rejet : 256 n'est pas multiple de 31,
- * replier un octet par `% 31` favoriserait les premiers caractères.
+ * Tire `length` caractères de `alphabet` par échantillonnage avec rejet : 256 n'est pas multiple
+ * de la taille de l'alphabet, replier un octet par `%` favoriserait les premiers caractères.
  */
-export function generateCode(random: RandomBytes = cryptoBytes): string {
-  const limit = 256 - (256 % INVITE_ALPHABET.length)
-  let code = ''
-  while (code.length < INVITE_LENGTH) {
-    for (const byte of random(INVITE_LENGTH * 2)) {
+export function randomFromAlphabet(length: number, alphabet: string = INVITE_ALPHABET, random: RandomBytes = cryptoBytes): string {
+  const limit = 256 - (256 % alphabet.length)
+  let out = ''
+  while (out.length < length) {
+    for (const byte of random(length * 2)) {
       if (byte >= limit) continue
-      code += INVITE_ALPHABET[byte % INVITE_ALPHABET.length]
-      if (code.length === INVITE_LENGTH) break
+      out += alphabet[byte % alphabet.length]
+      if (out.length === length) break
     }
   }
-  return code
+  return out
+}
+
+/** Alphabet des mots de passe générés : celui des codes, plus les minuscules sans « l » ni « o » (ambiguës). */
+export const PASSWORD_ALPHABET = INVITE_ALPHABET + 'abcdefghjkmnpqrstuvwxyz'
+
+export function generateCode(random: RandomBytes = cryptoBytes): string {
+  return randomFromAlphabet(INVITE_LENGTH, INVITE_ALPHABET, random)
 }

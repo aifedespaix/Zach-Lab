@@ -3,6 +3,8 @@ import cases from '../../../../../infra/fixtures/invite-code-states.json'
 import {
   INVITE_ALPHABET,
   INVITE_LENGTH,
+  PASSWORD_ALPHABET,
+  randomFromAlphabet,
   formatCode,
   generateCode,
   inviteCodeState,
@@ -49,5 +51,23 @@ describe('generateCode', () => {
     const code = generateCode(() => Uint8Array.from(batches[call++]))
     expect(code).toBe('ABCDEFGHJK')
     expect(call).toBe(2)
+  })
+})
+
+describe('randomFromAlphabet', () => {
+  it("tire la longueur demandée, uniquement dans l'alphabet", () => {
+    const out = randomFromAlphabet(12, PASSWORD_ALPHABET)
+    expect(out).toHaveLength(12)
+    for (const c of out) expect(PASSWORD_ALPHABET).toContain(c)
+  })
+  it("n'a aucun caractère ambigu (0 O 1 I l)", () => {
+    expect(PASSWORD_ALPHABET).not.toMatch(/[0OIl1]/)
+  })
+  it('rejette les octets biaisés au lieu de les replier (alphabet de mot de passe)', () => {
+    const limit = 256 - (256 % PASSWORD_ALPHABET.length)
+    // Octets valides 0..11 entrelacés d'octets ≥ limit : seuls les valides comptent.
+    const bytes = [limit, 0, 255, 1, limit + 1, 2, 255, 3, limit, 4, 255, 5, limit, 6, 255, 7, limit, 8, 255, 9, limit, 10, 255, 11]
+    const out = randomFromAlphabet(12, PASSWORD_ALPHABET, count => Uint8Array.from({ length: count }, (_, k) => bytes[k % bytes.length]))
+    expect(out).toBe(PASSWORD_ALPHABET.slice(0, 12))
   })
 })
