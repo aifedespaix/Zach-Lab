@@ -32,7 +32,7 @@ function violations(source: string, path = './app/bibliotheque/x.ts'): string[] 
     if (/zachart-mentale\/|zachart-maths\/|(^|[./])apps\//.test(specifier)) {
       found.push(`${specifier} (import d'une app par chemin)`)
     }
-    if (path.startsWith('./site/') && (specifier.startsWith('@/') || /(^|\/)app\//.test(specifier))) {
+    if ((path.startsWith('./site/') || path === './pages/index.astro') && (specifier.startsWith('@/') || /(^|\/)app\//.test(specifier))) {
       found.push(`${specifier} (la vitrine n'importe rien de app/)`)
     }
     if (specifier.startsWith('@tauri-apps/')) found.push(`${specifier} (Tauri)`)
@@ -64,6 +64,15 @@ describe('détecteur de frontière d\'admin', () => {
     expect(violations(`import x from './b'`, './site/a.ts')).toEqual([])
   })
 
+  it('la règle est active avec le format réel des clés du glob', () => {
+    // Les clés d'import.meta.glob('./**/*') ressemblent à './app/gestion/x.ts'.
+    expect(violations(`import { x } from '@app/types/card'`, './app/gestion/x.ts')).toHaveLength(1)
+    expect(violations(`import { x } from '@app/types/card'`, './site/Hero.tsx')).toHaveLength(1)
+    expect(violations(`import { x } from '@app/types/card'`, './app/bibliotheque/lib/x.ts')).toEqual([])
+    expect(violations(`import { x } from '@/ui/primitives'`, './site/Hero.tsx')).toHaveLength(1)
+    expect(violations(`import { x } from '../app/ui/primitives'`, './pages/index.astro')).toHaveLength(1)
+  })
+
   it('laisse passer ui, theme, search et le reste', () => {
     expect(violations(`import { Button } from '@suite/shared/ui'`)).toEqual([])
     expect(violations(`import { x } from '@suite/shared/theme'`)).toEqual([])
@@ -79,7 +88,10 @@ describe('frontière d\'admin', () => {
     expect(files.length).toBeGreaterThan(0)
   })
 
-  it.each(files)('%s n\'atteint pas Tauri', (_path, source) => {
-    expect(violations(source)).toEqual([])
+  // Le glob ne scanne que .ts/.tsx : la règle « vitrine » ne s'applique donc
+  // aux vrais fichiers que s'il y en a sous ./site/ ; les .astro de la vitrine
+  // sont couverts par scripts/check-dist.mjs.
+  it.each(files)('%s respecte la frontière', (path, source) => {
+    expect(violations(source, path)).toEqual([])
   })
 })
