@@ -217,9 +217,9 @@ codes rien tant qu'il n'a pas répondu :
      DÉFINITIVE. Accepte-t-on ce risque, ou introduit-on un `formatVersion` qui fait
      REFUSER d'écrire à une version ancienne plutôt que d'aplatir ? (Précédent dans le
      dépôt : `syncState.ts` refuse de lire une version future.)
-  2. `admin/` importe le MÊME validateur (`admin/src/lib/quality.ts` →
+  2. La bibliothèque du site (ex-`admin/`) importe le MÊME validateur (`apps/site/src/app/bibliotheque/lib/quality.ts` →
      `@app/validation/cardsValidation`), donc une carte passée par « Réparer » depuis le
-     panneau prof ressortirait aplatie. Qui met à jour `admin/` et son test ?
+     panneau prof ressortirait aplatie. Qui met à jour la bibliothèque et son test ?
 
 La forme à viser (celle que je recommande, dictée par la contrainte ci-dessus) : un bloc PLAT
 `{ kind: 'question', text }` qui OUVRE un groupe — les blocs suivants jusqu'au prochain
@@ -235,7 +235,7 @@ par le chemin de réparation partagé. Écris le test « un bloc X avec le nouve
 à `sanitizeBlocks` » AVANT le reste.
 
 Vérification : `bunx tsc --noEmit` sans erreur, `bunx vitest run` tout vert, plus
-`bun run test:admin` si `admin/` est touché.
+`bun run --filter site test` si la bibliothèque du site (`apps/site/src/app/bibliotheque/`, ex-`admin/`) est touchée.
 ```
 
 ---

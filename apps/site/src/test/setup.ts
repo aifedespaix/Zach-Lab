@@ -16,7 +16,7 @@ import { cleanup } from '@testing-library/react'
  * dossier : les matchers de `jest-dom` s'enregistrent dans l'instance d'`expect`
  * du paquet qui les charge. Lancé avec le binaire de la racine, tout ce fichier
  * s'exécute sans que `toBeInTheDocument` existe côté assertions. D'où
- * `"test:admin": "cd admin && bun run test"` dans le package.json racine, qui
- * délègue au package.json d'ici plutôt que d'appeler `vitest` directement.
+ * `bun run --filter site test` depuis la racine, qui passe par le package.json
+ * d'ici plutôt que d'appeler `vitest` directement.
  */
 afterEach(cleanup)

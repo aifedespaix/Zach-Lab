@@ -1,4 +1,4 @@
-# Espace professeur — interface web d'administration
+# Bibliothèque — l'ancienne interface web d'administration de Mentale
 
 Une page web, servie **par le serveur de synchronisation lui-même**, depuis
 laquelle un professeur administre toute la bibliothèque : arborescence,
@@ -23,7 +23,7 @@ conséquences :
 - **La structure** — une seule racine, quatre niveaux au plus, aucune carte
   orpheline ni circulaire. Elle **bloque** l'enregistrement. Le contrôle est
   fait par `validateCards`, le code **même** que celui qui décide si le canevas
-  de l'application accepte d'ouvrir un fichier : l'admin ne peut donc pas
+  de l'application accepte d'ouvrir un fichier : la bibliothèque ne peut donc pas
   enregistrer quelque chose que l'application refuserait d'afficher. Un fichier
   invalide peut être **réparé automatiquement** (`repairCards`), qui ne supprime
   rien : les cartes mal placées sont détachées et parquées en zone volante.
@@ -48,19 +48,16 @@ Un professeur peut de toute façon modifier n'importe quelle carte par la suite.
 ## Développement
 
 ```bash
-cd admin
-bun install
-PB_URL=https://cartes.mon-domaine.fr bun run dev    # http://localhost:1430
-bun run test
-bun run build
+PB_URL=https://cartes.mon-domaine.fr bun run --filter site dev    # http://localhost:1460/bibliotheque/
+bun run --filter site test
+bun run --filter site build
 ```
 
 Le serveur de développement **proxifie** `/api` et `/_` vers `PB_URL` (par
 défaut `http://127.0.0.1:8090`). C'est la même topologie qu'en production —
 même origine, donc aucun CORS — et donc le même comportement.
 
-Depuis la racine du dépôt : `bun run admin:dev`, `bun run test:admin`,
-`bun run admin:build`.
+Depuis la racine du dépôt : `bun run site:dev`, `bun run site:build`.
 
 ## Architecture, en trois points
 

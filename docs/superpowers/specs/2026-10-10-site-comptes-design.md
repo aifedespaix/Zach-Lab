@@ -170,3 +170,11 @@ partiellement livré, déplacement d'`infra/` de S1 fait).
 
 Inscription des élèves par code, envoi de courriels, réinitialisation de mot de passe par courriel,
 design de la vitrine, moteur de synchronisation, schéma `files`, migration de Mentale ou de Maths.
+
+## Écarts assumés à l'exécution
+
+- `invite_code` (sur `users`) est un champ **texte** et non une relation vers `invite_codes` : une relation exigerait l'id généré de la collection, que le schéma-comme-donnée ne connaît pas.
+- La fonction d'état d'un code existe en **deux implémentations** (le JS du hook, le TS du site), faute de pouvoir importer un module CommonJS dans le bundle ; toutes deux rejouent la même table de cas, `infra/fixtures/invite-code-states.json`.
+- Le `/compte/` de l'administrateur est en **lecture seule** : son mot de passe serait réécrit par `infra/.env` à chaque démarrage.
+- La limitation de débit de l'inscription est une **règle de PocketBase** (5 requêtes / 60 s sur `POST /api/inscription`), avec sa propre politique d'activation ; `--no-rate-limits` permet de jouer les scénarios d'intégration S1–S9 avant de l'appliquer.
+- Dans `/bibliotheque`, les listes internes défilent **avec la page** : `AppShell` n'a pas de hauteur fixe.

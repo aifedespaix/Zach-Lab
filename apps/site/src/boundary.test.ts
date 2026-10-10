@@ -9,7 +9,7 @@ const sources = import.meta.glob('./**/*.{ts,tsx}', {
 const IMPORT = /(?:from|import|vi\.mock|require)\s*\(?\s*['"]([^'"]+)['"]/g
 
 /**
- * L'interface d'administration est servie par PocketBase, dans un navigateur :
+ * Le site est servi par PocketBase, dans un navigateur :
  * rien de ce qu'elle importe ne doit pouvoir toucher Tauri. `@suite/shared`
  * n'est donc accessible que par les sous-chemins qui n'y touchent pas —
  * `commands`, `settings`, `shell` et `update` persistent des réglages ou parlent
@@ -38,13 +38,13 @@ function violations(source: string, path = './app/bibliotheque/x.ts'): string[] 
     if (specifier.startsWith('@tauri-apps/')) found.push(`${specifier} (Tauri)`)
     const shared = specifier.match(/^@suite\/shared(?:\/([^/]+))?/)
     if (shared && !ALLOWED_SHARED.has(shared[1] ?? '')) {
-      found.push(`${specifier} (sous-chemin de shared interdit à admin)`)
+      found.push(`${specifier} (sous-chemin de shared interdit au site)`)
     }
   }
   return found
 }
 
-describe('détecteur de frontière d\'admin', () => {
+describe('détecteur de frontière du site', () => {
   it('repère Tauri et les sous-chemins interdits', () => {
     expect(violations(`import { x } from '@tauri-apps/api/core'`)).toHaveLength(1)
     expect(violations(`import { x } from '@tauri-apps/plugin-fs'`)).toHaveLength(1)
@@ -81,7 +81,7 @@ describe('détecteur de frontière d\'admin', () => {
   })
 })
 
-describe('frontière d\'admin', () => {
+describe('frontière du site', () => {
   const files = Object.entries(sources).filter(([path]) => !path.endsWith('boundary.test.ts'))
 
   it('scanne bien des fichiers', () => {
