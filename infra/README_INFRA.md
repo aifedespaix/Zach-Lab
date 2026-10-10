@@ -8,17 +8,56 @@ Une seule image, ARM64 compatible (Raspberry Pi), SQLite embarqué — pas de ba
 de données séparée. Toute la configuration des collections est **automatique** :
 il n'y a plus rien à créer à la main dans le tableau de bord.
 
-Depuis l'arrivée de l'espace professeur, **le même conteneur sert aussi
-l'interface web d'administration** (`admin/`) à la racine du domaine. PocketBase
-publie de lui-même le contenu de `--publicDir` (`/pb_public`) pour toute URL qui
-n'est ni `/api/…` ni `/_/…` : le Dockerfile y dépose le SPA construit, et il n'y
-a donc **ni second conteneur, ni second domaine, ni CORS à ouvrir**.
+**Le même conteneur sert aussi le site de la suite** (`apps/site`, construit en
+statique) à la racine du domaine. PocketBase publie de lui-même le contenu de
+`--publicDir` (`/pb_public`) pour toute URL qui n'est ni `/api/…` ni `/_/…` : le
+Dockerfile y dépose le site construit, et il n'y a donc **ni second conteneur,
+ni second domaine, ni CORS à ouvrir**.
 
 | URL | Servie par |
 | --- | --- |
-| `https://cartes.mon-domaine.fr/` | l'interface professeur (`admin/`) |
-| `https://cartes.mon-domaine.fr/api/…` | l'API PocketBase — **inchangée**, l'application de bureau ne voit aucune différence |
-| `https://cartes.mon-domaine.fr/_/` | le tableau de bord PocketBase |
+| `https://cartes.mon-domaine.fr/` | la vitrine du site (page statique, sans JavaScript) |
+| `/login/` | le site : connexion (profs et élèves) |
+| `/inscription/` | le site : inscription d'un professeur avec un code d'invitation |
+| `/gestion/` | le site : espace de l'administrateur (codes d'invitation, professeurs, élèves) |
+| `/dashboard/` | le site : récapitulatif du professeur (et de l'administrateur) |
+| `/eleves/` | le site : le professeur crée et gère ses élèves |
+| `/compte/` | le site : le compte de l'utilisateur connecté |
+| `/bibliotheque/` | le site : la bibliothèque (ex-interface d'administration de Mentale) |
+| `/api/…` | l'API PocketBase — inchangée pour l'application de bureau — plus `POST /api/inscription` (hook) |
+| `/_/` | le tableau de bord PocketBase |
+
+## Comptes
+
+- **L'administrateur est le superutilisateur PocketBase** (`PB_ADMIN_EMAIL` /
+  `PB_ADMIN_PASSWORD` de `infra/.env`). Ce sont aussi ses identifiants sur
+  `/gestion/` : un identifiant qui contient `@` s'y connecte comme
+  superutilisateur. Les changer dans `.env` change cette connexion. **Ne les
+  changez pas depuis `/compte/`** (l'administrateur n'y a pas de champ mot de
+  passe : il serait de toute façon réécrit au redémarrage par `infra/.env`).
+- **Un professeur naît d'un code d'invitation**, créé par l'administrateur dans
+  `/gestion/` → Codes, puis utilisé sur `/inscription/`. Un code « unique » ne sert
+  qu'une fois ; supprimer un professeur **libère** le code à usage unique qu'il
+  avait consommé (l'usage se calcule en comptant les comptes qui portent le
+  code).
+- **Un élève est créé par son professeur** dans `/eleves/`.
+
+> **Au déploiement : les comptes d'élèves existants n'ont pas de professeur.**
+> Leur champ `teacher` est vide, donc aucun professeur ne les voit tant que
+> chacun n'a pas été rattaché : dans `/gestion/` → onglet Élèves → changement de
+> prof.
+
+## Hooks
+
+Le dossier `infra/pb_hooks/` est copié dans `/pb_hooks` de l'image (l'image de
+base lance PocketBase avec `--hooksDir=/pb_hooks`) :
+
+- `inscription.pb.js` — `POST /api/inscription` : crée un professeur à partir d'un
+  code valable, en une transaction. **Limitée à 5 requêtes / 60 s** par la
+  limitation de débit de PocketBase (voir « Limitation de débit » plus bas).
+- `users.pb.js` — refuse la suppression d'un professeur qui a encore des élèves
+  (même par le superutilisateur).
+- `lib/inviteCode.js` — l'état d'un code (valable, épuisé, expiré, révoqué).
 
 ## 1. Renseigner les identifiants d'administration
 
@@ -32,6 +71,16 @@ jamais dans le dépôt, et **elles servent deux fois** — au conteneur, qui cr�
 superutilisateur au démarrage, et au script de configuration, qui s'en sert pour
 s'authentifier. C'est le seul fichier à écrire.
 
+Les variables, une par une :
+
+| Variable | Rôle |
+| --- | --- |
+| `PB_URL` | l'URL du serveur, pour le script de configuration (le conteneur n'en a pas besoin) |
+| `PB_ADMIN_EMAIL` | l'email du superutilisateur : créé au démarrage du conteneur, utilisé par le script, **et identifiant de l'administrateur sur `/gestion/`** |
+| `PB_ADMIN_PASSWORD` | son mot de passe : mêmes trois usages |
+
+Aucune autre variable n'est nécessaire.
+
 ## 2. Déploiement (Dokploy)
 
 Dans Dokploy, créez une application « Docker Compose » pointant sur
@@ -43,7 +92,7 @@ votre choix (ex. `cartes.mon-domaine.fr`).
 > **Si votre déploiement existe déjà, il n'y a RIEN à reconfigurer côté
 > Dokploy ni côté tunnel.** Le service, son nom, son port `8090` et son volume
 > `pb_data` sont inchangés ; seule la façon de fabriquer l'image change. Le
-> domaine que vous avez déjà servira l'interface professeur en plus de l'API.
+> domaine que vous avez déjà servira le site en plus de l'API.
 >
 > Une seule chose est à vérifier dans Dokploy : que le service est bien
 > **construit depuis le dépôt** et non tiré d'un registre. Le compose déclare
@@ -52,13 +101,20 @@ votre choix (ex. `cartes.mon-domaine.fr`).
 > « Rebuild ») force la reconstruction.
 >
 > Le contexte de construction est la **racine du dépôt**, pas `infra/` : l'image
-> a besoin de `admin/` et de `src/`. C'est déjà ce que déclare le compose
-> (`context: ..`) ; rien à saisir.
+> a besoin de `apps/site` et de `apps/zachart-mentale/src`. C'est déjà ce que
+> déclare le compose (`context: ..`) ; rien à saisir.
 
-Le premier build est plus long que d'habitude (il installe les dépendances de
-`admin/` et compile le SPA, soit une poignée de secondes à quelques minutes
-selon la machine). Les suivants réutilisent la couche des dépendances tant que
-`admin/package.json` ne change pas.
+Le premier build est plus long que d'habitude (il installe les dépendances du
+site et le compile, soit une poignée de secondes à quelques minutes selon la
+machine). Les suivants réutilisent la couche des dépendances tant que les
+`package.json` ne changent pas.
+
+> **Derrière le tunnel Cloudflare, PocketBase doit lire la vraie adresse IP du
+> visiteur.** Dans le tableau de bord PocketBase (`/_/` → Settings → Application →
+> *Trusted proxy headers*), ajoutez `CF-Connecting-IP`. Sans cela, la limitation
+> de débit de l'inscription (voir plus bas) se calcule sur l'adresse du tunnel :
+> tous les visiteurs partageraient alors **un seul** quota de 5 requêtes par
+> minute.
 
 L'image crée le superutilisateur au premier démarrage (`superuser upsert`, donc
 idempotent au redémarrage) : **plus besoin de passer par `/_/`** pour
@@ -145,8 +201,8 @@ devrait avoir, et n'écrit que ce qui diffère. Relancée, elle répond
 > aussi — par la même commande.** Trois collections s'ajoutent (`dossiers`,
 > `sync_events`, `sync_conflicts`) ; aucune collection existante n'est modifiée,
 > et aucune règle ne change. Tant que le script n'a pas été relancé, la
-> synchronisation fonctionne **exactement comme avant** — c'est l'interface
-> d'administration qui reste partiellement muette : les onglets « Conflits » et
+> synchronisation fonctionne **exactement comme avant** — c'est la
+> bibliothèque web qui reste partiellement muette : les onglets « Conflits » et
 > « Journal » affichent « collection absente du serveur », et un dossier vide
 > créé depuis le téléphone ne s'enregistre pas. Rien n'est perdu, rien n'est à
 > réparer : il suffit de lancer
@@ -181,17 +237,18 @@ Ce qu'elle installe :
 | ---------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | `cartes_mentales` | `file_id` (unique), `author`, `path`, `content`, `type`            | lecture publique ; création pour tout compte connecté ; modification et suppression par l'auteur, ou par un compte `prof` |
 | `assets`         | `hash` (unique), `extension`, `file` (≤ 10 Mio)                    | lecture publique ; création pour tout compte connecté ; jamais modifié        |
-| `users`          | ajoute `username` (unique, obligatoire) et `role` (`eleve`/`prof`)  | inscription publique fermée ; connexion par pseudo                            |
+| `users`          | ajoute `username` (unique, obligatoire), `role` (`eleve`/`prof`), `teacher` (le prof d'un élève) et `invite_code` | inscription publique fermée (l'inscription passe par le hook) ; connexion par pseudo |
+| `invite_codes`   | `code`, `kind` (`unique`/`duree`), `expires_at`, `revoked`          | réservée à l'administrateur (superutilisateur) |
 | `dossiers`       | `path` (unique), `created_by`                                       | lecture publique ; création, renommage et suppression réservés aux `prof` |
 | `sync_events`    | `username`, `level`, `trigger`, `summary`, compteurs, `detail`      | lecture réservée aux `prof` ; écriture pour tout compte connecté ; jamais modifié |
 | `sync_conflicts` | `file_id`, `path`, `username`, `local_content`, `status`            | lecture et arbitrage par le `prof` ou par le compte concerné                   |
 
-Les trois dernières servent **l'espace professeur** (`admin/`), et elles sont
-**facultatives** : un serveur sur lequel le script n'a pas encore été relancé
+Les trois collections `dossiers`, `sync_events` et `sync_conflicts` servent **la
+bibliothèque du site** (`/bibliotheque/`), et elles sont **facultatives** : un serveur sur lequel le script n'a pas encore été relancé
 synchronise exactement comme avant. Les clients ne font qu'y déposer leur compte
 rendu, et l'échec de ce dépôt n'a jamais d'effet sur une synchronisation (voir
 `src/sync/syncReporting.ts`). Ce qui manque dans ce cas, c'est seulement ce que
-l'interface d'administration affiche : le journal reste vide et les conflits
+la bibliothèque affiche : le journal reste vide et les conflits
 n'y remontent pas.
 
 - **`dossiers`** ne contient que les dossiers **vides**. Un dossier peuplé est
@@ -242,7 +299,17 @@ Options utiles (`--help` liste tout) :
 | `--verify pseudo:motdepasse` | Après configuration, se connecte avec ce compte et fait un aller-retour réel sur `cartes_mentales` (écriture d'un contenu long, relecture, suppression) : la preuve que les champs et les règles acceptent le trafic de l'application. |
 | `--backup-cron <expr>` · `--backup-keep <n>` | Planification des sauvegardes automatiques (défaut `0 3 * * *`) et nombre conservé (défaut 7). |
 | `--no-backups` | Ne touche pas aux sauvegardes automatiques du serveur. |
+| `--no-rate-limits` | Ne touche pas à la limitation de débit de l'inscription (voir plus bas). Sert aux tests d'intégration. |
 | `--insecure` | Accepte un certificat TLS auto-signé (serveur local). |
+
+### Limitation de débit
+
+Le script active la limitation de débit de PocketBase et y pose une règle :
+**5 requêtes / 60 s sur `POST /api/inscription`**. Au-delà, le serveur répond
+`429`. C'est une règle de PocketBase, avec sa propre politique d'activation
+(`--check` la vérifie aussi). `--no-rate-limits` laisse ce réglage tel qu'il est :
+les scénarios d'intégration S1–S9 font bien plus de 5 inscriptions par minute, ils
+se jouent donc avant que la règle soit appliquée.
 
 ## 4. Créer les comptes des élèves et du professeur
 
@@ -257,6 +324,9 @@ relancer la même commande avec un mot de passe écrase l'ancien.
 
 Vous pouvez toujours passer par le tableau de bord (`https://…/_/` →
 collection `users`) : l'inscription par l'API publique, elle, est fermée.
+
+Pour le parcours normal du site (code d'invitation, élèves créés par leur
+professeur), voir « Comptes » plus haut.
 
 ## 5. Dans l'application
 
@@ -312,7 +382,8 @@ intégration continue, contre un PocketBase **éphémère monté à la version �
 dans `infra/docker-compose.yml`** : il vérifie que `--check` échoue sur un
 serveur vierge, que la configuration passe, que le second passage ne change plus
 rien, qu'un compte ordinaire peut réellement publier et relire un fichier long,
-et qu'une sauvegarde se télécharge. C'est la seule protection réelle contre une
+que les comptes, les codes et les hooks se comportent (`integration.mjs`), que la
+limitation de débit répond `429`, et qu'une sauvegarde se télécharge. C'est la seule protection réelle contre une
 API PocketBase qui bouge sous nos pieds — c'est exactement ce qui a fait
 disparaître le champ `username` des collections par défaut.
 
@@ -347,12 +418,12 @@ disparaître le champ `username` des collections par défaut.
   doit répondre « déjà à jour ». S'il propose des changements, lisez-les : c'est
   exactement ce qu'il appliquera.
 
-## 9. L'espace professeur
+## 9. La bibliothèque du site
 
-L'interface web servie à la racine du domaine. Elle est décrite dans
-[`admin/README.md`](../admin/README.md) ; l'essentiel tient en trois points :
+`/bibliotheque/` est l'ancienne interface web d'administration de Mentale, désormais
+une page du site (`apps/site/src/app/bibliotheque/`, voir son `README.md`) :
 
-- **On s'y connecte avec les comptes créés à l'étape 4**, et seuls les comptes
+- **On s'y connecte avec la session du site** (`/login/`) ; seuls les comptes
   `prof` sont acceptés.
 - **Elle ne demande aucun déploiement séparé** : elle est dans l'image
   PocketBase, construite par `infra/Dockerfile`.
@@ -365,8 +436,30 @@ L'interface web servie à la racine du domaine. Elle est décrite dans
 bun run infra/setup-pocketbase.mjs --check   # 0 = le serveur a tout ce qu'il faut
 ```
 
-## Tests de ce dossier
+## Tests
 
-`bun run test:infra` (depuis la racine) lance les tests de `infra/`. Le script appelle le `vitest`
-installé dans `apps/zachart-mentale/node_modules` : ni `vitest` seul (non résolu depuis la racine)
-ni `bunx vitest` (télécharge une autre version) ne conviennent.
+- `bun run test:infra` (depuis la racine) lance les tests unitaires de `infra/`. Le
+  script appelle le `vitest` installé dans `apps/zachart-mentale/node_modules` : ni
+  `vitest` seul (non résolu depuis la racine) ni `bunx vitest` (télécharge une
+  autre version) ne conviennent.
+- `bun run infra/integration.mjs` joue les scénarios S1–S9 (inscription par code,
+  élèves, hooks, règles) contre un **vrai** PocketBase, qui doit avoir été
+  configuré avec `--no-rate-limits`. `--only-rate-limit` joue S10 (le `429`), après
+  une application normale. La séquence est celle du workflow
+  `.github/workflows/infra-pocketbase.yml` :
+
+  ```bash
+  docker run -d --name pocketbase -p 8090:8090 \
+    -e PB_ADMIN_EMAIL -e PB_ADMIN_PASSWORD \
+    -v "$PWD/infra/pb_hooks:/pb_hooks:ro" \
+    ghcr.io/muchobien/pocketbase:0.40.3        # la version épinglée dans infra/Dockerfile
+
+  bun run infra/setup-pocketbase.mjs --no-rate-limits   # schéma, sans la limitation
+  bun run infra/integration.mjs                         # S1–S9
+  bun run infra/setup-pocketbase.mjs                    # applique la limitation
+  bun run infra/setup-pocketbase.mjs --check            # 0 = conforme
+  bun run infra/integration.mjs --only-rate-limit       # S10 : 429
+  ```
+
+  (`integration.mjs` lit `PB_URL`, `PB_ADMIN_EMAIL` et `PB_ADMIN_PASSWORD` dans
+  l'environnement uniquement ; `setup-pocketbase.mjs` les lit aussi dans `infra/.env`.)

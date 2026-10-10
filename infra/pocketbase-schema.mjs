@@ -401,7 +401,7 @@ export function desiredCollections() {
     },
     // L'espace du professeur. Ajouté APRÈS les trois collections ci-dessus, et
     // séparément : un serveur qui ne les a pas encore synchronise exactement
-    // comme avant — il ne remonte simplement rien à l'interface d'admin.
+    // comme avant — il ne remonte simplement rien à la bibliothèque du site.
     {
       name: FOLDERS_COLLECTION,
       kind: 'base',
@@ -614,9 +614,10 @@ export function planCollection(current, desired) {
 }
 
 // ---------------------------------------------------------------------------
-// L'espace du professeur : ce que l'interface d'administration lit et écrit.
+// L'espace du professeur : ce que la bibliothèque du site lit et écrit.
 //
-// Ces trois collections n'existent QUE pour l'admin web (`admin/`) et pour ce
+// Ces trois collections n'existent QUE pour la bibliothèque (`apps/site`,
+// `/bibliotheque/`) et pour ce
 // que les clients lui rapportent. L'application de bureau continue de
 // fonctionner sans elles : un serveur qui n'a pas encore été réappliqué ne
 // perd aucune fonction de synchronisation, il ne remonte simplement rien au
