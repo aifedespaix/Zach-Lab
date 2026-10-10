@@ -68,10 +68,67 @@ async function main() {
   if (!adminToken) throw new Error(`connexion admin impossible (${auth.status})`)
 
   if (onlyRateLimit) await scenarioS10()
-  else await scenariosS1toS9()
+  else { await scenariosS1toS9(); await scenarioFiles() }
 
   if (failures > 0) { console.log(`\n${failures} échec(s)`); process.exit(1) }
   console.log('\nTout est conforme.')
+}
+
+// S11 : la collection `files` (chantier Synchro S1) — `rev` compté par le
+// serveur, 409 sur révision périmée, table de droits prof/élève.
+async function scenarioFiles() {
+  console.log('S11 files : rev, conflit, droits')
+  const a = await newProf('fa')
+  const b = await newProf('fb')
+  const mkStudent = async (name) => {
+    const r = await api('/api/collections/users/records', {
+      method: 'POST', token: a.token,
+      body: { username: name, password: PASSWORD, passwordConfirm: PASSWORD, role: 'eleve', teacher: a.id },
+    })
+    return { id: r.json?.id, ...(await login(name)) }
+  }
+  const eleve = await mkStudent(`fe1_${run}`)
+  const other = await mkStudent(`fe2_${run}`)
+  const rec = (token, id) => api(`/api/collections/files/records/${id}`, { token })
+  const patch = (who, id, body) => api(`/api/collections/files/records/${id}`, { method: 'PATCH', token: who.token, body })
+  const file = (extra = {}) => ({
+    file_id: `f_${run}_${Math.random().toString(36).slice(2, 8)}`, app: 'zachart-mentale', path: 'cours/a.zmap',
+    content: '{}', hash: 'h1', owner: eleve.id, ...extra,
+  })
+
+  const created = await api('/api/collections/files/records', { method: 'POST', token: eleve.token, body: file() })
+  check('l’élève crée sa copie', created.status === 200, JSON.stringify(created.json))
+  check('rev vaut 1 à la création', created.json?.rev === 1, String(created.json?.rev))
+  const id = created.json?.id
+
+  check('rev ne s’écrit pas à la création', denied((await api('/api/collections/files/records', { method: 'POST', token: eleve.token, body: file({ rev: 9 }) })).status))
+  check('pas de copie au nom d’un autre élève', denied((await api('/api/collections/files/records', { method: 'POST', token: eleve.token, body: file({ owner: other.id }) })).status))
+  const fid = created.json?.file_id
+  check('(owner, app, file_id) est unique', denied((await api('/api/collections/files/records', { method: 'POST', token: eleve.token, body: file({ file_id: fid }) })).status))
+
+  const edit = await patch(eleve, id, { content: '{"x":1}', hash: 'h2' })
+  check('une modification fait passer rev à 2', edit.json?.rev === 2, String(edit.json?.rev))
+  const noop = await patch(eleve, id, { content: '{"x":1}', hash: 'h2' })
+  check('une écriture identique ne bouge pas rev', noop.json?.rev === 2, String(noop.json?.rev))
+  check('rev ne s’écrit pas à la mise à jour', denied((await patch(eleve, id, { rev: 50 })).status))
+  check('owner ne change pas', denied((await patch(eleve, id, { owner: other.id })).status))
+  const stale = await patch(eleve, id, { content: '{"x":2}', hash: 'h3', base_rev: 1 })
+  check('base_rev périmé : 409', stale.status === 409, String(stale.status))
+  const fresh = await patch(eleve, id, { content: '{"x":2}', hash: 'h3', base_rev: 2 })
+  check('base_rev à jour : accepté, rev 3', fresh.status === 200 && fresh.json?.rev === 3, JSON.stringify(fresh.json))
+
+  check('le prof de l’élève lit la copie', (await rec(a.token, id)).status === 200)
+  check('le prof d’un autre ne la lit pas', denied((await rec(b.token, id)).status))
+  check('un autre élève ne la lit pas', denied((await rec(other.token, id)).status))
+  check('un autre prof ne la modifie pas', denied((await patch(b, id, { content: '{}', hash: 'h9' })).status))
+
+  const del = await patch(eleve, id, { deleted_at: iso(Date.now()), deleted_by: eleve.id })
+  check('l’élève supprime (corbeille)', del.status === 200, JSON.stringify(del.json))
+  check('l’élève n’annule pas sa suppression', denied((await patch(eleve, id, { deleted_at: '' })).status))
+  const restored = await patch(a, id, { deleted_at: '' })
+  check('le prof annule la suppression', restored.status === 200 && !restored.json?.deleted_at, JSON.stringify(restored.json))
+  check('suppression définitive réservée au serveur',
+    denied((await api(`/api/collections/files/records/${id}`, { method: 'DELETE', token: a.token })).status))
 }
 
 async function scenariosS1toS9() {
