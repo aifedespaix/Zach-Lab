@@ -1,7 +1,7 @@
 ---
 import AppPage from '../layouts/AppPage.astro'
-import { Placeholder } from '../app/Placeholder'
+import { DashboardPage } from '../app/dashboard/DashboardPage'
 ---
 <AppPage title="Dashboard">
-  <Placeholder name="dashboard" client:only="react" />
+  <DashboardPage client:only="react" />
 </AppPage>
