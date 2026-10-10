@@ -1,12 +1,16 @@
 // Scénarios contre un VRAI PocketBase (hooks montés, schéma appliqué).
 //   PB_URL=… PB_ADMIN_EMAIL=… PB_ADMIN_PASSWORD=… bun run infra/integration.mjs
 // Sort en code 1 au premier échec constaté (tous les scénarios sont joués).
+// S1-S9 font bien plus de 5 inscriptions par minute : ils se jouent sur un serveur
+// configuré avec `setup-pocketbase.mjs --no-rate-limits`. S10 (la limitation de
+// débit) se joue seul, après `setup-pocketbase.mjs` : `… integration.mjs --only-rate-limit`.
 const { PB_URL, PB_ADMIN_EMAIL, PB_ADMIN_PASSWORD } = process.env
 const ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
 const PASSWORD = 'MotDePasse1234!'
 const run = Date.now().toString(36)
 let failures = 0
 let adminToken = ''
+const onlyRateLimit = process.argv.includes('--only-rate-limit')
 
 function check(name, condition, detail = '') {
   if (condition) return console.log(`  ✓ ${name}`)
@@ -63,6 +67,14 @@ async function main() {
   adminToken = auth.json?.token ?? ''
   if (!adminToken) throw new Error(`connexion admin impossible (${auth.status})`)
 
+  if (onlyRateLimit) await scenarioS10()
+  else await scenariosS1toS9()
+
+  if (failures > 0) { console.log(`\n${failures} échec(s)`); process.exit(1) }
+  console.log('\nTout est conforme.')
+}
+
+async function scenariosS1toS9() {
   console.log('S1 code unique')
   { const { code } = await createCode()
     check('première inscription : 200', (await signup(code, `s1a_${run}`)).status === 200)
@@ -150,8 +162,13 @@ async function main() {
     check('anonyme ne crée pas de compte', denied((await api('/api/collections/users/records', { method: 'POST',
       body: { username: `anon_${run}`, password: PASSWORD, passwordConfirm: PASSWORD, role: 'prof' } })).status)) }
 
-  if (failures > 0) { console.log(`\n${failures} échec(s)`); process.exit(1) }
-  console.log('\nTout est conforme.')
+}
+
+async function scenarioS10() {
+  console.log('S10 limitation de débit')
+  { const results = []
+    for (let i = 0; i < 8; i++) results.push((await signup('AAAAAAAAAA', `rl_${i}_${run}`)).status)
+    check('au moins une réponse 429', results.includes(429), results.join(',')) }
 }
 
 main().catch((error) => { console.error(error); process.exit(1) })

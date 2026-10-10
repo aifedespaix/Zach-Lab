@@ -23,6 +23,7 @@ import {
   SYNC_CONFLICTS_COLLECTION,
   SYNC_EVENTS_COLLECTION,
   DEFAULT_BACKUP_KEEP,
+  INSCRIPTION_RATE_RULE,
   MIND_MAPS_COLLECTION,
   USERS_COLLECTION,
   desiredCollections,
@@ -52,9 +53,9 @@ const DEFAULT_USERS = {
  * apply. PocketBase always ships `users`, so it is seeded by default and only
  * left out to exercise the "this is not a PocketBase" path.
  */
-function fakeClient({ initial = [], withUsers = true, backups = structuredClone(POCKETBASE_BACKUPS) } = {}) {
+function fakeClient({ initial = [], withUsers = true, backups = structuredClone(POCKETBASE_BACKUPS), rateLimits } = {}) {
   const collections = structuredClone(withUsers ? [DEFAULT_USERS, ...initial] : initial)
-  let settings = { backups: structuredClone(backups) }
+  let settings = { backups: structuredClone(backups), ...(rateLimits === undefined ? {} : { rateLimits: structuredClone(rateLimits) }) }
   let users = new Map()
   return {
     collections,
@@ -164,6 +165,11 @@ describe('parseArgs', () => {
     expect(parseArgs(['--backup-keep', '10']).backupKeep).toBe(10)
     expect(parseArgs(['--backup-cron', '0 */6 * * *']).backupCron).toBe('0 */6 * * *')
   })
+
+  it('handles the rate-limit opt-out', () => {
+    expect(parseArgs([]).rateLimits).toBe(true)
+    expect(parseArgs(['--no-rate-limits']).rateLimits).toBe(false)
+  })
 })
 
 describe('SetupError', () => {
@@ -248,9 +254,10 @@ describe('export du schéma', () => {
 })
 
 describe('exitCodeFor', () => {
-  const report = (status, backups = null) => ({
+  const report = (status, backups = null, rateLimits = null) => ({
     collections: [{ name: 'a', status, changes: [] }],
     backups,
+    rateLimits,
   })
 
   it('answers 0 for a conform server and 1 as soon as something differs', () => {
@@ -259,6 +266,13 @@ describe('exitCodeFor', () => {
     expect(exitCodeFor(report('updated'))).toBe(1)
     expect(exitCodeFor(report('unchanged', { status: 'updated', changes: ['cron'] }))).toBe(1)
     expect(exitCodeFor(report('unchanged', { status: 'unchanged', changes: [] }))).toBe(0)
+  })
+
+  it('answers 1 when the rate-limit rule is missing, 0 when it is there or opted out', () => {
+    const ok = { status: 'unchanged', changes: [] }
+    expect(exitCodeFor(report('unchanged', ok, { status: 'updated', changes: ['x'] }))).toBe(1)
+    expect(exitCodeFor(report('unchanged', ok, ok))).toBe(0)
+    expect(exitCodeFor(report('unchanged', ok, null))).toBe(0)
   })
 })
 
@@ -307,6 +321,11 @@ describe('resolveConfig', () => {
     expect(normalizeUrl('http://127.0.0.1:8090/')).toBe('http://127.0.0.1:8090')
     expect(normalizeUrl('  https://cartes.test/  ')).toBe('https://cartes.test')
     expect(normalizeUrl('')).toBe('')
+  })
+
+  it('keeps the rate-limit opt-out through resolveConfig', () => {
+    expect(resolveConfig(parseArgs([]), {}, null).rateLimits).not.toBe(false)
+    expect(resolveConfig(parseArgs(['--no-rate-limits']), {}, null).rateLimits).toBe(false)
   })
 
   it('lists every missing piece at once', () => {
@@ -557,7 +576,7 @@ describe('runSetup', () => {
 
   it('leaves the backups alone when asked to, and then never calls the settings API', async () => {
     const client = fakeClient()
-    const report = await runSetup(client, { ...config, backups: false }, silent)
+    const report = await runSetup(client, { ...config, backups: false, rateLimits: false }, silent)
 
     expect(client.getSettings).not.toHaveBeenCalled()
     expect(client.updateSettings).not.toHaveBeenCalled()
@@ -567,11 +586,40 @@ describe('runSetup', () => {
   it('leaves an already-scheduled server untouched', async () => {
     const client = fakeClient({
       backups: { cron: DEFAULT_BACKUP_CRON, cronMaxKeep: DEFAULT_BACKUP_KEEP, s3: { enabled: false } },
+      rateLimits: { enabled: true, rules: [INSCRIPTION_RATE_RULE] },
     })
     const report = await runSetup(client, config, silent)
 
     expect(client.updateSettings).not.toHaveBeenCalled()
     expect(report.backups).toEqual({ status: 'unchanged', changes: [] })
+  })
+
+  it('enables the rate limit with the inscription rule only, and a second run changes nothing', async () => {
+    const client = fakeClient()
+    const first = await runSetup(client, config, silent)
+    expect(first.rateLimits.status).toBe('updated')
+    expect(client.currentSettings().rateLimits).toEqual({ enabled: true, rules: [INSCRIPTION_RATE_RULE] })
+
+    client.updateSettings.mockClear()
+    const lines = []
+    const second = await runSetup(client, config, line => lines.push(line))
+    expect(second.rateLimits).toEqual({ status: 'unchanged', changes: [] })
+    expect(client.updateSettings).not.toHaveBeenCalled()
+    expect(lines.some(line => line.includes('limitation de débit : déjà à jour'))).toBe(true)
+  })
+
+  it('leaves the rate limit alone with rateLimits: false', async () => {
+    const client = fakeClient()
+    const report = await runSetup(client, { ...config, rateLimits: false }, silent)
+    expect(report.rateLimits).toBeNull()
+    expect(client.currentSettings().rateLimits).toBeUndefined()
+  })
+
+  it('writes nothing in a dry-run but still reports the missing rule', async () => {
+    const client = fakeClient()
+    const report = await runSetup(client, { ...config, dryRun: true }, silent)
+    expect(report.rateLimits.status).toBe('updated')
+    expect(client.updateSettings).not.toHaveBeenCalled()
   })
 
   it('stops with a clear message when the server is not a PocketBase instance', async () => {

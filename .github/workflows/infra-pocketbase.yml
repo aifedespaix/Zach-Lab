@@ -76,7 +76,16 @@ jobs:
             exit 1
           fi
 
-      - name: configure the server
+      # Les scénarios S1-S9 font bien plus de 5 inscriptions par minute : ils
+      # se jouent AVANT que la limitation de débit soit appliquée. S10 (la
+      # limitation elle-même) vient après, une fois le schéma complet en place.
+      - name: configure the server (without the signup rate limit)
+        run: bun run infra/setup-pocketbase.mjs --no-rate-limits
+
+      - name: accounts, invite codes and hooks behave
+        run: bun run infra/integration.mjs
+
+      - name: apply the signup rate limit
         run: bun run infra/setup-pocketbase.mjs
 
       - name: a second run is a no-op
@@ -110,8 +119,8 @@ jobs:
           bun run infra/setup-pocketbase.mjs --add-user 'eleve1:eleve:MotDePasse1234!'
           bun run infra/setup-pocketbase.mjs --verify 'eleve1:MotDePasse1234!'
 
-      - name: accounts, invite codes and hooks behave
-        run: bun run infra/integration.mjs
+      - name: the signup rate limit answers 429
+        run: bun run infra/integration.mjs --only-rate-limit
 
       - name: a backup can be taken and downloaded
         run: |

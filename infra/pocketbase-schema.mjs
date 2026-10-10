@@ -67,6 +67,40 @@ export function planBackups(current, desired = {}) {
   return { update: { backups: { ...current, ...wanted } }, changes }
 }
 
+/** 5 tentatives par minute et par adresse : assez pour une faute de frappe, trop peu pour deviner un code. */
+export const INSCRIPTION_RATE_RULE = { label: 'POST /api/inscription', maxRequests: 5, duration: 60, audience: '' }
+
+/**
+ * Active la limitation de débit de PocketBase pour l'inscription.
+ *
+ * Les règles PAR DÉFAUT de PocketBase (`*:create`, `*:auth`, `/api/`) existent
+ * même désactivées ; les activer ferait limiter la synchronisation, qui crée
+ * beaucoup d'enregistrements d'affilée. Si la limitation était éteinte, on
+ * repart donc d'une liste qui ne contient que notre règle. Si l'opérateur
+ * l'avait allumée, ses règles sont les siennes et on y ajoute la nôtre.
+ */
+export function planRateLimits(current, desired = INSCRIPTION_RATE_RULE) {
+  const enabled = current?.enabled === true
+  const rules = enabled ? current?.rules ?? [] : []
+  const mine = rules.find(rule => rule.label === desired.label)
+  const same =
+    mine !== undefined && mine.maxRequests === desired.maxRequests && mine.duration === desired.duration
+  const changes = []
+  if (!enabled) changes.push('activée')
+  if (!same) changes.push(`${desired.label} : ${desired.maxRequests} requêtes / ${desired.duration} s`)
+  if (changes.length === 0) return { changes: [] }
+  return {
+    update: {
+      rateLimits: {
+        ...(current ?? {}),
+        enabled: true,
+        rules: [...rules.filter(rule => rule.label !== desired.label), desired],
+      },
+    },
+    changes,
+  }
+}
+
 /** The rules the app's traffic needs. Empty string = public, `null` = superusers only. */
 export const MIND_MAP_RULES = {
   // Reading is public: the whole point is that every account on the server can

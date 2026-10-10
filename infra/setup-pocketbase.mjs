@@ -27,6 +27,7 @@ import {
   USERNAME_FIELD,
   desiredCollections,
   planBackups,
+  planRateLimits,
   planCollection,
 } from './pocketbase-schema.mjs'
 
@@ -63,6 +64,7 @@ Options :
   --backup-keep <n>        Nombre de sauvegardes automatiques à conserver (défaut 7).
   --backup-cron <expr>     Planification des sauvegardes (défaut « 0 3 * * * »).
   --no-backups             Ne touche pas aux sauvegardes automatiques du serveur.
+  --no-rate-limits         Ne touche pas à la limitation de débit du serveur (inscription).
   --insecure               Accepte un certificat TLS auto-signé (serveur local).
   --help                   Affiche cette aide.
 
@@ -178,6 +180,7 @@ export function parseArgs(argv) {
     check: false,
     export: null,
     backups: true,
+    rateLimits: true,
     backupKeep: null,
     backupCron: null,
     insecure: false,
@@ -237,6 +240,9 @@ export function parseArgs(argv) {
       }
       case '--no-backups':
         options.backups = false
+        break
+      case '--no-rate-limits':
+        options.rateLimits = false
         break
       case '--backup-keep':
         options.backupKeep = Number(value(index))
@@ -326,7 +332,8 @@ export function exportDocument(collections, exportedAt, names = desiredCollectio
 export function exitCodeFor(report) {
   const collectionsConform = report.collections.every(entry => entry.status === 'unchanged')
   const backupsConform = report.backups === null || report.backups.status === 'unchanged'
-  return collectionsConform && backupsConform ? 0 : 1
+  const rateLimitsConform = !report.rateLimits || report.rateLimits.status === 'unchanged'
+  return collectionsConform && backupsConform && rateLimitsConform ? 0 : 1
 }
 
 /** CLI flags, then the environment, then `infra/.env` — the first value found wins. */
@@ -367,7 +374,7 @@ export function assertComplete(config) {
  * against a fake, and what keeps this file free of PocketBase specifics.
  */
 export async function runSetup(client, config, log = console.log) {
-  const report = { dryRun: config.dryRun, collections: [], backups: null, users: [], verification: null }
+  const report = { dryRun: config.dryRun, collections: [], backups: null, rateLimits: null, users: [], verification: null }
   const prefix = config.dryRun ? '[simulation] ' : ''
 
   const session = await client.auth()
@@ -414,6 +421,20 @@ export async function runSetup(client, config, log = console.log) {
         : `${prefix}~ sauvegardes : ${plan.changes.join(' ; ')}`
     )
     if (!config.dryRun && plan.update !== undefined) await client.updateSettings(plan.update)
+  }
+
+  // Rate limit on the invite-code signup: a PocketBase setting, because the
+  // JSVM handlers run in isolated contexts and cannot share a counter.
+  if (config.rateLimits !== false) {
+    const rateSettings = await client.getSettings()
+    const ratePlan = planRateLimits(rateSettings?.rateLimits)
+    report.rateLimits = { status: ratePlan.changes.length === 0 ? 'unchanged' : 'updated', changes: ratePlan.changes }
+    log(
+      ratePlan.changes.length === 0
+        ? `${prefix}= limitation de débit : déjà à jour`
+        : `${prefix}~ limitation de débit : ${ratePlan.changes.join(' ; ')}`
+    )
+    if (!config.dryRun && ratePlan.update !== undefined) await client.updateSettings(ratePlan.update)
   }
 
   for (const user of config.users) {
@@ -652,7 +673,9 @@ export async function main(argv) {
 
   const report = await runSetup(client, config)
   const nothingToDo =
-    report.users.length === 0 && report.collections.every(entry => entry.status === 'unchanged')
+    report.users.length === 0 &&
+    report.collections.every(entry => entry.status === 'unchanged') &&
+    [report.backups, report.rateLimits].every(entry => !entry || entry.status === 'unchanged')
   if (config.dryRun) console.log('\nSimulation terminée : rien n’a été écrit (relancez sans --dry-run).')
   else if (nothingToDo) console.log('\nRien à faire : ce serveur est déjà configuré.')
   else console.log('\nConfiguration terminée. Dans l’application : Réglages → Synchronisation.')

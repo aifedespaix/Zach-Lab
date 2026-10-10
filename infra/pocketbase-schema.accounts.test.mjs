@@ -5,6 +5,8 @@ import {
   INVITE_CODE_LENGTH,
   USERS_COLLECTION,
   desiredCollections,
+  INSCRIPTION_RATE_RULE,
+  planRateLimits,
 } from './pocketbase-schema.mjs'
 
 const byName = name => desiredCollections().find(collection => collection.name === name)
@@ -68,5 +70,38 @@ describe('users', () => {
     const occurrences = rule => rule.split('@request.body.invite_code:isset = false').length - 1
     expect(occurrences(users.rules.updateRule)).toBe(2)
     expect(occurrences(users.rules.createRule)).toBe(1)
+  })
+})
+
+describe('planRateLimits', () => {
+  const defaults = {
+    enabled: false,
+    rules: [
+      { label: '*:auth', maxRequests: 2, duration: 3, audience: '' },
+      { label: '*:create', maxRequests: 20, duration: 5, audience: '' },
+    ],
+  }
+
+  it('désactivée : l’active avec NOTRE règle seule (pas les défauts qui brideraient la synchro)', () => {
+    const plan = planRateLimits(defaults)
+    expect(plan.update.rateLimits.enabled).toBe(true)
+    expect(plan.update.rateLimits.rules).toEqual([INSCRIPTION_RATE_RULE])
+    expect(plan.changes.length).toBeGreaterThan(0)
+  })
+
+  it('déjà activée par l’opérateur : garde ses règles et ajoute la nôtre', () => {
+    const mine = { label: '/api/', maxRequests: 300, duration: 10, audience: '' }
+    const plan = planRateLimits({ enabled: true, rules: [mine] })
+    expect(plan.update.rateLimits.rules).toEqual([mine, INSCRIPTION_RATE_RULE])
+  })
+
+  it('remplace une version périmée de notre règle', () => {
+    const stale = { ...INSCRIPTION_RATE_RULE, maxRequests: 99 }
+    const plan = planRateLimits({ enabled: true, rules: [stale] })
+    expect(plan.update.rateLimits.rules).toEqual([INSCRIPTION_RATE_RULE])
+  })
+
+  it('est un no-op quand tout est conforme', () => {
+    expect(planRateLimits({ enabled: true, rules: [INSCRIPTION_RATE_RULE] })).toEqual({ changes: [] })
   })
 })
