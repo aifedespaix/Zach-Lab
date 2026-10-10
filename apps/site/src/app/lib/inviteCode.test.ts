@@ -38,9 +38,16 @@ describe('generateCode', () => {
     expect(new Set(Array.from({ length: 1000 }, () => generateCode())).size).toBe(1000)
   })
   it('rejette les octets biaisés (≥ 248) au lieu de les replier', () => {
-    const bytes = [250, 255, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-    let i = 0
-    const code = generateCode(count => Uint8Array.from({ length: count }, () => bytes[i++ % bytes.length]))
-    expect(code).toHaveLength(INVITE_LENGTH)
+    // Octets 0..9 entrelacés d'octets ≥ 248 : seuls les premiers comptent.
+    const bytes = [248, 0, 250, 1, 255, 2, 249, 3, 251, 4, 252, 5, 253, 6, 254, 7, 248, 8, 250, 9]
+    const code = generateCode(count => Uint8Array.from({ length: count }, (_, k) => bytes[k % bytes.length]))
+    expect(code).toBe('ABCDEFGHJK')
+  })
+  it('redemande des octets quand un lot ne contient que des octets rejetés', () => {
+    const batches = [Array(20).fill(250), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
+    let call = 0
+    const code = generateCode(() => Uint8Array.from(batches[call++]))
+    expect(code).toBe('ABCDEFGHJK')
+    expect(call).toBe(2)
   })
 })
