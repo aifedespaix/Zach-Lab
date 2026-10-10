@@ -128,6 +128,14 @@ describe('describeApiError', () => {
     expect(describeApiError(err('oldPassword', 'validation_invalid_old_password'))).toBe('Mot de passe actuel : incorrect')
     expect(describeApiError(err('username', 'validation_not_unique'))).toBe('Identifiant : déjà utilisé')
   })
+  it('règles de l’ancien mot de passe et codes de validation', () => {
+    const err = (key: string, code: string) => ({ status: 400, response: { data: { [key]: { code, message: 'Some English text.' } } } })
+    expect(describeApiError(err('oldPassword', 'validation_zzz'))).toBe('Mot de passe actuel : incorrect')
+    expect(describeApiError(err('oldPassword', 'validation_required'))).toBe('Mot de passe actuel : obligatoire')
+    expect(describeApiError(err('username', 'validation_invalid_username'))).toBe('Identifiant : invalide (lettres, chiffres, point, tiret et underscore)')
+    expect(describeApiError(err('password', 'validation_length_out_of_range'))).toBe('Nouveau mot de passe : longueur incorrecte')
+    expect(describeApiError(err('password', 'validation_values_mismatch'))).toBe('Nouveau mot de passe : les deux mots de passe diffèrent')
+  })
   it('code inconnu : texte du serveur ; champ inconnu : clé brute', () => {
     expect(describeApiError({ status: 400, response: { data: { username: { code: 'validation_zzz', message: 'Bizarre.' } } } })).toBe('Identifiant : Bizarre.')
     expect(describeApiError({ status: 400, response: { data: { autre: { code: 'validation_not_unique', message: 'm' } } } })).toBe('autre : déjà utilisé')

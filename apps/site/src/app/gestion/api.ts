@@ -34,7 +34,9 @@ const ERROR_CODES: Record<string, string> = {
   validation_invalid_old_password: 'incorrect',
   validation_not_unique: 'déjà utilisé',
   validation_required: 'obligatoire',
-  validation_values_mismatch: 'ne correspond pas',
+  validation_values_mismatch: 'les deux mots de passe diffèrent',
+  validation_invalid_username: 'invalide (lettres, chiffres, point, tiret et underscore)',
+  validation_length_out_of_range: 'longueur incorrecte',
   validation_min_text_constraint: 'trop court',
   validation_max_text_constraint: 'trop long',
 }
@@ -56,7 +58,9 @@ export function describeApiError(error: unknown): string {
     if (first !== undefined) {
       const [key, detail] = first
       // Le code PocketBase est stable, son texte est en anglais : on traduit le code, sinon on garde le texte serveur.
-      const known = typeof detail?.code === 'string' ? ERROR_CODES[detail.code] : undefined
+      const code = typeof detail?.code === 'string' ? detail.code : ''
+      // Toute erreur sur l'ancien mot de passe veut dire « incorrect » (sauf champ vide) : jamais d'anglais.
+      const known = key === 'oldPassword' && code !== 'validation_required' ? 'incorrect' : ERROR_CODES[code]
       const reason = known ?? (typeof detail?.message === 'string' ? detail.message : undefined)
       if (reason !== undefined) return `${FIELD_NAMES[key] ?? key} : ${reason}`
     }

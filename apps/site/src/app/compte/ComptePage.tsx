@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button, Field, inputClass } from '@/ui/primitives'
 import { Protected } from '../shell/Protected'
 import { AppShell } from '../shell/AppShell'
@@ -11,7 +11,7 @@ import { InlineError, SecretNotice } from '../gestion/parts'
 // Laisse le temps de lire le message avant la redirection.
 const RECONNECT_REDIRECT_MS = 2500
 
-type Prof ={ id: string; username: string }
+type Prof = { id: string; username: string }
 
 /** Message d'une erreur : une erreur locale garde son texte, une erreur serveur est traduite. */
 const messageOf = (e: unknown) => (e instanceof Error && !('status' in e) ? e.message : describeApiError(e))
@@ -52,6 +52,13 @@ function PasswordSection({ prof }: { prof: Prof }) {
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
+  // Minuterie de redirection : une seule à la fois, et annulée si la page est quittée avant son échéance.
+  const redirectTimer = useRef<number | null>(null)
+  const cancelRedirect = () => {
+    if (redirectTimer.current !== null) window.clearTimeout(redirectTimer.current)
+    redirectTimer.current = null
+  }
+  useEffect(() => cancelRedirect, [])
   const submit = async () => {
     setDone(false)
     const problem = passwordError(password) ?? (password === confirm ? null : 'La confirmation ne correspond pas au nouveau mot de passe.')
@@ -73,7 +80,8 @@ function PasswordSection({ prof }: { prof: Prof }) {
       // « Identifiant incorrect » serait faux : le changement a réussi, seule la reconnexion a échoué.
       setError('Mot de passe modifié, mais la reconnexion a échoué : reconnectez-vous.')
       logout()
-      window.setTimeout(() => window.location.replace('/login/'), RECONNECT_REDIRECT_MS)
+      cancelRedirect()
+      redirectTimer.current = window.setTimeout(() => window.location.replace('/login/'), RECONNECT_REDIRECT_MS)
     }
   }
   return (

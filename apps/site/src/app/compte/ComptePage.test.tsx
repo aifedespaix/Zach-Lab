@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, within, fireEvent, waitFor } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { render, screen, within, fireEvent, waitFor, act } from '@testing-library/react'
 
 const h = vi.hoisted(() => ({
   update: vi.fn(),
@@ -109,26 +109,52 @@ describe('/compte — prof', () => {
     expect(main().getByLabelText('Nouveau mot de passe')).toHaveValue('nouveaumotdepasse')
   })
 
-  it('mot de passe changé mais reconnexion en échec : message exact, champs vidés, déconnexion puis redirection', async () => {
+  describe('reconnexion en échec après changement', () => {
     const replace = vi.fn()
-    vi.stubGlobal('location', { ...window.location, replace })
-    h.loginAny.mockRejectedValue(new Error('Identifiant ou mot de passe incorrect.'))
-    render(<ComptePage />)
-    type(main().getByLabelText('Mot de passe actuel'), 'ancienmotdepasse')
-    type(main().getByLabelText('Nouveau mot de passe'), 'nouveaumotdepasse')
-    type(main().getByLabelText('Confirmer le nouveau mot de passe'), 'nouveaumotdepasse')
-    fireEvent.click(main().getByRole('button', { name: 'Changer le mot de passe' }))
-    const alert = await main().findByRole('alert')
-    expect(alert).toHaveTextContent('Mot de passe modifié, mais la reconnexion a échoué : reconnectez-vous.')
-    expect(alert).not.toHaveTextContent('Identifiant ou mot de passe incorrect')
-    expect(main().getByLabelText('Mot de passe actuel')).toHaveValue('')
-    expect(main().getByLabelText('Nouveau mot de passe')).toHaveValue('')
-    expect(main().getByLabelText('Confirmer le nouveau mot de passe')).toHaveValue('')
-    expect(h.logout).toHaveBeenCalledTimes(1)
-    // La redirection est différée pour laisser lire le message.
-    expect(replace).not.toHaveBeenCalled()
-    await waitFor(() => expect(replace).toHaveBeenCalledWith('/login/'), { timeout: 4000 })
-    vi.unstubAllGlobals()
+    beforeEach(() => {
+      vi.useFakeTimers()
+      replace.mockReset()
+      vi.stubGlobal('location', { ...window.location, replace })
+      h.loginAny.mockRejectedValue(new Error('Identifiant ou mot de passe incorrect.'))
+    })
+    afterEach(() => {
+      vi.useRealTimers()
+      vi.unstubAllGlobals()
+    })
+    async function changePassword() {
+      const view = render(<ComptePage />)
+      type(main().getByLabelText('Mot de passe actuel'), 'ancienmotdepasse')
+      type(main().getByLabelText('Nouveau mot de passe'), 'nouveaumotdepasse')
+      type(main().getByLabelText('Confirmer le nouveau mot de passe'), 'nouveaumotdepasse')
+      fireEvent.click(main().getByRole('button', { name: 'Changer le mot de passe' }))
+      // Vide les promesses (update puis loginAny) sans avancer l'horloge de la redirection.
+      await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+      return view
+    }
+
+    it('message exact, champs vidés, déconnexion, puis redirection à 2500 ms', async () => {
+      await changePassword()
+      const alert = main().getByRole('alert')
+      expect(alert).toHaveTextContent('Mot de passe modifié, mais la reconnexion a échoué : reconnectez-vous.')
+      expect(alert).not.toHaveTextContent('Identifiant ou mot de passe incorrect')
+      expect(main().getByLabelText('Mot de passe actuel')).toHaveValue('')
+      expect(main().getByLabelText('Nouveau mot de passe')).toHaveValue('')
+      expect(main().getByLabelText('Confirmer le nouveau mot de passe')).toHaveValue('')
+      expect(h.logout).toHaveBeenCalledTimes(1)
+      await act(async () => { await vi.advanceTimersByTimeAsync(2499) })
+      expect(replace).not.toHaveBeenCalled()
+      await act(async () => { await vi.advanceTimersByTimeAsync(1) })
+      expect(replace).toHaveBeenCalledTimes(1)
+      expect(replace).toHaveBeenCalledWith('/login/')
+    })
+
+    it('ne redirige pas si la page est démontée avant l’échéance', async () => {
+      const view = await changePassword()
+      expect(h.logout).toHaveBeenCalledTimes(1)
+      view.unmount()
+      await act(async () => { await vi.advanceTimersByTimeAsync(5000) })
+      expect(replace).not.toHaveBeenCalled()
+    })
   })
 
   it('se déconnecte', () => {
