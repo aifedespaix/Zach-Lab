@@ -18,6 +18,7 @@ import {
 import {
   ASSETS_COLLECTION,
   DEFAULT_BACKUP_CRON,
+  FILES_COLLECTION,
   FOLDERS_COLLECTION,
   INVITE_CODES_COLLECTION,
   SYNC_CONFLICTS_COLLECTION,
@@ -222,6 +223,7 @@ describe('export du schéma', () => {
       ASSETS_COLLECTION,
       MIND_MAPS_COLLECTION,
       FOLDERS_COLLECTION,
+      FILES_COLLECTION,
       INVITE_CODES_COLLECTION,
       SYNC_CONFLICTS_COLLECTION,
       SYNC_EVENTS_COLLECTION,
@@ -517,13 +519,14 @@ describe('runSetup', () => {
     expect(client.auth).toHaveBeenCalled()
     // Tout ce que le script possède sauf `users`, qui EXISTE déjà sur un
     // PocketBase vierge et n'est donc jamais créée, seulement complétée.
-    expect(client.createCollection).toHaveBeenCalledTimes(6)
+    expect(client.createCollection).toHaveBeenCalledTimes(7)
     expect(client.updateCollection).toHaveBeenCalledTimes(1) // users only
     expect(report.collections.map(entry => [entry.name, entry.status])).toEqual([
       [MIND_MAPS_COLLECTION, 'created'],
       [ASSETS_COLLECTION, 'created'],
       [INVITE_CODES_COLLECTION, 'created'],
       [USERS_COLLECTION, 'updated'],
+      [FILES_COLLECTION, 'created'],
       [FOLDERS_COLLECTION, 'created'],
       [SYNC_EVENTS_COLLECTION, 'created'],
       [SYNC_CONFLICTS_COLLECTION, 'created'],

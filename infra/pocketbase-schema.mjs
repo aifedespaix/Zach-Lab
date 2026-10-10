@@ -401,6 +401,14 @@ export function desiredCollections() {
       // themselves. Teachers are born by the sign-up hook or the superuser.
       rules: USERS_RULES,
     },
+    {
+      name: FILES_COLLECTION,
+      kind: 'base',
+      fields: FILE_FIELDS,
+      indexes: FILE_INDEXES,
+      rules: FILE_RULES,
+    },
+
     // L'espace du professeur. Ajouté APRÈS les trois collections ci-dessus, et
     // séparément : un serveur qui ne les a pas encore synchronise exactement
     // comme avant — il ne remonte simplement rien à la bibliothèque du site.
@@ -626,6 +634,47 @@ export function planCollection(current, desired) {
 // journal. C'est délibéré — le rapport est un effet de bord, jamais une
 // condition du sync.
 // ---------------------------------------------------------------------------
+
+export const FILES_COLLECTION = 'files'
+
+/**
+ * Chantier Synchro (S1) : UNE copie d'un fichier pour UN propriétaire. Le prof
+ * ne partage pas un fichier avec N élèves, il en distribue N copies liées par
+ * `origin_id`.
+ *
+ * `rev` est compté par le SERVEUR (hook `files.pb.js`) : l'horloge d'une
+ * machine ne décide de rien. Aucune règle ne laisse un client l'écrire.
+ */
+export const FILE_FIELDS = [
+  { name: 'file_id', type: 'text', required: true, min: 1, max: 255, help: 'Identité stable du fichier (meta.id), posée à la création.' },
+  { name: 'app', type: 'text', required: true, min: 1, max: 64, help: 'L’application : zachart-mentale, zachart-maths…' },
+  { name: 'kind', type: 'text', required: false, max: 64, help: 'Type propre à l’application (cours, exo, fiche…). Opaque pour la synchro.' },
+  { name: 'path', type: 'text', required: true, min: 1, max: 1024, help: 'Chemin relatif depuis le dossier de synchro de l’application.' },
+  { name: 'content', type: 'text', required: true, min: 0, max: TEXT_MAX, help: 'Le fichier entier (UTF-8). Un max à 0 le plafonnerait à 5000 caractères : ne pas y toucher.' },
+  { name: 'hash', type: 'text', required: true, min: 1, max: 255, help: 'Hash du contenu.' },
+  { name: 'rev', type: 'number', required: false, min: 0, onlyInt: true, help: 'Révision, incrémentée par le serveur à chaque écriture acceptée. Jamais écrite par un client.' },
+  { name: 'owner', type: 'relation', required: true, collectionId: '_pb_users_auth_', maxSelect: 1, cascadeDelete: true, help: 'Propriétaire de CETTE copie.' },
+  { name: 'origin_id', type: 'text', required: false, max: 255, help: 'file_id de l’original si c’est une copie distribuée par un prof.' },
+  { name: 'conflict_of', type: 'text', required: false, max: 255, help: 'file_id du fichier dont celui-ci est le doublon.' },
+  { name: 'deleted_at', type: 'date', required: false, help: 'Corbeille (suppression douce). Vide = le fichier existe.' },
+  { name: 'deleted_by', type: 'relation', required: false, collectionId: '_pb_users_auth_', maxSelect: 1, cascadeDelete: false, help: 'Qui a supprimé.' },
+  { name: 'updated_by', type: 'relation', required: false, collectionId: '_pb_users_auth_', maxSelect: 1, cascadeDelete: false, help: 'Dernier auteur, pour l’affichage.' },
+  CREATED_FIELD,
+  UPDATED_FIELD,
+]
+
+export const FILE_INDEXES = [
+  'CREATE UNIQUE INDEX `idx_files_owner_app_file_id` ON `files` (`owner`, `app`, `file_id`)',
+]
+
+// Remplacé par les vraies règles (tâche 2) : en attendant, superutilisateurs seuls.
+export const FILE_RULES = {
+  listRule: null,
+  viewRule: null,
+  createRule: null,
+  updateRule: null,
+  deleteRule: null,
+}
 
 export const FOLDERS_COLLECTION = 'dossiers'
 export const SYNC_EVENTS_COLLECTION = 'sync_events'
