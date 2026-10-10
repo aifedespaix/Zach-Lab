@@ -1,5 +1,7 @@
 # L6 — Cycle de vie d'un fichier : session, autosave, historique, accueil
 
+> **Ajouts 2026-10-10 (obligatoires)** : voir `../ajustements/ajouts-aux-lots.md` § L6.
+
 **Taille** : L (le plus délicat côté données) · **Dépend de** : L1, L2, L3, L4 · **Fonctionnalités** : F11, F24, F28, F40–F44, F48–F54, F100–F102 · **Décisions** : D07 (en partie), D12, D13, D18, D19
 
 ## Objectif

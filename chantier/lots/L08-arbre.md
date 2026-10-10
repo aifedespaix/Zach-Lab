@@ -1,5 +1,7 @@
 # L8 — L'arbre de fichiers commun
 
+> **Ajouts 2026-10-10 (obligatoires)** : voir `../ajustements/ajouts-aux-lots.md` § L8 (arbre vide, renommage par menu, FolderPicker, recherche avancée, pied commun).
+
 **Taille** : XL (le plus gros lot, à découper en 3 sessions) · **Dépend de** : L1, L2, L6, L7 · **Fonctionnalités** : F45–F47, F65–F78, F80 · **Décisions** : D05, D06, D07, D08, D11, D15, D19
 
 ## Objectif

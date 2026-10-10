@@ -44,3 +44,6 @@ la version retenue par `chantier/07-decisions-ux.md`).
 
 ## Compte rendu final (obligatoire, court)
 Lot traité · par app : fichiers supprimés / déplacés / modifiés, lignes retirées · tests avant→après (par workspace) · décisions UX appliquées (par défaut ou validées) · comportements qui changent visiblement · parcours manuels à faire (liste) · points ouverts.
+
+## Avancement global (obligatoire, après le compte rendu du lot)
+Lis `chantier/prompts/avancement-global.md` et produis le tableau de bord de TOUS les chantiers (Harmonie, Ajustements, Synchro), avec le prochain lot et le modele conseille.

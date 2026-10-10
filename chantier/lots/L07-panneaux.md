@@ -1,5 +1,7 @@
 # L7 — Panneaux latéraux : coque unique et registre de sections
 
+> **Ajouts 2026-10-10 (obligatoires)** : voir `../ajustements/ajouts-aux-lots.md` § L7 (règle des pastilles, pied commun).
+
 **Taille** : L · **Dépend de** : L1, L2, L4 · **Fonctionnalités** : F29, F60–F64, F79, F90–F95 · **Décisions** : D04, D14, D15
 
 ## Objectif

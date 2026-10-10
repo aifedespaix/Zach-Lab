@@ -1,5 +1,7 @@
 # L4 — Barre du haut : zones imposées
 
+> **Ajouts 2026-10-10** : voir `../ajustements/ajouts-aux-lots.md` § L4 et le lot A2.
+
 **Taille** : L · **Dépend de** : L1, L3 · **Fonctionnalités** : F20–F30 · **Décisions** : D02, D03, D16
 
 ## Objectif

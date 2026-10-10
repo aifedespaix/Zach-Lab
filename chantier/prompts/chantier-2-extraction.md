@@ -45,3 +45,6 @@ comme préalable à l'extraction.
 
 ## Compte rendu final (obligatoire, court)
 Lot traité · ce qui a été créé dans `shared` (modules + API en 5 lignes) · tests ajoutés / total avant→après · mesure `base` avant→après · décisions prises par défaut · points ouverts pour le chantier 3.
+
+## Avancement global (obligatoire, après le compte rendu du lot)
+Lis `chantier/prompts/avancement-global.md` et produis le tableau de bord de TOUS les chantiers (Harmonie, Ajustements, Synchro), avec le prochain lot et le modele conseille.

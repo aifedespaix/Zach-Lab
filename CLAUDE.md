@@ -99,6 +99,13 @@ ranking.
   `writeJsonConfig(name, value)` read and write `appConfigDir` files (missing → fallback; unreadable → moved to `<name>.bak`; written
   beside and renamed, which needs `fs:allow-rename`). `readVersioned(raw, { current, steps })` runs format migrations in order.
   Maths and Mentale still use their own readers until their L2 migration (chantier 3).
+- Select with search (`@suite/shared/ui`, chantier A1): `ComboboxSelect` (`options: { value, label, detail?, depth? }[]`, `value`, `onChange`, `ariaLabel`, `placeholder`,
+  `emptyText`, `creatable?: { label, toValue }` for a free name — typing calls `onChange` as you go and a row offers to create it) is an `<input role="combobox">`
+  whose list is a Radix Popover portal (so it opens above a modal's scroll area, and Escape closes the list before the modal). `filterOptions`/`foldText`: accent- and
+  case-insensitive substring on the label OR the `detail` (the full path: « 3e/géo » finds `Collège/3e/Géométrie`). `FolderPicker` (`folders: FolderNode[]`, `allowRoot` →
+  `FOLDER_ROOT`) is the same over a folder tree: indented while the filter is empty, flat with the path while typing. Home/End drive the list only while nothing is typed.
+  Used by Mentale's `NewMindMapDialog` and Maths' `NewSheetDialog` (chapter, `creatable`); L8's « Déplacer vers… » plugs in there. Its list is outside the dialog's DOM:
+  tests query it with `screen`, not `within(dialog)`.
 - Search is Orama (`@suite/shared/search`): `createSearchIndex(fields)`,
   `loadSearchIndex(fields, serialized)`. French, accent- and typo-tolerant.
 - Math is KaTeX (`@suite/shared/math`): `renderMathToHtml(latex, display?)`, bounded, never
@@ -305,6 +312,11 @@ The app imports nothing from another app and only `@suite/shared` public entry p
 Mentale onto it, **lot by lot**. Start at `chantier/README.md`; the next lot to do is in `chantier/suivi.md`; the
 generic prompts are in `chantier/prompts/`. Until a lot is `terminé`, the sections of this file describing the
 current (duplicated) state remain true. Never rename a command id, a storage key or a file format without an alias.
+
+A chantier **« Ajustements »** (`chantier/ajustements/`, start at its `README.md`; progress in `chantier/ajustements/suivi.md`; prompt
+`chantier/prompts/ajustements.md`) holds the user's 2026-10-10 requests: bug fixes (A0), searchable folder select (A1), toolbar/settings
+(A2), parity audit (A3), Maths defaults (A4), full file management in Base (A6). What fits an unfinished Harmonie lot is added to it in
+`chantier/ajustements/ajouts-aux-lots.md`. Every chantier prompt ends with the global progress table of `chantier/prompts/avancement-global.md`.
 
 A second chantier, **« Synchro »** (`chantier/sync/`, start at its `README.md`; progress in `chantier/sync/suivi.md`), plans one
 sync shared by the whole suite (one PocketBase, whole-file sync, conflict = marked duplicate, teacher → per-student copies,
