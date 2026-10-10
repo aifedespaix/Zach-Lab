@@ -148,6 +148,31 @@ async function scenariosS1toS9() {
     })
     check('A réinitialise le mot de passe de son élève (sans l’ancien)', reset.status === 200, JSON.stringify(reset.json))
     check('l’élève se connecte avec le nouveau', (await login(`e1_${run}`, 'NouveauMdp1234!')).status === 200)
+    // Les clés du corps JSON de PocketBase acceptent des MODIFICATEURS (`role+`, `teacher+`, `champ-`).
+    // Les règles testent `@request.body.role:isset` : on vérifie sur un vrai serveur qu'une clé à
+    // modificateur ne contourne pas cette protection. Après chaque refus, l'administrateur relit
+    // l'enregistrement : un 200 « silencieux » qui changerait quelque chose serait aussi attrapé.
+    const record = async id => (await api(`/api/collections/users/records/${id}`, { token: adminToken })).json
+    const attempt = async (label, who, id, body) => {
+      const before = await record(id)
+      const { status } = await api(`/api/collections/users/records/${id}`, { method: 'PATCH', token: who.token, body })
+      const after = await record(id)
+      // `role` doit exister des deux côtés : sinon « inchangé » serait vrai à vide (id introuvable).
+      const unchanged = typeof before?.role === 'string' && after?.role === before?.role && after?.teacher === before?.teacher && after?.invite_code === before?.invite_code
+      check(`${label} : refusé (HTTP ${status})`, denied(status))
+      check(`${label} : rôle, prof et code inchangés`, unchanged, `${before?.role}/${before?.teacher} -> ${after?.role}/${after?.teacher}`)
+    }
+    await attempt('A se met role+ eleve', a, a.id, { 'role+': 'eleve' })
+    await attempt('A se met teacher+ B', a, a.id, { 'teacher+': b.id })
+    await attempt('A se pose invite_code', a, a.id, { invite_code: 'X' })
+    await attempt('A met role+ prof à son élève', a, eleve.json?.id, { 'role+': 'prof' })
+    await attempt('A met teacher+ B à son élève', a, eleve.json?.id, { 'teacher+': b.id })
+    await attempt('A met role prof à son élève', a, eleve.json?.id, { role: 'prof' })
+    const student = await login(`e1_${run}`, 'NouveauMdp1234!')
+    await attempt('l’élève se met role prof', student, eleve.json?.id, { role: 'prof' })
+    await attempt('l’élève se met role+ prof', student, eleve.json?.id, { 'role+': 'prof' })
+    await attempt('l’élève se met teacher B', student, eleve.json?.id, { teacher: b.id })
+    await attempt('l’élève se met teacher+ B', student, eleve.json?.id, { 'teacher+': b.id })
     const refused = await api(`/api/collections/users/records/${a.id}`, { method: 'DELETE', token: adminToken })
     check('supprimer un prof qui a des élèves : refusé, même par l’admin', refused.status === 400, String(refused.status))
     check('A supprime son élève', (await api(`/api/collections/users/records/${eleve.json?.id}`,
