@@ -18,6 +18,8 @@
     "./storage": "./src/storage/index.ts",
     "./app": "./src/app/index.ts",
     "./view": "./src/view/index.ts",
+    "./history": "./src/history/index.ts",
+    "./files": "./src/files/index.ts",
     "./testing": "./src/testing/index.ts"
   },
   "scripts": {
