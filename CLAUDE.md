@@ -47,7 +47,7 @@ what is theirs by props, slots, options, or by registering it — the command
 catalogue (`defineCommandCatalog`), the settings panels and sources, the search
 ranking.
 
-- Public entry points only: `@suite/shared/{app,ui,theme,update,shell,commands,settings,search,math,tree,equation,storage,view,testing}`
+- Public entry points only: `@suite/shared/{app,ui,theme,update,shell,commands,settings,search,math,tree,equation,storage,view,files,history,testing}`
   and `@suite/shared/theme.css`. Never import a file inside a sub-path.
 - Sources are consumed as TypeScript, with no build step. Inside `shared`, imports
   are **relative**, never `@suite/shared/…`.

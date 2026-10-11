@@ -52,4 +52,5 @@ Voir `07-decisions-ux.md`. Décisions non validées au démarrage d'un lot : pri
 | 2026-10-11 | L6 | Hooks de fichier génériques dans `shared/files` (titre, lancement, dépôt, garde de fermeture) + tests ; `shared` 832 tests verts, `tsc` propre. Composants d'accueil et dialogues restent à extraire. |
 | 2026-10-11 | L6 | Extrait : `HomeScreen`, `DropOverlay`, `SaveFailedDialog`, `UnreadableFileDialog` dans `shared/files` (+20 tests) ; `shared` 852 tests verts, `tsc` propre.
 | 2026-10-11 | L6 | Extrait : `NewFileDialog` (+8 tests) ; `shared` 862 tests verts, `tsc` propre.
+| 2026-10-11 | L6 | Migré Maths : `NewSheetDialog` s'appuie sur `NewFileDialog` (chapitre en enfant) ; `files` et `history` ajoutés aux points d'entrée publics (test de frontière Maths + CLAUDE.md). Maths 666 tests verts. Reste Mentale (`NewMindMapDialog`, `App.tsx`).
 | 2026-10-09 | — | Chantier 1 (analyse) terminé : `chantier/` créé, état de référence relevé. |
