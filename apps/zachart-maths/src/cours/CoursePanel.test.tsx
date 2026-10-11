@@ -121,10 +121,18 @@ describe('CoursePanel', () => {
     localStorage.setItem(RIGHT_COLLAPSED_KEY, '1')
     await user.click(screen.getByRole('button', { name: 'Afficher ou masquer la calculatrice' }))
     expect(localStorage.getItem(RIGHT_COLLAPSED_KEY)).toBe('0')
-    localStorage.setItem(RIGHT_COLLAPSED_KEY, '1')
     await user.click(screen.getByRole('button', { name: 'Afficher ou masquer la calculatrice' }))
     expect(screen.queryByRole('region', { name: 'Notes et calculatrice' })).not.toBeInTheDocument()
-    expect(localStorage.getItem(RIGHT_COLLAPSED_KEY)).toBe('1')
+    expect(localStorage.getItem(RIGHT_COLLAPSED_KEY)).toBe('0')
+  })
+
+  it("panneau replié : une pastille allumée en mémoire reste allumée au clic et déplie", async () => {
+    const { user } = await setup()
+    await user.click(screen.getByRole('button', { name: 'Afficher ou masquer la calculatrice' }))
+    localStorage.setItem(RIGHT_COLLAPSED_KEY, '1')
+    await user.click(screen.getByRole('button', { name: 'Afficher ou masquer la calculatrice' }))
+    expect(screen.getByTestId('calculatrice')).toBeInTheDocument()
+    expect(localStorage.getItem(RIGHT_COLLAPSED_KEY)).toBe('0')
   })
 
   it("quand plus rien n'est allumé, le panneau de droite se replie ; tant qu'une pastille l'est, non", async () => {

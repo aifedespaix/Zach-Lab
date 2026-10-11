@@ -1,9 +1,19 @@
 import { create } from 'zustand'
 import { setPanelCollapsed } from '@suite/shared/shell'
 import { useCalculatorStore } from '../calc/useCalculatorStore'
+import { onPastilleClick } from './pastilles'
 
 /** La clé de repli du panneau de droite (`App.tsx`) : activer une pastille le déplie. */
 export const RIGHT_COLLAPSED_KEY = 'zachart-maths:right-collapsed'
+
+/** Lue à chaque clic : un raccourci clavier agit aussi panneau replié. Même valeur que `usePanelCollapsed` (`'1'`). */
+const isRightCollapsed = () => {
+  try {
+    return localStorage.getItem(RIGHT_COLLAPSED_KEY) === '1'
+  } catch {
+    return false
+  }
+}
 const COURSES_KEY = 'zachart-maths:courses-visible'
 
 function readCoursesVisible(): boolean {
@@ -96,15 +106,17 @@ export const useCoursesStore = create<CoursesStore>((set, get) => ({
   },
   toggleBottom(tab) {
     const { notesVisible, bottomTab, setNotesVisible, setBottomTab } = get()
-    if (notesVisible && bottomTab === tab) return setNotesVisible(false)
+    const { unfold, nextRemembered } = onPastilleClick({ collapsed: isRightCollapsed(), remembered: notesVisible && bottomTab === tab })
+    if (!nextRemembered) return setNotesVisible(false)
     setBottomTab(tab)
     setNotesVisible(true)
-    setPanelCollapsed(RIGHT_COLLAPSED_KEY, false)
+    if (unfold) setPanelCollapsed(RIGHT_COLLAPSED_KEY, false)
     if (tab === 'calculatrice') useCalculatorStore.getState().requestFocus()
   },
   toggleCourses() {
     const { coursesVisible, setCoursesVisible } = get()
-    setCoursesVisible(!coursesVisible)
-    if (!coursesVisible) setPanelCollapsed(RIGHT_COLLAPSED_KEY, false)
+    const { unfold, nextRemembered } = onPastilleClick({ collapsed: isRightCollapsed(), remembered: coursesVisible })
+    setCoursesVisible(nextRemembered)
+    if (unfold) setPanelCollapsed(RIGHT_COLLAPSED_KEY, false)
   },
 }))
