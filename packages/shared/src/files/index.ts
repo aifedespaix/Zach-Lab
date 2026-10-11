@@ -1,3 +1,7 @@
 export * from './useAutosave'
 export * from './session'
 export * from './useFileSession'
+export * from './useWindowTitle'
+export * from './useLaunchFile'
+export * from './useFileDropZone'
+export * from './useUnsavedChangesGuard'

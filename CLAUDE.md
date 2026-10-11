@@ -102,6 +102,12 @@ ranking.
   `view.zoomOut/zoomIn/zoomReset/toggleDensity` (standard; registered by `SuiteApp`, the app declares them in its catalogue); bar items `view.zoom` (`ZoomControls`) and
   `view.density` (`DensityToggle`) in the `view` zone when the catalogue has the commands; « Apparence » panel (`AppearanceSettingsPanel`, `standardSettings({ appearance })`,
   applied at once, no draft). Maths and Mentale still use their own zoom/compact/font code until their L5 migration (chantier 3).
+- Files (`@suite/shared/files` and `@suite/shared/history`, chantier L6, en cours): `createHistoryStore` (snapshots, group key, 200 max),
+  `useAutosave`, `useFileSession(port)` (open guarded → flush → read → validate → arm autosave; failure keeps the previous file),
+  session format read from both Maths and Mentale (`parseSession`/`loadSession`/`saveSession`/`pushRecent`), `useWindowTitle(title)`,
+  `useLaunchFile(open, { command, event })`, `useFileDropZone(ref, { extensions, onDrop, rejectMessage })`,
+  `useUnsavedChangesGuard(flush, { beforeClose })` (`guard(action)` for switching files, window close with the optional sync hook).
+  The close-sync policy (timeout, offline) stays in the app. Not yet in shared: `HomeScreen`, `NewFileDialog`, failure dialogs.
 - Persistence (`@suite/shared/storage`, chantier L2): the ONLY place that touches `localStorage` (`boundary.test.ts`).
   `readStored`/`writeStored` never throw and fall back to memory. `defineAppStorage('zachart-maths').key('zoom')` →
   `zachart-maths:zoom` (existing keys are kept as they are). `createPersisted({ key, fallback, parse, serialize?, migrate?, normalize? })`
