@@ -134,3 +134,6 @@ export function useFileSession<T>(port: DocumentPort<T>, { delay = AUTOSAVE_DELA
     canRedo: loaded?.history.canRedo() ?? false,
   }), [opening, loaded, error, clearError, open, close, flush, follow, setDoc, undo, redo])
 }
+
+/** Ce que `useFileSession` rend, pour les composants qui le reçoivent en prop. */
+export type FileSession<T> = ReturnType<typeof useFileSession<T>>
