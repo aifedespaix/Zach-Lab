@@ -18,7 +18,7 @@ import { useWorkspaceStore, describeError } from './state/useWorkspaceStore'
 import { useQuizStore } from './state/useQuizStore'
 import { useCardDetailStore } from './state/useCardDetailStore'
 import { useCardHoverStore } from './state/useCardHoverStore'
-import { useAutosave } from '@suite/shared/files'
+import { useAutosave, useFileSession, type DocumentPort } from '@suite/shared/files'
 import { loadMindMap, saveMindMap, mindMapExists, loadMindMapMeta } from './persistence/fileStore'
 import { duplicateMap } from './persistence/fileOps'
 import { useSyncStore } from './state/useSyncStore'
@@ -60,6 +60,12 @@ interface PendingRepair {
   /** The raw cards as read from disk — the repair works on a copy of these. */
   cards: Card[]
   issues: CardIssue[]
+}
+
+/** What a map file holds on disk: its cards and its metadata. */
+interface MindMapDocument {
+  cards: Card[]
+  meta: MindMapMeta | null
 }
 
 /** How many « (Réparée n) » names to try before giving up on finding a free one. */
@@ -292,77 +298,97 @@ function App() {
     useCardDetailStore.getState().retain(new Set(cards.map(card => card.id)))
   }, [cards])
 
-  // Re-runs on every file switch (open a different file, or a rename that
-  // moves the current file to a new path): each switch starts a fresh
-  // load -> validate -> enable-autosave cycle.
+  // The map's file access, as the document session sees it. `validate` keeps the
+  // rejected cards so the repair dialog can offer a copy of them.
+  const rejectedCardsRef = useRef<Card[]>([])
+  const mindMapPort = useMemo<DocumentPort<MindMapDocument>>(
+    () => ({
+      read: async path => {
+        const [cards, meta] = await Promise.all([loadMindMap(path), loadMindMapMeta(path)])
+        return cards === null ? null : { cards, meta }
+      },
+      // The session never edits its own copy (the card store does), so this is
+      // only reached by the session's autosave, which stays idle.
+      write: (path, doc) => saveMindMap(path, doc.cards),
+      validate: raw => {
+        const report = validateCards(raw.cards)
+        if (report.valid) return { ok: true }
+        rejectedCardsRef.current = raw.cards
+        return { ok: false, issues: report.issues }
+      },
+    }),
+    []
+  )
+  const session = useFileSession(mindMapPort)
+
+  // The file a document session holds is the FACT (its cards are read, validated
+  // and ready); `currentFilePath` is only the INTENT. The session opens the
+  // intent, and only a loaded, valid file ever reaches the store and the canvas.
+  const sessionPathRef = useRef<string | null>(null)
+  sessionPathRef.current = session.path
   useEffect(() => {
-    if (!currentFilePath) {
+    if (currentFilePath === null) {
+      if (session.path !== null) void session.close()
+      return
+    }
+    if (currentFilePath === session.path) return
+    setSaveFailed(false)
+    setLoadError(null)
+    void session.open(currentFilePath)
+  }, [currentFilePath, session.path, session.open, session.close])
+
+  // A file the session holds is copied into the card store, then recorded as loaded:
+  // the canvas mounts only once its cards are in the store.
+  useEffect(() => {
+    if (session.path === null) {
       setLoadedPath(null)
       setLoadedMeta(null)
       return
     }
-    // Already the file on screen — this run is a revert below landing, or the
-    // state update that recorded the load. Re-loading would be pointless and
-    // would wipe the error message that explains why a switch did not happen.
-    if (currentFilePath === loadedPath) return
+    if (session.doc === null || session.path === loadedPath) return
+    loadCards(session.doc.cards)
+    setLoadedMeta(session.doc.meta)
+    setLoadedPath(session.path)
+  }, [session.path, session.doc, loadedPath, loadCards])
 
-    let cancelled = false
-    const previousPath = loadedPath
-    const attemptedName = fileNameOf(currentFilePath)
-    setSaveFailed(false)
-    setLoadError(null)
-
-    // A failed switch must never leave the app lying about what it is editing:
-    // the canvas still holds the previous file, so `currentFilePath` goes back
-    // to it too (or to null if nothing was open), and autosave stays disarmed
-    // for the path that failed. `message` is null when the reason is already
-    // being shown elsewhere — the repair dialog says its own piece.
-    function failSwitch(message: string | null) {
+  // A failed open keeps the previous file: `currentFilePath` goes back to the one
+  // the session still holds (or to null), so the app never lies about what it edits.
+  useEffect(() => {
+    const error = session.error
+    if (error === null) return
+    const previousPath = sessionPathRef.current
+    const failSwitch = (message: string | null) => {
       setLoadError(message)
       setCurrentFile(previousPath)
     }
-
-    Promise.all([loadMindMap(currentFilePath), loadMindMapMeta(currentFilePath)])
-      .then(([result, meta]) => {
-        if (cancelled) return
-        if (result === null) {
-          // With file switching, `null` no longer means "first run, nothing on
-          // disk yet" — every mind map is created on disk before it can be
-          // clicked. It means the file vanished since the last scan (there is
-          // no live file-watching). Adopting the previous file's cards into
-          // this path and arming autosave would silently recreate a file the
-          // user deleted, with the wrong content.
-          failSwitch(`Impossible d’ouvrir ${attemptedName} : ce fichier n’existe plus.`)
-          return
-        }
-        // The guard rail: a structurally broken map is never handed to the
-        // canvas. Rendering one throws mid-render (no position for a card
-        // caught in a parent cycle, no palette for a level past 4), React tears
-        // the tree down, and the map the user just clicked disappears a frame
-        // after appearing. Blocked here, it becomes a question instead.
-        const report = validateCards(result)
-        if (!report.valid) {
-          setRepairError(null)
-          setPendingRepair({ path: currentFilePath, fileName: attemptedName, cards: result, issues: report.issues })
-          failSwitch(null)
-          return
-        }
-        loadCards(result)
-        setLoadedMeta(meta)
-        setLoadedPath(currentFilePath)
-      })
-      .catch(err => {
-        if (cancelled) return
+    switch (error.kind) {
+      case 'missing':
+        failSwitch(`Impossible d’ouvrir ${fileNameOf(error.path)} : ce fichier n’existe plus.`)
+        return
+      case 'invalid':
+        // The repair dialog says its own piece, so no load-error line here.
+        setRepairError(null)
+        setPendingRepair({
+          path: error.path,
+          fileName: fileNameOf(error.path),
+          cards: rejectedCardsRef.current,
+          issues: error.issues as CardIssue[],
+        })
+        failSwitch(null)
+        return
+      case 'read':
         console.error(
           'Échec du chargement de la carte mentale (le fichier existe mais est illisible ou corrompu) — autosave désactivée pour ne pas l’écraser :',
-          err
+          error.cause
         )
-        failSwitch(`Impossible d’ouvrir ${attemptedName} : fichier illisible ou corrompu.`)
-      })
-    return () => {
-      cancelled = true
+        failSwitch(`Impossible d’ouvrir ${fileNameOf(error.path)} : fichier illisible ou corrompu.`)
+        return
+      case 'save':
+        setSaveFailed(true)
+        setCurrentFile(previousPath)
+        return
     }
-  }, [currentFilePath, loadedPath, loadCards, setCurrentFile])
+  }, [session.error, setCurrentFile])
 
   /**
    * "Créer une copie réparée": repair a DUPLICATE of the raw data, save it
