@@ -36,7 +36,18 @@ describe('useFileDropZone', () => {
     const { result } = renderHook(() => useFileDropZone(zone, options))
     await act(async () => {})
     act(() => handler?.({ payload: { type: 'drop', position: { x: 10, y: 10 }, paths: ['a.pdf', 'b.zmap'] } }))
-    expect(options.onDrop).toHaveBeenCalledWith('b.zmap')
+    expect(options.onDrop).toHaveBeenCalledWith('b.zmap', { x: 10, y: 10 })
+    expect(result.current.dropError).toBeNull()
+  })
+
+  it('affiche le message renvoyé par l’app, et l’efface à un dépôt accepté', async () => {
+    const onDrop = vi.fn<(path: string, point: { x: number; y: number }) => string | void>(() => 'Pas sur une carte')
+    const { result } = renderHook(() => useFileDropZone(zone, { ...options, onDrop }))
+    await act(async () => {})
+    act(() => handler?.({ payload: { type: 'drop', position: { x: 10, y: 10 }, paths: ['a.json'] } }))
+    expect(result.current.dropError).toBe('Pas sur une carte')
+    onDrop.mockReturnValue(undefined)
+    act(() => handler?.({ payload: { type: 'drop', position: { x: 10, y: 10 }, paths: ['a.json'] } }))
     expect(result.current.dropError).toBeNull()
   })
 

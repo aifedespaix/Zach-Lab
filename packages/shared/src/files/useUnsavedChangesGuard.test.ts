@@ -45,6 +45,17 @@ describe('useUnsavedChangesGuard — ouverture', () => {
     expect(action).toHaveBeenCalledOnce()
     expect(result.current.prompt).toBeNull()
   })
+  it("après un échec, « continuer » lance onContinue à la place de l'action", async () => {
+    const flush = vi.fn().mockRejectedValue(new Error('disque plein'))
+    const action = vi.fn()
+    const onContinue = vi.fn()
+    const { result } = renderHook(() => useUnsavedChangesGuard(flush))
+    act(() => result.current.guard(action, 'Ouvrir quand même', onContinue))
+    await waitFor(() => expect(result.current.prompt).not.toBeNull())
+    act(() => result.current.prompt?.onContinue?.())
+    expect(onContinue).toHaveBeenCalledOnce()
+    expect(action).not.toHaveBeenCalled()
+  })
 })
 
 describe('useUnsavedChangesGuard — fermeture', () => {

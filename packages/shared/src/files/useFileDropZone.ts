@@ -4,8 +4,11 @@ import { getCurrentWindow } from '@tauri-apps/api/window'
 export interface FileDropZoneOptions {
   /** Extensions acceptées, avec le point, insensibles à la casse : `['.zmap', '.json']`. */
   extensions: readonly string[]
-  /** Appelé avec le premier fichier accepté déposé dans la zone. */
-  onDrop: (path: string) => void
+  /**
+   * Appelé avec le premier fichier accepté déposé dans la zone, et le point du dépôt en pixels CSS (pour
+   * savoir ce qui se trouve dessous). Renvoie un message d'erreur à afficher, ou rien quand le dépôt est pris.
+   */
+  onDrop: (path: string, point: { x: number; y: number }) => string | void
   /** Message affiché quand le dépôt ne contient aucun fichier accepté. */
   rejectMessage: string
 }
@@ -58,8 +61,8 @@ export function useFileDropZone(
               setDropError(rejectMessage)
               return
             }
-            setDropError(null)
-            onDropRef.current(accepted)
+            const verdict = onDropRef.current(accepted, cssPoint(payload.position))
+            setDropError(typeof verdict === 'string' ? verdict : null)
             return
           }
           // 'leave'
@@ -84,12 +87,15 @@ export function useFileDropZone(
 }
 
 /** Les positions arrivent en pixels physiques ; le DOM travaille en pixels CSS. */
+function cssPoint(position: { x: number; y: number }): { x: number; y: number } {
+  const scale = window.devicePixelRatio || 1
+  return { x: position.x / scale, y: position.y / scale }
+}
+
 function isInZone(zoneRef: RefObject<HTMLElement | null>, position: { x: number; y: number }): boolean {
   const el = zoneRef.current
   if (!el) return false
   const rect = el.getBoundingClientRect()
-  const scale = window.devicePixelRatio || 1
-  const x = position.x / scale
-  const y = position.y / scale
+  const { x, y } = cssPoint(position)
   return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom
 }

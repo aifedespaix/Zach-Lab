@@ -21,9 +21,11 @@ export interface UnsavedChangesGuardOptions {
 export interface UnsavedChangesGuard {
   /**
    * Lance `action` (ouvrir un autre fichier, par exemple) une fois la sauvegarde faite. Si elle échoue, une
-   * boîte propose `continueLabel` : la seule issue où continuer perd vraiment une modification.
+   * boîte propose `continueLabel` : la seule issue où continuer perd vraiment une modification. Ce « continuer »
+   * lance `onContinue` si l'app le veut autre que `action` (ex. : ne pas lancer après l'échec ce qui suit
+   * une sauvegarde réussie, comme une synchro du fichier quitté).
    */
-  guard: (action: () => void, continueLabel?: string) => void
+  guard: (action: () => void, continueLabel?: string, onContinue?: () => void) => void
   prompt: UnsavedChangesPrompt | null
   dismissPrompt: () => void
   closing: boolean
@@ -49,7 +51,7 @@ export function useUnsavedChangesGuard(
   beforeCloseRef.current = beforeClose
 
   const guard = useCallback(
-    (action: () => void, continueLabel = 'Ouvrir quand même') => {
+    (action: () => void, continueLabel = 'Ouvrir quand même', onContinue: () => void = action) => {
       flushRef.current()
         .then(action)
         .catch((error: unknown) => {
@@ -58,7 +60,7 @@ export function useUnsavedChangesGuard(
             continueLabel,
             onContinue: () => {
               setPrompt(null)
-              action()
+              onContinue()
             },
           })
         })
