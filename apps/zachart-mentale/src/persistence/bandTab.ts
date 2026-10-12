@@ -1,10 +1,11 @@
+import { readStored, writeStored } from '@suite/shared/storage'
 import { DEFAULT_TAB, SYMBOL_TABS } from '../content/symbolTabs'
 import type { BandTabId } from '../types/symbolBand'
 
 /**
  * L'onglet du bandeau resté ouvert.
  *
- * Même contrat que les autres réglages d'interface (`booleanFlag`, `bandFamilies`) :
+ * Même contrat que les autres réglages d'interface (`bandFamilies`, `shared/storage`) :
  * `localStorage`, au mieux — jamais d'exception quand le stockage est bloqué — et
  * lecture SYNCHRONE pour que le premier rendu montre déjà le bon onglet.
  *
@@ -25,7 +26,7 @@ export function createBandTabStorage(options: { key: string }): BandTabStorage {
   return {
     load() {
       try {
-        const raw = localStorage.getItem(key)
+        const raw = readStored(key)
         // Rien d'enregistré : c'est le premier lancement, donc l'onglet par
         // défaut — pas « fermé », qui est un choix que l'utilisateur n'a pas
         // encore fait.
@@ -41,7 +42,7 @@ export function createBandTabStorage(options: { key: string }): BandTabStorage {
     },
     save(tab) {
       try {
-        localStorage.setItem(key, JSON.stringify(tab))
+        writeStored(key, JSON.stringify(tab))
       } catch {
         // Best-effort : un stockage bloqué ne coûte que le réglage.
       }

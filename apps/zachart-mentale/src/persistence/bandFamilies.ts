@@ -1,8 +1,9 @@
+import { readStored, writeStored } from '@suite/shared/storage'
+
 /**
  * Les familles de signes que l'utilisateur a choisi de MASQUER dans le bandeau.
  *
- * Même contrat que les autres réglages d'interface (`booleanFlag`, `panelWidth`,
- * `sidebarWidth`) : `localStorage`, au mieux — jamais d'exception quand le
+ * Même contrat que les autres réglages d'interface (`shared/storage`) : `localStorage`, au mieux — jamais d'exception quand le
  * stockage est bloqué — et lecture SYNCHRONE pour que le premier rendu reflète
  * déjà le choix, sans un flash de bandeau complet avant le réglage.
  *
@@ -23,7 +24,7 @@ export function createBandFamiliesStorage(options: { key: string }): BandFamilie
   return {
     load() {
       try {
-        const raw = localStorage.getItem(key)
+        const raw = readStored(key)
         if (raw === null) return []
         const parsed: unknown = JSON.parse(raw)
         if (!Array.isArray(parsed)) return []
@@ -37,7 +38,7 @@ export function createBandFamiliesStorage(options: { key: string }): BandFamilie
     },
     save(names) {
       try {
-        localStorage.setItem(key, JSON.stringify(names))
+        writeStored(key, JSON.stringify(names))
       } catch {
         // Best-effort : un stockage bloqué ne coûte que le réglage à la
         // prochaine ouverture.
