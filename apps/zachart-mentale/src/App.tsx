@@ -18,7 +18,7 @@ import { useWorkspaceStore, describeError } from './state/useWorkspaceStore'
 import { useQuizStore } from './state/useQuizStore'
 import { useCardDetailStore } from './state/useCardDetailStore'
 import { useCardHoverStore } from './state/useCardHoverStore'
-import { useAutosave } from './persistence/useAutosave'
+import { useAutosave } from '@suite/shared/files'
 import { loadMindMap, saveMindMap, mindMapExists, loadMindMapMeta } from './persistence/fileStore'
 import { duplicateMap } from './persistence/fileOps'
 import { useSyncStore } from './state/useSyncStore'
@@ -128,11 +128,14 @@ function App() {
   const { updateReady, dismissed, applyUpdate, dismissUpdate, status: updateStatus, checkNow: checkForUpdates } =
     useAppUpdater()
   const { flush } = useAutosave(
-    loadedPath ?? '',
+    cardsToSave => saveMindMap(loadedPath ?? '', cardsToSave),
     cards,
-    500,
-    loadedPath !== null && loadedPath === currentFilePath,
-    () => setSaveFailed(true)
+    {
+      delay: 500,
+      enabled: loadedPath !== null && loadedPath === currentFilePath,
+      scope: loadedPath ?? '',
+      onError: () => setSaveFailed(true),
+    }
   )
   const syncResult = useSyncStore(s => s.lastResult)
   /** L'avancement du run de fermeture, montré par l'écran de chargement. */
