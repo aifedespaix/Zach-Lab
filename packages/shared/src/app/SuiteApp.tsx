@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useStore } from 'zustand'
 import { CommandPalette, useCommand, useGlobalShortcuts, useShortcutSettingsStore } from '../commands'
+import { printPage } from '../shell/print'
 import { SettingsDialog, mergeSettings, standardSettings } from '../settings'
 import { AnimatedMark, AppBoot, AppShell, AppToolbar, ResizablePanel, createPanelWidthStorage, toolbarEntries, toolbarHiddenStore, type ToolbarFile } from '../shell'
 import { useThemeDomSync, useToggleTheme } from '../theme'
@@ -105,6 +106,7 @@ export function SuiteApp({
   useCommand('settings.open.toolbar', () => openSettings('toolbar'))
   useCommand('settings.open.updates', () => openSettings('updates'))
   useCommand('app.toggleTheme', () => toggleTheme())
+  useCommand('file.print', () => printPage())
   useCommand('view.zoomOut', () => stores.zoom.getState().set(current => current - ZOOM_STEP), view?.zoom !== false)
   useCommand('view.zoomIn', () => stores.zoom.getState().set(current => current + ZOOM_STEP), view?.zoom !== false)
   useCommand('view.zoomReset', () => stores.zoom.getState().reset(), view?.zoom !== false)

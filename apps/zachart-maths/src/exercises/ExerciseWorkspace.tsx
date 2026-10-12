@@ -255,7 +255,7 @@ export function ExerciseWorkspace() {
   return (
     <SymbolInsertContext value={insertSymbol}>
     <UnitHuesContext value={unitHues}>
-    <section aria-label="Exercice" onFocus={rememberField} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+    <section aria-label="Exercice" data-print-area onFocus={rememberField} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       {/* Le parent garde le fond normal de l'app ; seul le bloc question porte le bleu, aux coins arrondis. */}
       <div style={{ padding: space.outer }}>
       <header

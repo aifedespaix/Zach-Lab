@@ -12,6 +12,7 @@ export function TextDocument({ session }: { session: FileSession<string> }) {
   return (
     <textarea
       aria-label="Contenu du fichier"
+      data-print-area
       value={session.doc}
       onChange={event => session.setDoc(event.target.value, 'text')}
       style={{ flex: 1, padding: 16, resize: 'none', background: 'transparent', color: 'inherit', border: 0, outline: 'none' }}

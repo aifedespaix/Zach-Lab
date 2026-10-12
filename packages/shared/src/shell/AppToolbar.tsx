@@ -1,4 +1,4 @@
-import { ChevronDown, Minus, Plus, Rows3, Copy, FilePlus, FolderOpen, FolderPlus, FolderSearch, Moon, PenLine, Redo2, Save, Search, Settings, Trash2, Undo2, X, type LucideIcon } from 'lucide-react'
+import { ChevronDown, Minus, Plus, Rows3, Copy, FilePlus, FolderOpen, FolderPlus, FolderSearch, Moon, PenLine, Printer, Redo2, Save, Search, Settings, Trash2, Undo2, X, type LucideIcon } from 'lucide-react'
 import { Fragment, type ReactNode } from 'react'
 import { CommandButton, CommandDropdownItem, commandById } from '../commands'
 import { ThemeToggle } from '../theme'
@@ -59,7 +59,10 @@ const FILE_MENU_GROUPS: readonly (readonly { command: string; icon: LucideIcon }
     { command: 'file.rename', icon: PenLine },
     { command: 'file.duplicate', icon: Copy },
   ],
-  [{ command: 'file.reveal', icon: FolderSearch }],
+  [
+    { command: 'file.reveal', icon: FolderSearch },
+    { command: 'file.print', icon: Printer },
+  ],
   [
     { command: 'file.close', icon: X },
     { command: 'file.delete', icon: Trash2 },
@@ -131,6 +134,14 @@ function standardItems(file: ToolbarFile | undefined): ToolbarItem[] {
       zone: 'file',
       node: <FileMenu groups={groups} />,
       menu: <FileMenuEntries groups={groups} />,
+    },
+  )
+  add(
+    has('file.print') && {
+      id: 'file.print',
+      zone: 'file',
+      node: <CommandButton command="file.print" icon={Printer} variant="ghost" size="icon-sm" />,
+      menu: <CommandDropdownItem command="file.print" icon={Printer} />,
     },
   )
   add(
@@ -253,6 +264,7 @@ const STANDARD_LABELS: Record<string, string> = {
 
 const STANDARD_ICONS: Record<string, LucideIcon> = {
   'file.newOrClose': FilePlus,
+  'file.print': Printer,
   'edit.undo': Undo2,
   'edit.redo': Redo2,
   'view.zoom': Plus,

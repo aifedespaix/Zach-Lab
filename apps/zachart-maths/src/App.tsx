@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
-import { BookOpen, ClipboardCheck, Download, ChevronsDownUp, Redo2, Undo2, ListChecks, ListFilter, FilePlus, FolderPlus, Highlighter, Keyboard, Minus, Moon, Plus, Rows3, NotebookPen, Calculator, Search, Settings as SettingsIcon, Shapes, X } from 'lucide-react'
+import { BookOpen, ClipboardCheck, Download, ChevronsDownUp, Printer, Redo2, Undo2, ListChecks, ListFilter, FilePlus, FolderPlus, Highlighter, Keyboard, Minus, Moon, Plus, Rows3, NotebookPen, Calculator, Search, Settings as SettingsIcon, Shapes, X } from 'lucide-react'
 import {
   CommandButton,
   CommandDropdownItem,
@@ -13,6 +13,7 @@ import { SettingsDialog, ShortcutSettingsPanel } from '@suite/shared/settings'
 import { AppShell, BootScreen, CollapsiblePanel, OverflowToolbar, createPanelWidthStorage, type OverflowItem } from '@suite/shared/shell'
 import { startCircularThemeTransition, useResolvedTheme, useThemeDomSync, useThemeStore } from '@suite/shared/theme'
 import { Hint, TooltipProvider } from '@suite/shared/ui'
+import { printPage } from '@suite/shared/shell'
 import { UpdateReadyBanner, UpdateSettingsSection, useAppUpdater } from '@suite/shared/update'
 import { AnimatedLogo } from './AnimatedLogo'
 import './commands'
@@ -82,6 +83,7 @@ export default function App() {
   const unitColors = useUnitColors(state => state.enabled)
   useCommand('app.palette', () => setPaletteOpen(true))
   useCommand('app.settings', () => setSettingsOpen(true))
+  useCommand('file.print', () => printPage())
   const onlyToCorrect = useCorrectionView(state => state.onlyToCorrect)
   useCommand('review.open', () => useCorrectionView.getState().setReviewOpen(true))
   useCommand('correction.toggleHide', () => useCorrectionView.getState().toggleHideCorrected())
@@ -142,6 +144,7 @@ export default function App() {
     },
     { id: 'colors', node: button('view.toggleUnitColors', Highlighter, unitColors, 'rainbow-active'), menu: <CommandDropdownItem command="view.toggleUnitColors" icon={Highlighter} />, priority: 2 },
     { id: 'compact', node: button('view.toggleCompact', Rows3, compact, 'toggle-on'), menu: <CommandDropdownItem command="view.toggleCompact" icon={Rows3} />, priority: 2 },
+    { id: 'print', node: <CommandButton command="file.print" icon={Printer} variant="ghost" size="icon-sm" />, menu: <CommandDropdownItem command="file.print" icon={Printer} />, priority: 2 },
     {
       id: 'zoom',
       node: (

@@ -42,6 +42,7 @@ Voir `07-decisions-ux.md`. Décisions non validées au démarrage d'un lot : pri
 
 | Date | Lot | Événement |
 |---|---|---|
+| 2026-10-12 | Impression | Demande utilisateur : impression / PDF globale. Ajouté : commande standard `file.print` (`Mod+P`), `printPage()` (`shell/print.ts`), bouton de barre et entrée du menu « Fichier » (partagé), feuille A4 par défaut (`@page` dans `theme.css`), zone `data-print-area` posée sur Base (texte), Maths (fiche), Mentale (canevas). Mentale : `file.exportPdf` passe de `Mod+P` à `Mod+Shift+P` pour libérer le raccourci. Shared 869, Base 29, Maths 666, Mentale 2 260 tests verts. À faire : réglage du format (A4 seulement pour l'instant), vérification de l'impression réelle dans Tauri. |
 | 2026-10-12 | L6 | Mentale : `App.tsx` charge par `useFileSession` (port `read`/`validate`/`write` sur `loadMindMap`/`validateCards`), le store de cartes reste la source du canevas (choix a). Chargement, reprise sur erreur et réparation passent par les effets du lot. Objectif `App.tsx` < 350 lignes non atteint (garde, lecture seule, synchro restent à l'app). Mentale 2 260 tests verts. |
 | 2026-10-09 | L0 | Extrait : `@suite/shared/testing` (`describeAppContract`, `createMemoryFs`), `bun run measure:sharing`, spikes S1 (voie A) et S2 (`scripts/baseline-shots.mjs`). |
 | 2026-10-09 | L1 | Extrait : alias d'ids, `standardCommands`, `createTypedCommands`, détection de conflit de raccourci standard (dev). |

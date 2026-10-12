@@ -19,6 +19,7 @@ import {
   PanelRightClose,
   PenLine,
   PictureInPicture2,
+  Printer,
   Redo2,
   RefreshCw,
   Save,
@@ -50,6 +51,7 @@ import {
 import { CommandButton } from '../commands/CommandButton'
 import { CommandDropdownItem } from '../commands/CommandMenuItem'
 import { CommandPalette } from '@suite/shared/commands'
+import { printPage } from '@suite/shared/shell'
 import { NewMindMapDialog } from '../NewMindMapDialog'
 import { NameDialog } from '../sidebar/NameDialog'
 import { ExportDialog } from '../sidebar/ExportDialog'
@@ -160,6 +162,8 @@ export function AppToolbar({ filePath, cards, meta, onOpenFile, onRequestFork, f
   )
 
   useCommand('file.close', () => setCurrentFile(null), hasFile)
+
+  useCommand('file.print', () => printPage(), hasFile)
 
   useCommand(
     'file.rename',
@@ -353,6 +357,7 @@ export function AppToolbar({ filePath, cards, meta, onOpenFile, onRequestFork, f
             <CommandDropdownItem command="file.export" icon={Download} />
             <CommandDropdownItem command="file.exportPdf" icon={FileDown} />
             <CommandDropdownItem command="file.reveal" icon={FolderSearch} />
+            <CommandDropdownItem command="file.print" icon={Printer} />
             <CommandDropdownItem command="file.refresh" icon={RefreshCw} />
             <DropdownMenuSeparator />
             <CommandDropdownItem command="file.close" icon={X} />
@@ -377,6 +382,7 @@ export function AppToolbar({ filePath, cards, meta, onOpenFile, onRequestFork, f
         <CommandButton command="card.addFloating" icon={PictureInPicture2} />
         <CommandButton command="file.export" icon={Download} />
         <CommandButton command="file.reveal" icon={FolderSearch} />
+        <CommandButton command="file.print" icon={Printer} />
         <CommandButton command="app.quiz" icon={GraduationCap} className="toolbar-quiz--rainbow" />
 
         <span className="toolbar-separator" aria-hidden />

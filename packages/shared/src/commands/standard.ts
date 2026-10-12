@@ -106,6 +106,12 @@ const DEFINITIONS = {
     category: 'file',
     defaultBinding: 'Mod+Shift+E',
   },
+  'file.print': {
+    label: 'Imprimer',
+    description: 'Imprime la zone du document au format A4 ; la boîte d’impression permet aussi de l’enregistrer en PDF.',
+    category: 'file',
+    defaultBinding: 'Mod+P',
+  },
   'file.close': {
     label: 'Fermer',
     description: 'Ferme le fichier ouvert et revient à l’accueil.',

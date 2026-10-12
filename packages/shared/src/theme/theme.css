@@ -652,3 +652,28 @@ math-field {
 [data-radix-popper-content-wrapper] > * {
   zoom: var(--app-zoom, 1);
 }
+
+/* Impression : feuille A4 par défaut ; seule la zone `data-print-area` part (sinon toute la page). */
+@page {
+  size: A4;
+  margin: 15mm;
+}
+@media print {
+  html {
+    zoom: 1 !important;
+  }
+  body * {
+    visibility: hidden;
+  }
+  [data-print-area],
+  [data-print-area] * {
+    visibility: visible;
+  }
+  [data-print-area] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+}

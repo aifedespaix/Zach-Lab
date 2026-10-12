@@ -103,6 +103,13 @@ export const COMMANDS = [
     label: 'Exporter en PDF',
     description: 'Exporte directement la carte ouverte en PDF.',
     category: 'file',
+    defaultBinding: 'Mod+Shift+P',
+  },
+  {
+    id: 'file.print',
+    label: 'Imprimer',
+    description: 'Imprime la carte au format A4 ; la boîte d’impression permet de l’enregistrer en PDF.',
+    category: 'file',
     defaultBinding: 'Mod+P',
   },
   {

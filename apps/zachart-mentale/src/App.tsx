@@ -549,7 +549,7 @@ function App() {
       {!loadError && !dropError && updateReady && !dismissed && (
         <UpdateReadyBanner onApply={applyUpdate} onDismiss={dismissUpdate} />
       )}
-      <main ref={mainRef} style={{ flex: 1, position: 'relative' }}>
+      <main ref={mainRef} data-print-area style={{ flex: 1, position: 'relative' }}>
         {isDragActive && (
           <div
             style={{

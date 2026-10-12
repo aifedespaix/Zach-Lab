@@ -207,6 +207,13 @@ export const COMMANDS = [
     allowInEditable: true,
   },
   {
+    id: 'file.print',
+    label: 'Imprimer',
+    description: 'Imprime la fiche au format A4 ; la boîte d’impression permet de l’enregistrer en PDF.',
+    category: 'tree',
+    defaultBinding: 'Mod+P',
+  },
+  {
     id: 'exercise.previous',
     label: 'Exercice précédent',
     description: 'Passe à l’exercice d’avant dans la fiche (en crée un avant le premier).',
