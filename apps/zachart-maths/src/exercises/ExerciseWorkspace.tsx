@@ -1,4 +1,4 @@
-import { spacing, useCompact } from './useCompact'
+import { spacing, useDensity } from '@suite/shared/view'
 import { useEffect, useRef, useState } from 'react'
 import { CommandButton, useCommand } from '@suite/shared/commands'
 import { Check, ChevronLeft, ListChecks, RotateCcw, ChevronRight, Columns2, Plus, Trash2 } from 'lucide-react'
@@ -60,7 +60,7 @@ const field = 'rounded border bg-background px-2 py-1 text-sm'
 
 /** La zone centrale : l'exercice ouvert, de son titre jusqu'à la réponse finale. */
 export function ExerciseWorkspace() {
-  const compact = useCompact(state => state.enabled)
+  const compact = useDensity().compact
   const { exercise, sheet, status } = useOpenExercise()
   const edit = useOpenExercise(s => s.edit)
   const editTitle = useOpenExercise(s => s.editTitle)

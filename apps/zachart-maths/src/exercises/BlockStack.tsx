@@ -14,7 +14,7 @@ import { HighlightedTextarea, UnitHuesContext } from './HighlightedTextarea'
 import { borderOf, headerToneOf, toneOf } from './toolbarCatalog'
 import { canRemoveRect, cellKeyAction, cellMove, clearRect, crossProduct, deleteShortcut, inRect, insertShortcut, pasteGrid, rectOf, rectToTsv, removeRect, type CellMove, type CellPoint } from './tableNav'
 import { tableLayout } from './tableUnits'
-import { spacing, useCompact } from './useCompact'
+import { spacing, useDensity } from '@suite/shared/view'
 import { useUnitColors } from './useUnitColors'
 import {
   BLOCK_TYPES, MAX_TABLE, newBlock, addColumn, addRow, canGrow, convertBlock, duplicateBlock, insertBlockAfter, isKnown, moveBlock, parseBlocks,
@@ -386,7 +386,7 @@ export function BlockStack({ value, onChange, label = "Blocs de l'exercice", onS
   /** Le bloc qui vient de l'autre zone : fondu d'entrée, halo et curseur. */
   arrivedId?: string | null
 }) {
-  const compact = useCompact(state => state.enabled)
+  const compact = useDensity().compact
   const blocks = useMemo(() => parseBlocks(value), [value])
   const toFocus = useRef<string | null>(arrivedId)
   const reduced = useReducedMotion()

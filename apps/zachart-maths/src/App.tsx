@@ -14,6 +14,7 @@ import { AppShell, BootScreen, CollapsiblePanel, OverflowToolbar, createPanelWid
 import { startCircularThemeTransition, useResolvedTheme, useThemeDomSync, useThemeStore } from '@suite/shared/theme'
 import { Hint, TooltipProvider } from '@suite/shared/ui'
 import { printPage } from '@suite/shared/shell'
+import { useApplyView, useDensity, useUiZoom } from '@suite/shared/view'
 import { UpdateReadyBanner, UpdateSettingsSection, useAppUpdater } from '@suite/shared/update'
 import { AnimatedLogo } from './AnimatedLogo'
 import './commands'
@@ -29,8 +30,6 @@ import { useCorrectionView } from './exercises/useCorrectionView'
 import { SheetOutline } from './exercises/SheetOutline'
 import { TreeRailLabel } from './exercises/TreeRailLabel'
 import { ToolbarSettingsPanel } from './exercises/ToolbarSettingsPanel'
-import { useCompact } from './exercises/useCompact'
-import { useZoom } from './exercises/useZoom'
 import { useUnitColors } from './exercises/useUnitColors'
 import { useToolbarFamilies } from './exercises/useToolbarFamilies'
 import { useOpenExercise } from './exercises/useOpenExercise'
@@ -41,6 +40,8 @@ import { useExerciseStore } from './exercises/useExerciseStore'
 // share a machine, but never a webview.
 /** Durée minimale de l'écran de chargement : en dessous, l'animation clignoterait sans rien dire. */
 const BOOT_FLOOR_MS = 1300
+/** The app's id: the prefix of its view and panel storage keys (`zachart-maths:zoom`…). */
+const APP_ID = 'zachart-maths'
 
 const leftPanel = createPanelWidthStorage({ key: 'zachart-maths:left-width', min: 180, max: 520, fallback: 240 })
 const rightPanel = createPanelWidthStorage({ key: 'zachart-maths:right-width', min: 300, max: 640, fallback: 400 })
@@ -87,8 +88,12 @@ export default function App() {
   const onlyToCorrect = useCorrectionView(state => state.onlyToCorrect)
   useCommand('review.open', () => useCorrectionView.getState().setReviewOpen(true))
   useCommand('correction.toggleHide', () => useCorrectionView.getState().toggleHideCorrected())
-  const compact = useCompact(state => state.enabled)
-  const zoom = useZoom(state => state.percent)
+  const density = useDensity()
+  const compact = density.compact
+  const ui = useUiZoom()
+  const zoom = ui.percent
+  // Paints the zoom on the root element (the shared view), as `<SuiteApp>` does for the apps built on it.
+  useApplyView(APP_ID)
   useEffect(() => {
     const root = document.documentElement
     root.style.zoom = zoom === 100 ? '' : `${zoom}%`
@@ -103,10 +108,10 @@ export default function App() {
   const canRedo = useOpenExercise(state => state.redoDepth > 0)
   useCommand('edit.undo', () => useOpenExercise.getState().undo(), canUndo)
   useCommand('edit.redo', () => useOpenExercise.getState().redo(), canRedo)
-  useCommand('view.toggleCompact', () => useCompact.getState().toggle())
-  useCommand('view.zoomOut', () => useZoom.getState().zoomOut())
-  useCommand('view.zoomIn', () => useZoom.getState().zoomIn())
-  useCommand('view.zoomReset', () => useZoom.getState().reset())
+  useCommand('view.toggleCompact', () => density.toggle())
+  useCommand('view.zoomOut', () => ui.zoomOut())
+  useCommand('view.zoomIn', () => ui.zoomIn())
+  useCommand('view.zoomReset', () => ui.reset())
   useCommand('view.toggleUnitColors', () => useUnitColors.getState().toggle())
   useCommand('app.toggleTheme', () => {
     startCircularThemeTransition({
@@ -154,7 +159,7 @@ export default function App() {
             <button
               type="button"
               aria-label="Zoom à 100 %"
-              onClick={() => useZoom.getState().reset()}
+              onClick={() => ui.reset()}
               style={{ minWidth: 44, fontSize: 12, fontVariantNumeric: 'tabular-nums' }}
             >{zoom} %</button>
           </Hint>

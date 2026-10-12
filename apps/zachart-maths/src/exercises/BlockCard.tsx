@@ -1,4 +1,4 @@
-import { spacing, useCompact } from './useCompact'
+import { spacing, useDensity } from '@suite/shared/view'
 import type { ReactNode } from 'react'
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, HelpCircle, Trash2 } from 'lucide-react'
 import { Button, Hint, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@suite/shared/ui'
@@ -26,7 +26,7 @@ interface BlockCardProps {
  * le contenu. La gouttière est discrète tant qu'on ne survole ni ne focalise la carte.
  */
 export function BlockCard({ block, index, count, onMove, onRemove, onSend, sendTo = 'right', halo, onHaloEnd, children }: BlockCardProps) {
-  const compact = useCompact(state => state.enabled)
+  const compact = useDensity().compact
   const meta = isKnown(block) ? BLOCK_META[block.type] : null
   const label = meta?.label ?? 'Bloc inconnu'
   const Icon = meta?.icon ?? HelpCircle

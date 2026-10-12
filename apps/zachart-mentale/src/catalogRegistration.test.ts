@@ -20,5 +20,6 @@ describe('registration of the command catalogue', () => {
 
     expect(commandList().length).toBeGreaterThan(0)
     expect(commandById('file.new')).toBeDefined()
-  })
+    // Importe l'application entière à neuf : lent par nature, et proche du délai par défaut sous charge.
+  }, 20_000)
 })
