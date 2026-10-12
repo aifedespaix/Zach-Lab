@@ -200,7 +200,8 @@ describe('App file switching', () => {
     await openFile(PATH_A)
 
     expect(useWorkspaceStore.getState().currentFilePath).toBeNull()
-    expect(screen.getByText('Aucun fichier ouvert')).toBeInTheDocument()
+    // Nothing is open, so the shared bar shows no file title (it draws one only for an open file).
+    expect(screen.queryByTitle(PATH_A)).not.toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent(/illisible ou corrompu/)
     expect(saveMindMap).not.toHaveBeenCalled()
   })
@@ -215,12 +216,10 @@ describe('App file switching', () => {
     // display. `minWidth: 0` is the load-bearing declaration: a flex item whose
     // floor is the whole string is what pushed the header past the window edge.
     // jsdom lays nothing out, so this pins the declaration, not the pixels.
-    expect(screen.getByTitle(PATH_A)).toHaveStyle({
-      minWidth: '0px',
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-      whiteSpace: 'nowrap',
-    })
+    // The shared title: the text clips inside its own box, and the box yields to the bar (minWidth 0).
+    const title = screen.getByTitle(PATH_A)
+    expect(title).toHaveStyle({ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' })
+    expect(title.parentElement).toHaveStyle({ minWidth: '0px' })
   })
 
   it('dismisses the load-error message on demand', async () => {
@@ -360,7 +359,7 @@ describe('App corrupted-map guard', () => {
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(useWorkspaceStore.getState().currentFilePath).toBeNull()
-    expect(screen.getByText('Aucun fichier ouvert')).toBeInTheDocument()
+    expect(screen.queryByText('Aucun fichier ouvert')).not.toBeInTheDocument()
   })
 
   it('keeps the previously open map on screen when a corrupt one is clicked', async () => {

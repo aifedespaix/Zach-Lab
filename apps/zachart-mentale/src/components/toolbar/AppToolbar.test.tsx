@@ -57,8 +57,7 @@ describe('AppToolbar', () => {
     vi.mocked(usePublishMindMap).mockReturnValue({ canPublish: () => true, publish, publishAll: vi.fn() })
     renderToolbar()
 
-    await user.click(screen.getByRole('button', { name: 'Fichier' }))
-    await user.click(await screen.findByRole('menuitem', { name: /Publier pour la synchronisation/ }))
+    await user.click(screen.getByRole('button', { name: /Publier pour la synchronisation/ }))
 
     expect(publish).toHaveBeenCalledWith('/cours/chapitre1.zmap')
   })
@@ -69,8 +68,7 @@ describe('AppToolbar', () => {
     vi.mocked(usePublishMindMap).mockReturnValue({ canPublish: () => false, publish, publishAll: vi.fn() })
     renderToolbar()
 
-    await user.click(screen.getByRole('button', { name: 'Fichier' }))
-    await user.click(await screen.findByRole('menuitem', { name: /Publier pour la synchronisation/ }))
+    await user.click(screen.getByRole('button', { name: /Publier pour la synchronisation/ }))
 
     expect(publish).not.toHaveBeenCalled()
   })
@@ -79,11 +77,12 @@ describe('AppToolbar', () => {
     const user = userEvent.setup()
     renderToolbar()
 
-    const newMap = screen.getByRole('button', { name: 'Nouvelle carte mentale' })
-    expect(newMap).toHaveAttribute('aria-keyshortcuts', 'Mod+N')
-    await user.hover(newMap)
+    // One slot for « Nouveau » and « Fermer » (the shared bar): with a file open it is « Fermer ».
+    const close = screen.getByRole('button', { name: 'Fermer la carte mentale' })
+    expect(close).toHaveAttribute('aria-keyshortcuts', 'Mod+W')
+    await user.hover(close)
     // The tooltip is how a mouse-driven user discovers the keyboard.
-    expect(await screen.findByText('Ctrl + N')).toBeInTheDocument()
+    expect(await screen.findByText('Ctrl + W')).toBeInTheDocument()
   })
 
   it('writes the map immediately when asked to save', async () => {

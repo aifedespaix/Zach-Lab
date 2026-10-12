@@ -1,13 +1,8 @@
 import { useCallback, useState } from 'react'
 import { revealItemInDir } from '@tauri-apps/plugin-opener'
 import {
-  ChevronDown,
-  Command,
-  Copy,
   Download,
   FileDown,
-  FilePlus,
-  FolderOpen,
   FolderSearch,
   CloudUpload,
   GraduationCap,
@@ -17,17 +12,9 @@ import {
   Moon,
   PanelLeftClose,
   PanelRightClose,
-  PenLine,
   PictureInPicture2,
-  Printer,
-  Redo2,
-  RefreshCw,
-  Save,
   Settings,
   Sun,
-  Trash2,
-  Undo2,
-  X,
 } from 'lucide-react'
 import type { Card, MindMapMeta } from '../../types/card'
 import type { FileTreeNode } from '../../types/workspace'
@@ -51,6 +38,7 @@ import {
 import { CommandButton } from '../commands/CommandButton'
 import { CommandDropdownItem } from '../commands/CommandMenuItem'
 import { CommandPalette } from '@suite/shared/commands'
+import { AppToolbar as SharedAppToolbar, defineToolbar } from '@suite/shared/shell'
 import { printPage } from '@suite/shared/shell'
 import { NewMindMapDialog } from '../NewMindMapDialog'
 import { NameDialog } from '../sidebar/NameDialog'
@@ -88,6 +76,8 @@ interface AppToolbarProps {
   /** Writes a pending autosave immediately — what « Enregistrer » actually does. */
   flush: () => Promise<void>
   updateCheck: Partial<UpdateCheckHandle> & { status: UpdateCheckHandle['status']; checkNow: () => Promise<void> }
+  /** The last autosave failed: the title says so. */
+  saveFailed?: boolean
 }
 
 /** A dialog that needs a name typed into it before it can act. */
@@ -106,7 +96,7 @@ type PendingNaming = { kind: 'rename' | 'duplicate'; initialName: string }
  * button: a command triggered from the keyboard has no button to open its
  * dialog for it.
  */
-export function AppToolbar({ filePath, cards, meta, onOpenFile, onRequestFork, flush, updateCheck }: AppToolbarProps) {
+export function AppToolbar({ filePath, cards, meta, onOpenFile, onRequestFork, flush, updateCheck, saveFailed }: AppToolbarProps) {
   const [newMapOpen, setNewMapOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
   const [quizOpen, setQuizOpen] = useState(false)
@@ -328,126 +318,99 @@ export function AppToolbar({ filePath, cards, meta, onOpenFile, onRequestFork, f
     }
   }
 
-  return (
-    <TooltipProvider>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        {/*
-          The « Fichier » menu holds everything that acts on the file itself.
-          A menu rather than eight more icons: these are deliberate, occasional
-          actions, and each one reads better with its name and its shortcut than
-          as a glyph you have to hover to identify.
-        */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
-              Fichier
-              <ChevronDown />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            <CommandDropdownItem command="file.new" icon={FilePlus} />
-            <CommandDropdownItem command="tree.newFolder" icon={FolderOpen} />
-            <CommandDropdownItem command="file.addRootFolder" icon={FolderSearch} />
-            <DropdownMenuSeparator />
-            <CommandDropdownItem command="file.save" icon={Save} />
-            <CommandDropdownItem command="file.rename" icon={PenLine} />
-            <CommandDropdownItem command="file.duplicate" icon={Copy} />
-            <CommandDropdownItem command="sync.publish" icon={CloudUpload} />
-            <DropdownMenuSeparator />
-            <CommandDropdownItem command="file.export" icon={Download} />
-            <CommandDropdownItem command="file.exportPdf" icon={FileDown} />
-            <CommandDropdownItem command="file.reveal" icon={FolderSearch} />
-            <CommandDropdownItem command="file.print" icon={Printer} />
-            <CommandDropdownItem command="tree.refresh" icon={RefreshCw} />
-            <DropdownMenuSeparator />
-            <CommandDropdownItem command="file.close" icon={X} />
-            <CommandDropdownItem command="file.delete" icon={Trash2} />
-          </DropdownMenuContent>
-        </DropdownMenu>
+  // The app's own buttons, kept as one group on the bar. The file menu, the title, undo/redo,
+  // print and the palette are the shared bar's: they are drawn by `SharedAppToolbar` from the catalogue.
+  const appGroup = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <CommandButton command="file.export" icon={Download} />
+      <CommandButton command="file.exportPdf" icon={FileDown} />
+      <CommandButton command="file.reveal" icon={FolderSearch} />
+      <CommandButton command="file.addRootFolder" icon={FolderSearch} />
+      <CommandButton command="sync.publish" icon={CloudUpload} />
 
-        <span className="toolbar-separator" aria-hidden />
+      <span className="toolbar-separator" aria-hidden />
 
-        <CommandButton command="file.close" icon={X} />
-        <CommandButton
-          command="file.new"
-          icon={FilePlus}
-          variant={hasFile ? 'outline' : 'default'}
-          className={hasFile ? undefined : 'toolbar-new--invite'}
-        />
-        <CommandButton command="edit.undo" icon={Undo2} />
-        <CommandButton command="edit.redo" icon={Redo2} />
+      <CommandButton command="card.addFloating" icon={PictureInPicture2} />
+      <CommandButton command="app.quiz" icon={GraduationCap} className="toolbar-quiz--rainbow" />
 
-        <span className="toolbar-separator" aria-hidden />
+      <span className="toolbar-separator" aria-hidden />
 
-        <CommandButton command="card.addFloating" icon={PictureInPicture2} />
-        <CommandButton command="file.export" icon={Download} />
-        <CommandButton command="file.reveal" icon={FolderSearch} />
-        <CommandButton command="file.print" icon={Printer} />
-        <CommandButton command="app.quiz" icon={GraduationCap} className="toolbar-quiz--rainbow" />
+      {/* Locked or not, the same outline button: what changes is the colour,
+          and it is the SAME orange as the locked rows of the tree — the two
+          are one state, and the colour is what says so. */}
+      <CommandButton
+        command="view.toggleLock"
+        icon={editsBlocked ? Lock : LockOpen}
+        variant="outline"
+        className={editsBlocked ? 'toolbar-lock--active' : undefined}
+      />
 
-        <span className="toolbar-separator" aria-hidden />
-
-        {/* Locked or not, the same outline button: what changes is the colour,
-            and it is the SAME orange as the locked rows of the tree — the two
-            are one state, and the colour is what says so. */}
-        <CommandButton
-          command="view.toggleLock"
-          icon={editsBlocked ? Lock : LockOpen}
-          variant="outline"
-          className={editsBlocked ? 'toolbar-lock--active' : undefined}
-        />
-        <CommandButton command="app.palette" icon={Command} />
-
-        {/* The theme button keeps its own handler rather than going through the
-            command: the circular reveal animates out of the CLICK's coordinates,
-            which a keyboard shortcut does not have. Both end on the same
-            `setThemeMode`. */}
+      {/* The theme button keeps its own handler rather than going through the
+          command: the circular reveal animates out of the CLICK's coordinates,
+          which a keyboard shortcut does not have. Both end on the same
+          `setThemeMode`. */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label={resolvedTheme === 'dark' ? 'Passer au thème clair' : 'Passer au thème sombre'}
+            onClick={event => {
+              const target = resolvedTheme === 'dark' ? 'light' : 'dark'
+              startCircularThemeTransition({
+                x: event.clientX,
+                y: event.clientY,
+                apply: () => void setThemeMode(target),
+              })
+            }}
+          >
+            {resolvedTheme === 'dark' ? <Sun /> : <Moon />}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          {resolvedTheme === 'dark' ? 'Passer au thème clair' : 'Passer au thème sombre'}
+        </TooltipContent>
+      </Tooltip>
+      <DropdownMenu>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label={resolvedTheme === 'dark' ? 'Passer au thème clair' : 'Passer au thème sombre'}
-              onClick={event => {
-                const target = resolvedTheme === 'dark' ? 'light' : 'dark'
-                startCircularThemeTransition({
-                  x: event.clientX,
-                  y: event.clientY,
-                  apply: () => void setThemeMode(target),
-                })
-              }}
-            >
-              {resolvedTheme === 'dark' ? <Sun /> : <Moon />}
-            </Button>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" aria-label="Paramètres et raccourcis">
+                <Settings />
+              </Button>
+            </DropdownMenuTrigger>
           </TooltipTrigger>
-          <TooltipContent>
-            {resolvedTheme === 'dark' ? 'Passer au thème clair' : 'Passer au thème sombre'}
-          </TooltipContent>
+          <TooltipContent>Paramètres et raccourcis</TooltipContent>
         </Tooltip>
+        <DropdownMenuContent align="end">
+          <DropdownMenuLabel>Application</DropdownMenuLabel>
+          <CommandDropdownItem command="app.settings" icon={Settings} />
+          <CommandDropdownItem command="app.shortcuts" icon={Keyboard} />
+          <DropdownMenuSeparator />
+          <CommandDropdownItem command="view.toggleSidebar" icon={PanelRightClose} />
+          <CommandDropdownItem command="view.toggleDetailPanel" icon={PanelLeftClose} />
+          <CommandDropdownItem command="view.toggleTheme" icon={resolvedTheme === 'dark' ? Sun : Moon} />
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  )
+  const toolbar = defineToolbar({
+    items: [{ id: 'mentale.actions', zone: 'app', node: appGroup, label: 'Actions de la carte' }],
+    // The shared settings and theme buttons would repeat the group's own; the group keeps them.
+    hide: ['app.settings', 'app.toggleTheme'],
+  })
 
-        <DropdownMenu>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" aria-label="Paramètres et raccourcis">
-                  <Settings />
-                </Button>
-              </DropdownMenuTrigger>
-            </TooltipTrigger>
-            <TooltipContent>Paramètres et raccourcis</TooltipContent>
-          </Tooltip>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Application</DropdownMenuLabel>
-            <CommandDropdownItem command="app.settings" icon={Settings} />
-            <CommandDropdownItem command="app.shortcuts" icon={Keyboard} />
-            <DropdownMenuSeparator />
-            <CommandDropdownItem command="view.toggleSidebar" icon={PanelRightClose} />
-            <CommandDropdownItem command="view.toggleDetailPanel" icon={PanelLeftClose} />
-            <CommandDropdownItem command="view.toggleTheme" icon={resolvedTheme === 'dark' ? Sun : Moon} />
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
+  return (
+    <TooltipProvider>
+      <SharedAppToolbar
+        toolbar={toolbar}
+        file={{
+          open: hasFile,
+          name: fileName ?? undefined,
+          path: filePath ?? undefined,
+          status: saveFailed ? 'error' : 'saved',
+        }}
+      />
       {/* Mounted only while open, so each run starts from a clean field. */}
       {newMapOpen && <NewMindMapDialog onClose={() => setNewMapOpen(false)} onCreated={onOpenFile} />}
 

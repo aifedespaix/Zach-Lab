@@ -1,4 +1,4 @@
-import { ChevronDown, Minus, Plus, Rows3, Copy, FilePlus, FolderOpen, FolderPlus, FolderSearch, Moon, PenLine, Printer, Redo2, Save, Search, Settings, Trash2, Undo2, X, type LucideIcon } from 'lucide-react'
+import { ChevronDown, Minus, Plus, Rows3, Copy, FilePlus, FolderOpen, FolderPlus, FolderSearch, Moon, PenLine, Printer, Redo2, RefreshCw, Save, Search, Settings, Trash2, Undo2, X, type LucideIcon } from 'lucide-react'
 import { Fragment, type ReactNode } from 'react'
 import { CommandButton, CommandDropdownItem, commandById } from '../commands'
 import { ThemeToggle } from '../theme'
@@ -62,6 +62,7 @@ const FILE_MENU_GROUPS: readonly (readonly { command: string; icon: LucideIcon }
   [
     { command: 'file.reveal', icon: FolderSearch },
     { command: 'file.print', icon: Printer },
+    { command: 'tree.refresh', icon: RefreshCw },
   ],
   [
     { command: 'file.close', icon: X },

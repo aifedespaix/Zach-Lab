@@ -469,29 +469,8 @@ function App() {
             onRequestFork={() => setForkPromptOpen(true)}
             flush={flush}
             updateCheck={{ status: updateStatus, checkNow: checkForUpdates, updateReady, applyUpdate }}
+            saveFailed={saveFailed}
           />
-        )}
-        <span
-          title={currentFilePath ?? undefined}
-          style={{
-            fontSize: 13,
-            fontWeight: 500,
-            // The name yields before the toolbar does. Without `minWidth: 0`
-            // its floor is the whole string, which pushes the header past the
-            // window edge and turns into a horizontal scrollbar instead of an
-            // ellipsis; with it, the name absorbs the squeeze and ends in "…".
-            minWidth: 0,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {currentFileName ?? 'Aucun fichier ouvert'}
-        </span>
-        {saveFailed && (
-          <span role="status" style={{ color: 'var(--warning-fg)', fontSize: 13 }}>
-            ⚠ Erreur de sauvegarde
-          </span>
         )}
         </>
       }
