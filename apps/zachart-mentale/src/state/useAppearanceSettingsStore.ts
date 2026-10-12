@@ -1,5 +1,6 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { useThemeStore, type ThemeMode } from '@suite/shared/theme'
+import { viewStores } from '@suite/shared/view'
 import type { AppearanceSettings } from '../types/appearanceSettings'
 import { DEFAULT_APPEARANCE_SETTINGS } from '../types/appearanceSettings'
 import { loadAppearanceSettings, saveAppearanceSettings } from '../persistence/appearanceSettings'
@@ -29,6 +30,17 @@ function currentSettings(state: AppearanceSettings): AppearanceSettings {
 
 export type AppearanceSettingsStore = UseBoundStore<StoreApi<AppearanceSettingsState>>
 
+/** Mentale's id in the shared view: the prefix of its `<id>:font` key. */
+export const APP_ID = 'zachart-mentale'
+
+/**
+ * The font the shared view paints (`--font-sans`). The settings file stays the source of truth; this
+ * mirrors it, so a live preview and « Annuler » reach the page through the same path as a commit.
+ */
+function mirrorFont(fontFamily: string): void {
+  viewStores(APP_ID).font.getState().set(fontFamily)
+}
+
 // Serializes persistence writes so overlapping setter calls (e.g. dragging an
 // OKLCH slider fires setLevelColor repeatedly) can never land out of order —
 // each write waits for the previous one to finish before starting, so the
@@ -55,8 +67,10 @@ export function createAppearanceSettingsStore(): AppearanceSettingsStore {
       try {
         const settings = await loadAppearanceSettings()
         set(settings)
+        mirrorFont(settings.fontFamily)
       } catch {
         set(DEFAULT_APPEARANCE_SETTINGS)
+        mirrorFont(DEFAULT_APPEARANCE_SETTINGS.fontFamily)
       }
     },
     setFontFamily: async fontFamily => {
@@ -88,4 +102,8 @@ export const useAppearanceSettingsStore = createAppearanceSettingsStore()
 // the settings dialog's live preview, "Annuler", and the file loading at startup.
 useAppearanceSettingsStore.subscribe((state, previous) => {
   if (state.themeMode !== previous.themeMode) useThemeStore.getState().setMode(state.themeMode)
+})
+
+useAppearanceSettingsStore.subscribe((state, previous) => {
+  if (state.fontFamily !== previous.fontFamily) mirrorFont(state.fontFamily)
 })

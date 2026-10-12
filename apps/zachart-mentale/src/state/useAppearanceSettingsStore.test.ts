@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useThemeStore } from '@suite/shared/theme'
+import { viewStores } from '@suite/shared/view'
 import { createAppearanceSettingsStore, useAppearanceSettingsStore } from './useAppearanceSettingsStore'
 import { DEFAULT_APPEARANCE_SETTINGS } from '../types/appearanceSettings'
 
@@ -105,5 +106,29 @@ describe('useAppearanceSettingsStore — thème partagé', () => {
     expect(useThemeStore.getState().mode).toBe('dark')
     useAppearanceSettingsStore.getState().applyDraft(snapshot)
     expect(useThemeStore.getState().mode).toBe('light')
+  })
+})
+
+describe('police : le fichier d’apparence reste la source, le commun la peint', () => {
+  const shownFont = () => viewStores('zachart-mentale').font.getState().value
+
+  beforeEach(() => {
+    localStorage.clear()
+    viewStores('zachart-mentale').font.getState().reset()
+    useAppearanceSettingsStore.setState(DEFAULT_APPEARANCE_SETTINGS)
+  })
+
+  it('init copie la police du fichier dans le magasin partagé', async () => {
+    const store = createAppearanceSettingsStore()
+    vi.mocked(loadAppearanceSettings).mockResolvedValue({ ...DEFAULT_APPEARANCE_SETTINGS, fontFamily: 'Georgia, serif' })
+    await store.getState().init()
+    expect(shownFont()).toBe('Georgia, serif')
+  })
+
+  it('un changement dans le store (aperçu, Annuler) atteint le magasin partagé', () => {
+    useAppearanceSettingsStore.getState().applyDraft({ ...DEFAULT_APPEARANCE_SETTINGS, fontFamily: 'Monospace' })
+    expect(shownFont()).toBe('Monospace')
+    useAppearanceSettingsStore.getState().applyDraft({ ...DEFAULT_APPEARANCE_SETTINGS, fontFamily: DEFAULT_APPEARANCE_SETTINGS.fontFamily })
+    expect(shownFont()).toBe(DEFAULT_APPEARANCE_SETTINGS.fontFamily)
   })
 })

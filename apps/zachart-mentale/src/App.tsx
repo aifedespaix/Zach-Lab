@@ -42,11 +42,11 @@ import { ClosingSyncScreen } from './components/ClosingSyncScreen'
 import { AnimatedLogo } from './components/AnimatedLogo'
 import { RecentFilesList } from './components/RecentFilesList'
 import { collectMindMapPaths } from './persistence/fileTree'
-import { useAppearanceSettingsStore } from './state/useAppearanceSettingsStore'
+import { APP_ID, useAppearanceSettingsStore } from './state/useAppearanceSettingsStore'
 import { useShortcutSettingsStore } from '@suite/shared/commands'
 import { useCardSelectionStore } from './state/useCardSelectionStore'
 import { useThemeDomSync } from '@suite/shared/theme'
-import { useAppliedFontFamily } from './hooks/useAppliedFontFamily'
+import { useApplyView } from '@suite/shared/view'
 import { useAppUpdater, UpdateReadyBanner } from '@suite/shared/update'
 import { useAutoSync } from './hooks/useAutoSync'
 import type { SyncResult } from './sync/syncService'
@@ -130,7 +130,8 @@ function App() {
   useAutoSync()
   useWindowTitle(windowTitleFor(currentFilePath))
   useThemeDomSync()
-  useAppliedFontFamily()
+  // Paints the font (and the zoom variables, off here: Mentale's canvas is not checked at other zooms, S1).
+  useApplyView(APP_ID, { zoom: false })
   const { updateReady, dismissed, applyUpdate, dismissUpdate, status: updateStatus, checkNow: checkForUpdates } =
     useAppUpdater()
   const { flush } = useAutosave(
