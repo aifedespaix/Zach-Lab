@@ -27,10 +27,11 @@ import { ReadOnlyMapDialog } from './components/ReadOnlyMapDialog'
 import { fileNameOf, parentDirOf, repairedCopyPath } from './persistence/paths'
 import { repairCards, validateCards, type CardIssue } from './validation/cardsValidation'
 import { useGlobalShortcuts } from './hooks/useGlobalShortcuts'
-import { useWindowTitle } from './hooks/useWindowTitle'
+import { useWindowTitle } from '@suite/shared/files'
+import { windowTitleFor } from './persistence/windowTitle'
 import { useUnsavedChangesGuard } from './hooks/useUnsavedChangesGuard'
 import { useFileDropZone } from './hooks/useFileDropZone'
-import { useLaunchFile } from './hooks/useLaunchFile'
+import { useLaunchFile } from '@suite/shared/files'
 import { imageBlockFrom } from './content/imageBlock'
 import { mimeForPath } from './content/pickImage'
 import { contentOf } from './content/blocks'
@@ -121,7 +122,7 @@ function App() {
   useGlobalShortcuts()
   // Only does anything when the user turned automatic sync on.
   useAutoSync()
-  useWindowTitle(currentFilePath)
+  useWindowTitle(windowTitleFor(currentFilePath))
   useThemeDomSync()
   useAppliedFontFamily()
   const { updateReady, dismissed, applyUpdate, dismissUpdate, status: updateStatus, checkNow: checkForUpdates } =
@@ -232,7 +233,7 @@ function App() {
   const { isDragActive, dropError } = useFileDropZone(mainRef, requestOpenFile, handleDropImageOnCard)
   // Same entry point as the sidebar and drag & drop, so a map opened from the
   // Explorer goes through the unsaved-changes guard like any other switch.
-  useLaunchFile(requestOpenFile)
+  useLaunchFile(requestOpenFile, { command: 'launch_mind_map', event: 'open-mind-map' })
 
   useEffect(() => {
     useQuizSettingsStore.getState().init()
