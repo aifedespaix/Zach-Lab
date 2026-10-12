@@ -42,6 +42,7 @@ Voir `07-decisions-ux.md`. Décisions non validées au démarrage d'un lot : pri
 
 | Date | Lot | Événement |
 |---|---|---|
+| 2026-10-12 | L6 | Mentale : `App.tsx` charge par `useFileSession` (port `read`/`validate`/`write` sur `loadMindMap`/`validateCards`), le store de cartes reste la source du canevas (choix a). Chargement, reprise sur erreur et réparation passent par les effets du lot. Objectif `App.tsx` < 350 lignes non atteint (garde, lecture seule, synchro restent à l'app). Mentale 2 260 tests verts. |
 | 2026-10-09 | L0 | Extrait : `@suite/shared/testing` (`describeAppContract`, `createMemoryFs`), `bun run measure:sharing`, spikes S1 (voie A) et S2 (`scripts/baseline-shots.mjs`). |
 | 2026-10-09 | L1 | Extrait : alias d'ids, `standardCommands`, `createTypedCommands`, détection de conflit de raccourci standard (dev). |
 | 2026-10-09 | L2 | Extrait : `@suite/shared/storage` (`createPersisted*`, `readJsonConfig`/`writeJsonConfig`, `readVersioned`), panneaux/thème/raccourcis de `shared` migrés dessus. |
