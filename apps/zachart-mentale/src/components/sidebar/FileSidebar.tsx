@@ -329,10 +329,10 @@ export function FileSidebar({ onOpenFile }: FileSidebarProps) {
     setSearchFocusRequest(request => request + 1)
   }, [collapsed])
   useCommand('file.addRootFolder', () => void handleAddFolder())
-  useCommand('file.refresh', () => void handleRefreshAll())
+  useCommand('tree.refresh', () => void handleRefreshAll())
   useCommand('view.collapseFolders', () => collapseAllFolders(), rootFolders.length > 0)
   useCommand(
-    'file.newFolder',
+    'tree.newFolder',
     () => setNewFolderParent(defaultFolderTarget()),
     rootFolders.length > 0
   )
@@ -676,7 +676,7 @@ export function FileSidebar({ onOpenFile }: FileSidebarProps) {
             */}
             <PanelFooter label="Actions de la barre latérale">
               <CommandButton command="file.addRootFolder" icon={FolderPlus} variant="ghost" size="icon-sm" />
-              <CommandButton command="file.refresh" icon={RefreshCw} variant="ghost" size="icon-sm" />
+              <CommandButton command="tree.refresh" icon={RefreshCw} variant="ghost" size="icon-sm" />
               <CommandButton command="view.collapseFolders" icon={FoldVertical} variant="ghost" size="icon-sm" />
               <SidebarIconButton
                 label={showUnreadable ? 'Masquer les fichiers non lisibles' : 'Afficher les fichiers non lisibles'}

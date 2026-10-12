@@ -35,7 +35,7 @@ describe('command catalogue — cohérence', () => {
   })
 
   it('gives every command a category the settings panel can show', () => {
-    const shown = new Set(['file', 'edit', 'card', 'navigation', 'view', 'app'])
+    const shown = new Set(['file', 'tree', 'edit', 'card', 'navigation', 'view', 'app'])
     for (const command of commandList()) expect(shown.has(command.category), command.id).toBe(true)
   })
 

@@ -346,7 +346,7 @@ export function AppToolbar({ filePath, cards, meta, onOpenFile, onRequestFork, f
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
             <CommandDropdownItem command="file.new" icon={FilePlus} />
-            <CommandDropdownItem command="file.newFolder" icon={FolderOpen} />
+            <CommandDropdownItem command="tree.newFolder" icon={FolderOpen} />
             <CommandDropdownItem command="file.addRootFolder" icon={FolderSearch} />
             <DropdownMenuSeparator />
             <CommandDropdownItem command="file.save" icon={Save} />
@@ -358,7 +358,7 @@ export function AppToolbar({ filePath, cards, meta, onOpenFile, onRequestFork, f
             <CommandDropdownItem command="file.exportPdf" icon={FileDown} />
             <CommandDropdownItem command="file.reveal" icon={FolderSearch} />
             <CommandDropdownItem command="file.print" icon={Printer} />
-            <CommandDropdownItem command="file.refresh" icon={RefreshCw} />
+            <CommandDropdownItem command="tree.refresh" icon={RefreshCw} />
             <DropdownMenuSeparator />
             <CommandDropdownItem command="file.close" icon={X} />
             <CommandDropdownItem command="file.delete" icon={Trash2} />

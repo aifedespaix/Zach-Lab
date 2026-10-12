@@ -23,3 +23,14 @@ describe('registration of the command catalogue', () => {
     // Importe l'application entière à neuf : lent par nature, et proche du délai par défaut sous charge.
   }, 20_000)
 })
+
+describe('ids standard et alias des commandes renommées', () => {
+  it('l’ancien identifiant résout vers le standard (les raccourcis enregistrés restent valables)', async () => {
+    await import('./types/commands')
+    const { commandById, isCommandId } = await import('@suite/shared/commands')
+
+    expect(commandById('file.newFolder')?.id).toBe('tree.newFolder')
+    expect(commandById('file.refresh')?.id).toBe('tree.refresh')
+    expect(isCommandId('tree.refresh')).toBe(true)
+  })
+})

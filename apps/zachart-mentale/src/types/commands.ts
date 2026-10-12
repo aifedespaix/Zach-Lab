@@ -15,10 +15,11 @@
 import { defineCommandCatalog, type CommandDefinition } from '@suite/shared/commands'
 
 /** The groups the shortcuts settings tab (and the palette) shows. */
-export type CommandCategory = 'file' | 'edit' | 'card' | 'navigation' | 'view' | 'app'
+export type CommandCategory = 'file' | 'tree' | 'edit' | 'card' | 'navigation' | 'view' | 'app'
 
 export const CATEGORY_LABELS: Record<CommandCategory, string> = {
   file: 'Fichier',
+  tree: 'Arborescence',
   edit: 'Édition',
   card: 'Cartes',
   navigation: 'Navigation',
@@ -36,10 +37,10 @@ export const COMMANDS = [
     defaultBinding: 'Mod+N',
   },
   {
-    id: 'file.newFolder',
+    id: 'tree.newFolder',
     label: 'Nouveau dossier',
     description: 'Crée un sous-dossier dans le dossier de travail choisi.',
-    category: 'file',
+    category: 'tree',
     defaultBinding: 'Mod+Shift+N',
   },
   {
@@ -120,10 +121,10 @@ export const COMMANDS = [
     defaultBinding: 'Mod+Shift+E',
   },
   {
-    id: 'file.refresh',
+    id: 'tree.refresh',
     label: 'Actualiser l’arborescence',
     description: 'Relit les dossiers de travail, pour voir les fichiers ajoutés en dehors de l’app.',
-    category: 'file',
+    category: 'tree',
     defaultBinding: 'F5',
   },
 
@@ -491,4 +492,6 @@ export type CommandId = (typeof COMMANDS)[number]['id']
 defineCommandCatalog({
   categories: (Object.keys(CATEGORY_LABELS) as CommandCategory[]).map(id => ({ id, label: CATEGORY_LABELS[id] })),
   commands: COMMANDS,
+  // The ids the suite's standard vocabulary uses. The old ones keep resolving, and so keep their saved shortcuts.
+  aliases: { 'file.newFolder': 'tree.newFolder', 'file.refresh': 'tree.refresh' },
 })
