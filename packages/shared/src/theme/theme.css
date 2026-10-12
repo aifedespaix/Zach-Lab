@@ -662,14 +662,15 @@ math-field {
   html {
     zoom: 1 !important;
   }
-  body * {
+  /* Une zone marquée : seule elle part. Sans zone (rien d'ouvert), la page entière part. */
+  body:has([data-print-area]) * {
     visibility: hidden;
   }
-  [data-print-area],
-  [data-print-area] * {
+  body:has([data-print-area]) [data-print-area],
+  body:has([data-print-area]) [data-print-area] * {
     visibility: visible;
   }
-  [data-print-area] {
+  body:has([data-print-area]) [data-print-area] {
     position: absolute;
     inset: 0;
     width: 100%;
