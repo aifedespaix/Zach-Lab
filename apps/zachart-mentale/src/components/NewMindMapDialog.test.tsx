@@ -151,6 +151,6 @@ describe('NewMindMapDialog', () => {
     render(<NewMindMapDialog onClose={vi.fn()} onCreated={vi.fn()} />)
 
     expect(screen.getByText(/Aucun dossier configuré/)).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Créer' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Créer' })).toBeDisabled()
   })
 })

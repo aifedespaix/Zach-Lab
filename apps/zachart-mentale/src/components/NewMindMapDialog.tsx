@@ -4,17 +4,8 @@ import { useWorkspaceStore, describeError } from '../state/useWorkspaceStore'
 import { createMindMapFile } from '../persistence/fileOps'
 import { mindMapExists } from '../persistence/fileStore'
 import { sanitizeFileName, separatorOf, parentDirOf, mindMapFileNameFor } from '../persistence/paths'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  Button,
-  FolderPicker,
-  type FolderNode,
-} from '@suite/shared/ui'
+import { NewFileDialog } from '@suite/shared/files'
+import { FolderPicker, type FolderNode } from '@suite/shared/ui'
 
 export interface FolderOption {
   path: string
@@ -90,113 +81,55 @@ export function NewMindMapDialog({ onClose, onCreated }: NewMindMapDialogProps) 
     if (beside !== null && options.some(option => option.path === beside)) return beside
     return options[0]?.path ?? ''
   })
-  const [name, setName] = useState('')
-  const [creating, setCreating] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
-  const trimmed = name.trim()
-  const canCreate = trimmed !== '' && folder !== '' && !creating
-
-  async function handleCreate() {
-    if (!canCreate) return
-    const fileName = mindMapFileNameFor(trimmed)
-    setCreating(true)
-    setError(null)
+  async function handleCreate(name: string) {
+    const fileName = mindMapFileNameFor(name)
+    // `createMindMapFile` writes unconditionally, so an existing map of the
+    // same name would be replaced by an empty one. Refused here instead: the
+    // header offers no undo, and a chapter overwritten by « Nouveau chapitre »
+    // is not something the user could get back.
+    if (await mindMapExists(`${folder}${separatorOf(folder)}${fileName}`)) {
+      throw new Error(`« ${fileName} » existe déjà dans ce dossier. Choisissez un autre nom.`)
+    }
+    let path: string
     try {
-      // `createMindMapFile` writes unconditionally, so an existing map of the
-      // same name would be replaced by an empty one. Refused here instead: the
-      // header offers no undo, and a chapter overwritten by « Nouveau chapitre »
-      // is not something the user could get back.
-      if (await mindMapExists(`${folder}${separatorOf(folder)}${fileName}`)) {
-        setError(`« ${fileName} » existe déjà dans ce dossier. Choisissez un autre nom.`)
-        return
-      }
-      const path = await createMindMapFile(folder, trimmed)
-      await refreshFolder(folder)
-      // So the new map is visible in the tree, not just on the canvas: it may
-      // well have landed inside folders the user has never expanded.
-      expandPaths(options.find(option => option.path === folder)?.trail ?? [folder])
-      onCreated(path)
-      onClose()
+      path = await createMindMapFile(folder, name)
     } catch (caught) {
       // Kept open on failure: a read-only folder or an illegal name is
       // something the user can still fix from this same dialog.
-      setError(`Impossible de créer la carte mentale « ${sanitizeFileName(trimmed)} » : ${describeError(caught)}`)
-    } finally {
-      setCreating(false)
+      throw new Error(`Impossible de créer la carte mentale « ${sanitizeFileName(name)} » : ${describeError(caught)}`)
     }
+    await refreshFolder(folder)
+    // So the new map is visible in the tree, not just on the canvas: it may
+    // well have landed inside folders the user has never expanded.
+    expandPaths(options.find(option => option.path === folder)?.trail ?? [folder])
+    onCreated(path)
+    onClose()
   }
 
   return (
-    <Dialog open onOpenChange={open => !open && onClose()}>
-      {/* Wider than the default `sm:max-w-sm` and scrollable: a deep folder name or zoom 150 % must not push the fields out. */}
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Nouvelle carte mentale</DialogTitle>
-          {options.length === 0 && (
-            <DialogDescription>
-              Aucun dossier configuré. Ajoutez d’abord un dossier depuis la barre latérale.
-            </DialogDescription>
-          )}
-        </DialogHeader>
-
-        {options.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 }}>
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
-              <span style={{ fontWeight: 500 }}>Dossier</span>
-              <FolderPicker
-                ariaLabel="Dossier de destination"
-                folders={folders}
-                value={folder}
-                onChange={setFolder}
-                placeholder="Taper pour filtrer les dossiers…"
-              />
-            </label>
-
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
-              <span style={{ fontWeight: 500 }}>Nom</span>
-              <input
-                autoFocus
-                aria-label="Nom de la nouvelle carte mentale"
-                value={name}
-                onChange={event => setName(event.target.value)}
-                onKeyDown={event => {
-                  if (event.key === 'Enter') void handleCreate()
-                }}
-                placeholder="Chapitre 1"
-                style={{
-                  width: '100%',
-                  minWidth: 0,
-                  boxSizing: 'border-box',
-                  padding: '6px 8px',
-                  borderRadius: 8,
-                  border: '1px solid var(--border)',
-                  background: 'var(--background)',
-                  color: 'inherit',
-                  font: 'inherit',
-                }}
-              />
-            </label>
-
-            {error && (
-              <p role="alert" style={{ margin: 0, color: 'var(--warning-fg)' }}>
-                {error}
-              </p>
-            )}
-          </div>
-        )}
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={creating}>
-            Annuler
-          </Button>
-          {options.length > 0 && (
-            <Button onClick={handleCreate} disabled={!canCreate}>
-              {creating ? 'Création…' : 'Créer'}
-            </Button>
-          )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <NewFileDialog
+      open
+      title="Nouvelle carte mentale"
+      description={options.length === 0 ? 'Aucun dossier configuré. Ajoutez d’abord un dossier depuis la barre latérale.' : undefined}
+      nameLabel="Nom de la nouvelle carte mentale"
+      namePlaceholder="Chapitre 1"
+      canCreate={folder !== ''}
+      onCreate={handleCreate}
+      onCancel={onClose}
+    >
+      {options.length > 0 && (
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+          <span style={{ fontWeight: 500 }}>Dossier</span>
+          <FolderPicker
+            ariaLabel="Dossier de destination"
+            folders={folders}
+            value={folder}
+            onChange={setFolder}
+            placeholder="Taper pour filtrer les dossiers…"
+          />
+        </label>
+      )}
+    </NewFileDialog>
   )
 }
