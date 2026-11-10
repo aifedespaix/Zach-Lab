@@ -34,7 +34,7 @@ export function Toolbar({ target, onSymbol }: ToolbarProps) {
                   variant="outline"
                   size="icon-sm"
                   aria-label={symbol.label}
-                  disabled={target === 'none' || (target === 'text' && symbol.mathOnly === true)}
+                  disabled={target === 'none'}
                   onMouseDown={keepFocus}
                   onClick={() => onSymbol(symbol)}
                   style={{ borderColor: borderOf(family.hue), width: 26, height: 26, fontSize: 13 }}

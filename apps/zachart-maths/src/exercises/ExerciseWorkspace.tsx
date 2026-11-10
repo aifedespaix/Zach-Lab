@@ -20,6 +20,8 @@ import { isMathField, type MathfieldElement } from '../math/mathFieldElement'
 import { splitPath } from './names'
 import { exerciseStatus, isBlank, type Status } from './sheet'
 import { moveBlock, parseBlocks } from './blocks'
+import { insideInlineMath, textInsertion } from './inlineMath'
+import { MathPreview } from './MathPreview'
 import { Toolbar, type InsertTarget } from './Toolbar'
 import type { SymbolEntry } from './toolbarCatalog'
 import { useExerciseStore } from './useExerciseStore'
@@ -100,7 +102,16 @@ export function ExerciseWorkspace() {
       field.dispatchEvent(new Event('input', { bubbles: true }))
       return
     }
-    insertAtCursor(field, field.dataset.mathRaw !== undefined ? (symbol.plain ?? symbol.latex.replace(/#[0?]/g, '')) : symbol.glyph)
+    if (field.dataset.mathRaw !== undefined) {
+      insertAtCursor(field, symbol.plain ?? symbol.latex.replace(/#[0?]/g, ''))
+    } else {
+      // Champ de texte : une structure s'écrit en LaTeX entre « $ », et la sélection devient son contenu.
+      const start = field.selectionStart ?? field.value.length
+      const end = field.selectionEnd ?? start
+      const { text, caret } = textInsertion(symbol, field.value.slice(start, end), insideInlineMath(field.value, start))
+      insertAtCursor(field, text)
+      field.setSelectionRange(start + caret, start + caret)
+    }
     field.focus()
   }
 
@@ -310,6 +321,7 @@ export function ExerciseWorkspace() {
               onChange={e => edit({ enonce: e.target.value })}
               className={`${field} hue-field w-full`}
             />
+            <MathPreview text={exercise.enonce} />
           </FieldContextMenu>
           <CommandButton
             command="exercise.toggleSplit" icon={Columns2} variant={split ? 'secondary' : 'ghost'} size="icon-sm"
@@ -394,6 +406,7 @@ export function ExerciseWorkspace() {
             rows={2}
             className={`${field} hue-field w-full`}
           />
+          <MathPreview text={exercise.reponse} />
         </FieldContextMenu>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 8, marginTop: 4 }}>

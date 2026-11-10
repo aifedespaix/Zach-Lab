@@ -314,6 +314,10 @@ under `src/`, wired together in `App.tsx`:
   (`useLightColors`, clé `zachart-maths:light-colors`, attribut `data-light-colors` sur la racine) met `--tone-pct` et `--field-bg-pct` à 0 : `toneOf` lit
   `--tone-pct`, les bordures restent ; ce qui PORTE une information (unités, en-têtes de tableau, cours) utilise `infoToneOf`/`headerToneOf`, jamais effacé.
   `view.zen` (Mod+Shift+H, `zen.ts`) range les deux panneaux et retient leur état d'avant ; il n'a pas d'état propre (zen = les deux repliés).
+- **Formules dans le texte** (`inlineMath.ts`, `MathPreview.tsx`) : un texte libre (énoncé, bloc texte, réponse) accepte du LaTeX entre `$…$`.
+  La barre d'outils n'est plus grisée dans un champ de texte : une structure (`mathOnly`) y est écrite entre `$` (`textInsertion` : la sélection
+  devient le contenu, le curseur va au premier trou ; déjà dans une formule → pas de nouveaux `$`), un signe simple reste un caractère. `MathPreview`
+  affiche sous le champ le même texte, formules composées (KaTeX), seulement s'il y en a. Rien dans le fichier ne change de format (c'est du texte).
 - **`math/`** — `isMathField` (the toolbar's target check); MathLive itself and `renderMathToHtml` come from `@suite/shared`.
 - **`cours/`** — courses are Markdown files in `cours/contenu/` (front matter `titre`,
   `chapitre`, `mots-cles`), compiled in with `import.meta.glob`; adding a course is adding a

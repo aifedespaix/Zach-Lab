@@ -10,6 +10,7 @@ import { CalcEditor } from './CalcEditor'
 import { EmptyAreaContextMenu } from './EmptyAreaContextMenu'
 import { EquationEditor, type SubBlockContext } from './EquationEditor'
 import { FieldContextMenu } from './FieldContextMenu'
+import { MathPreview } from './MathPreview'
 import { HighlightedTextarea, UnitHuesContext } from './HighlightedTextarea'
 import { borderOf, headerToneOf, infoToneOf, toneOf } from './toolbarCatalog'
 import { canRemoveRect, cellKeyAction, cellMove, clearRect, crossProduct, deleteShortcut, inRect, insertShortcut, pasteGrid, rectOf, rectToTsv, removeRect, type CellMove, type CellPoint } from './tableNav'
@@ -33,6 +34,7 @@ function TextEditor({ block, onChange }: { block: TextBlock; onChange: (patch: P
         onChange={e => onChange({ contenu: e.target.value })}
         className={`${field} hue-field w-full`}
       />
+      <MathPreview text={block.contenu} />
     </FieldContextMenu>
   )
 }
