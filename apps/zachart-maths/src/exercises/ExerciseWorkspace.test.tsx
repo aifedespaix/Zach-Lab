@@ -101,7 +101,7 @@ describe('ExerciseWorkspace', () => {
     expect(screen.getByRole('contentinfo', { name: 'Zone de réponse' })).toHaveAttribute('data-corrige', 'true')
     await act(async () => useOpenExercise.getState().flush())
     expect(stored(fs, 'A/a.json').exercices[0].corrige).toBe(true)
-    expect(useExerciseStore.getState().tree[0].exercises[0].aCorriger).toBe(1)
+    expect(useExerciseStore.getState().tree.find(c => c.name === 'A')!.exercises[0].aCorriger).toBe(1)
     await userEvent.click(screen.getByRole('button', { name: 'Exercice corrigé' }))
     expect(screen.getByRole('contentinfo', { name: 'Zone de réponse' })).not.toHaveAttribute('data-corrige')
   })
@@ -262,7 +262,7 @@ describe('ExerciseWorkspace', () => {
     await open('A/b.json')
     expect(stored(fs, 'A/a.json')).toMatchObject({ titre: 'Renommé', exercices: [{ reponse: 'x = 3' }] })
     expect(screen.getByLabelText("Titre de l'exercice")).toHaveValue('Second')
-    expect(useExerciseStore.getState().tree[0].exercises.map(e => e.titre)).toEqual(['Renommé', 'Second'])
+    expect(useExerciseStore.getState().tree.find(c => c.name === 'A')!.exercises.map(e => e.titre)).toEqual(['Renommé', 'Second'])
   })
 
   it('signale un fichier illisible, et un échec d\'écriture', async () => {
@@ -348,12 +348,12 @@ describe('ExerciseWorkspace', () => {
     expect(screen.getByRole('button', { name: 'Plus' })).toBeDisabled()
   })
 
-  it('la barre insère du LaTeX dans un champ de formule, et réserve les structures aux formules', async () => {
+  it('la barre insère du LaTeX dans un champ de formule, et accepte les structures dans un texte (qui devient texte à formules)', async () => {
     const fs = await setup({ 'A/a.json': exo('Premier') })
     await open('A/a.json')
     const user = userEvent.setup()
     await user.click(screen.getByLabelText('Réponse'))
-    expect(screen.getByRole('button', { name: 'Fraction' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Fraction' })).toBeEnabled()
     expect(screen.getByRole('button', { name: 'Multiplié par' })).toBeEnabled()
 
     await user.click(screen.getByRole('button', { name: 'Ajouter un bloc Équation' }))

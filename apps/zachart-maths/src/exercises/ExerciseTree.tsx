@@ -187,7 +187,7 @@ export function ExerciseTree() {
         {naming?.kind === 'new-chapter' && (
           <NameField label="Nom du nouveau chapitre" onSubmit={finishNaming} onCancel={() => setNaming(null)} />
         )}
-        {tree.length === 0 && naming === null && search.trim() === '' && (
+        {tree.every(c => c.name === INBOX_CHAPTER) && naming === null && search.trim() === '' && (
           <p style={{ padding: '4px 12px', fontSize: 13, color: 'var(--muted-foreground)' }}>
             Aucun chapitre. Crée-en un avec le bouton en bas du panneau.
           </p>

@@ -52,7 +52,10 @@ describe('ExerciseTree', () => {
     // La liste est dans un portail, hors de la modale : on la cherche dans tout l'écran.
     expect(screen.getByRole('option', { name: 'Algèbre' })).toBeInTheDocument()
     expect(screen.queryByRole('option', { name: 'Géométrie' })).toBeNull()
-    expect(within(dialog).getByRole('button', { name: 'Valider' })).toBeDisabled()
+    // Sans nom de fiche, la modale ne crée pas de fiche : elle ajoute un exercice à « Non classé ».
+    expect(within(dialog).getByRole('button', { name: 'Créer un exercice non classé' })).toBeEnabled()
+    await user.type(within(dialog).getByLabelText('Nom de la fiche'), 'x')
+    expect(within(dialog).getByRole('button', { name: 'Valider' })).toBeEnabled()
     await user.click(within(dialog).getByRole('button', { name: 'Annuler' }))
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   })
