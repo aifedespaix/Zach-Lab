@@ -314,10 +314,16 @@ under `src/`, wired together in `App.tsx`:
   (`useLightColors`, clé `zachart-maths:light-colors`, attribut `data-light-colors` sur la racine) met `--tone-pct` et `--field-bg-pct` à 0 : `toneOf` lit
   `--tone-pct`, les bordures restent ; ce qui PORTE une information (unités, en-têtes de tableau, cours) utilise `infoToneOf`/`headerToneOf`, jamais effacé.
   `view.zen` (Mod+Shift+H, `zen.ts`) range les deux panneaux et retient leur état d'avant ; il n'a pas d'état propre (zen = les deux repliés).
-- **Formules dans le texte** (`inlineMath.ts`, `MathPreview.tsx`) : un texte libre (énoncé, bloc texte, réponse) accepte du LaTeX entre `$…$`.
-  La barre d'outils n'est plus grisée dans un champ de texte : une structure (`mathOnly`) y est écrite entre `$` (`textInsertion` : la sélection
-  devient le contenu, le curseur va au premier trou ; déjà dans une formule → pas de nouveaux `$`), un signe simple reste un caractère. `MathPreview`
-  affiche sous le champ le même texte, formules composées (KaTeX), seulement s'il y en a. Rien dans le fichier ne change de format (c'est du texte).
+- **Formules dans le texte** (`TextWithFormulas.tsx` ; `InlineMathText` + `inlineText.ts` de `@suite/shared/equation`) : énoncé, bloc texte et réponse
+  acceptent des formules au milieu des phrases. La valeur reste une chaîne, la formule y est entre `$…$` (aucun changement de format de fichier ; un
+  `\placeholder{}` vide est retiré à la lecture). Sans formule, le champ est le `<textarea>` d'avant (orthographe, `HighlightedTextarea`) ; dès qu'une formule
+  apparaît (bouton « Formule » à part en haut de la barre, une structure de la barre — fraction, vecteur, arc… —, ou `$x$` tapé) il devient `InlineMathText` :
+  un `contenteditable` dont les formules sont des pastilles `<span data-chip>` + `<math-field>` (DOM géré à la main, jamais par React ; reconstruit seulement
+  quand `value` diffère de ce qu'il contient). Chaque pastille a un nœud texte (`ZWSP` au besoin) de chaque côté ; flèche au bord = entre dans la formule,
+  `move-out`/Entrée = en sort, Retour arrière dans une pastille vide la supprime. La barre appelle `insertFormula(rich)` / `insertText` sur l'élément
+  (`isInlineText`), ou envoie `FORMULA_EVENT` au `<textarea>` (`data-formula-field`), qui attend MathLive avant de basculer (sinon la reconstruction à son
+  arrivée perd le focus). Les unités colorées passent par l'API CSS Custom Highlight (`markers`), rien n'est ajouté au DOM. Dans une case de tableau, les
+  structures restent grisées (pas de rendu). Le rendu et le curseur ont été vérifiés dans Chromium (jsdom ne sait pas éditer un `contenteditable`).
 - **`math/`** — `isMathField` (the toolbar's target check); MathLive itself and `renderMathToHtml` come from `@suite/shared`.
 - **`cours/`** — courses are Markdown files in `cours/contenu/` (front matter `titre`,
   `chapitre`, `mots-cles`), compiled in with `import.meta.glob`; adding a course is adding a

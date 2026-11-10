@@ -32,7 +32,7 @@ describe('useToolbarFamilies', () => {
 describe('Toolbar et réglages', () => {
   it('une famille masquée disparaît de la barre', () => {
     useToolbarFamilies.setState({ hidden: [first] })
-    render(<Toolbar target="text" onSymbol={() => {}} />)
+    render(<Toolbar target="text" onSymbol={() => {}} onFormula={() => {}} canFormula={false} />)
     expect(screen.queryByRole('group', { name: first })).toBeNull()
     expect(screen.getByRole('group', { name: SYMBOL_FAMILIES[1].name })).toBeTruthy()
   })
@@ -41,7 +41,7 @@ describe('Toolbar et réglages', () => {
     render(
       <>
         <ToolbarSettingsPanel />
-        <Toolbar target="text" onSymbol={() => {}} />
+        <Toolbar target="text" onSymbol={() => {}} onFormula={() => {}} canFormula={false} />
       </>,
     )
     expect(screen.getByRole('group', { name: first })).toBeTruthy()

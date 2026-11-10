@@ -14,14 +14,14 @@ import { bumpLabel } from './label'
 import { AnimatedLogo } from '../AnimatedLogo'
 import { BlockStack } from './BlockStack'
 import { FieldContextMenu } from './FieldContextMenu'
-import { HighlightedTextarea, UnitHuesContext } from './HighlightedTextarea'
+import { UnitHuesContext } from './HighlightedTextarea'
 import { insertAtCursor, isTextField, type TextField } from './insertAtCursor'
 import { isMathField, type MathfieldElement } from '../math/mathFieldElement'
 import { splitPath } from './names'
 import { exerciseStatus, isBlank, type Status } from './sheet'
 import { moveBlock, parseBlocks } from './blocks'
-import { insideInlineMath, textInsertion } from './inlineMath'
-import { MathPreview } from './MathPreview'
+import { isInlineText, type InlineTextElement } from '@suite/shared/equation'
+import { FORMULA_EVENT, TextWithFormulas, type FormulaRequest } from './TextWithFormulas'
 import { Toolbar, type InsertTarget } from './Toolbar'
 import type { SymbolEntry } from './toolbarCatalog'
 import { useExerciseStore } from './useExerciseStore'
@@ -69,11 +69,11 @@ export function ExerciseWorkspace() {
   const selected = useExerciseStore(s => s.selected)
   const recent = useExerciseStore(s => s.recent)
   const tree = useExerciseStore(s => s.tree)
-  const lastField = useRef<TextField | MathfieldElement | null>(null)
+  const lastField = useRef<TextField | MathfieldElement | InlineTextElement | null>(null)
   const [target, setTarget] = useState<InsertTarget>('none')
   const currentId = useOpenExercise(s => s.currentId)
   const [confirming, setConfirming] = useState(false)
-  const enonce = useRef<HTMLTextAreaElement>(null)
+  const enonce = useRef<HTMLElement>(null)
   /** Vrai quand une action vient de créer un exercice : le curseur va dans son énoncé, qu'on remplit d'abord. */
   const focusEnonce = useRef(false)
   /** Le bloc qui vient de passer dans l'autre zone, et la zone où il est arrivé. */
@@ -83,14 +83,30 @@ export function ExerciseWorkspace() {
   // passé sur un bouton (clavier) depuis.
   const rememberField = (e: React.FocusEvent) => {
     // MathLive vit dans un shadow DOM : l'évènement y est ramené à l'élément `math-field`.
-    if (isMathField(e.target)) {
+    if (isInlineText(e.target)) {
+      lastField.current = e.target
+      setTarget('rich')
+    } else if (isMathField(e.target)) {
       lastField.current = e.target
       setTarget('math')
     } else if (isTextField(e.target)) {
       lastField.current = e.target
-      setTarget(e.target.dataset.mathRaw !== undefined ? 'raw' : 'text')
+      setTarget(e.target.dataset.mathRaw !== undefined ? 'raw' : e.target.dataset.formulaField !== undefined ? 'rich' : 'text')
     }
   }
+  /** Le texte à formules qui contient le curseur (le texte lui-même, ou une de ses formules). */
+  const inlineRoot = (field: Element | null | undefined) => {
+    const root = field?.closest?.('[data-inline-text]')
+    return isInlineText(root) ? root : null
+  }
+  const insertFormula = () => {
+    const field = lastField.current
+    if (!field?.isConnected) return
+    const root = inlineRoot(field)
+    if (root !== null) void root.insertFormula()
+    else if (field.dataset.formulaField !== undefined) field.dispatchEvent(new CustomEvent<FormulaRequest>(FORMULA_EVENT, { detail: {} }))
+  }
+  const canFormula = target === 'rich' || (target === 'math' && inlineRoot(lastField.current) !== null)
   const insertSymbol = (symbol: SymbolEntry) => {
     const field = lastField.current
     if (!field?.isConnected) return
@@ -102,16 +118,18 @@ export function ExerciseWorkspace() {
       field.dispatchEvent(new Event('input', { bubbles: true }))
       return
     }
-    if (field.dataset.mathRaw !== undefined) {
-      insertAtCursor(field, symbol.plain ?? symbol.latex.replace(/#[0?]/g, ''))
-    } else {
-      // Champ de texte : une structure s'écrit en LaTeX entre « $ », et la sélection devient son contenu.
-      const start = field.selectionStart ?? field.value.length
-      const end = field.selectionEnd ?? start
-      const { text, caret } = textInsertion(symbol, field.value.slice(start, end), insideInlineMath(field.value, start))
-      insertAtCursor(field, text)
-      field.setSelectionRange(start + caret, start + caret)
+    if (isInlineText(field)) {
+      // Texte à formules : une structure devient une formule dans la phrase, un signe simple du texte.
+      if (symbol.mathOnly === true) void field.insertFormula(symbol.latex)
+      else field.insertText(symbol.glyph)
+      return
     }
+    if (field.dataset.formulaField !== undefined && symbol.mathOnly === true) {
+      // Champ de texte simple : il passe en texte à formules pour accueillir la structure.
+      field.dispatchEvent(new CustomEvent<FormulaRequest>(FORMULA_EVENT, { detail: { rich: symbol.latex } }))
+      return
+    }
+    insertAtCursor(field, field.dataset.mathRaw !== undefined ? (symbol.plain ?? symbol.latex.replace(/#[0?]/g, '')) : symbol.glyph)
     field.focus()
   }
 
@@ -312,16 +330,15 @@ export function ExerciseWorkspace() {
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
           <FieldContextMenu kind="text">
-            <HighlightedTextarea
+            <TextWithFormulas
               ref={enonce}
-              aria-label="Énoncé de l'exercice"
+              ariaLabel="Énoncé de l'exercice"
               placeholder="Quelle est la question ?"
               value={exercise.enonce}
               rows={Math.max(2, exercise.enonce.split('\n').length)}
-              onChange={e => edit({ enonce: e.target.value })}
+              onValueChange={enonce => edit({ enonce })}
               className={`${field} hue-field w-full`}
             />
-            <MathPreview text={exercise.enonce} />
           </FieldContextMenu>
           <CommandButton
             command="exercise.toggleSplit" icon={Columns2} variant={split ? 'secondary' : 'ghost'} size="icon-sm"
@@ -333,7 +350,7 @@ export function ExerciseWorkspace() {
       </div>
 
       <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
-        <Toolbar target={target} onSymbol={insertSymbol} />
+        <Toolbar target={target} onSymbol={insertSymbol} onFormula={insertFormula} canFormula={canFormula} />
         <div
           style={{
             flex: 1, minWidth: 0, minHeight: 0, display: 'grid',
@@ -399,14 +416,14 @@ export function ExerciseWorkspace() {
           )}
         </div>
         <FieldContextMenu kind="text">
-          <HighlightedTextarea
+          <TextWithFormulas
             id="reponse-finale"
+            ariaLabel="Réponse"
             value={exercise.reponse}
-            onChange={e => edit({ reponse: e.target.value })}
+            onValueChange={reponse => edit({ reponse })}
             rows={2}
             className={`${field} hue-field w-full`}
           />
-          <MathPreview text={exercise.reponse} />
         </FieldContextMenu>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 8, marginTop: 4 }}>

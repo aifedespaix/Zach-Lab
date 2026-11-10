@@ -652,3 +652,43 @@ math-field {
 [data-radix-popper-content-wrapper] > * {
   zoom: var(--app-zoom, 1);
 }
+
+/*
+ * Le texte à formules en ligne (`InlineMathText`, `@suite/shared/equation`) : un texte éditable où chaque formule est une
+ * pastille. Le texte garde les sauts de ligne de la valeur ; le marqueur de place vide est un pseudo-élément (un texte vide
+ * porte un caractère invisible, `:empty` ne s'y applique pas) ; la pastille est un champ de formule encadré qui épouse la ligne.
+ */
+.inline-math-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  cursor: text;
+}
+.inline-math-text[data-empty]::before {
+  content: attr(data-placeholder);
+  color: var(--muted-foreground);
+  pointer-events: none;
+}
+.inline-math-chip {
+  display: inline-block;
+  vertical-align: baseline;
+  margin: 0 1px;
+  white-space: normal;
+}
+.inline-math-chip math-field {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 0 4px;
+  font-size: 1.05em;
+  border: 1px solid var(--field-border, var(--border));
+  border-radius: 4px;
+  background: color-mix(in oklab, var(--field-border, var(--border)) 14%, var(--background));
+}
+.inline-math-chip math-field:focus-within {
+  outline: 2px solid var(--focus-cell-ring, var(--ring));
+  outline-offset: 0;
+}
+/* Ni le menu ni le clavier virtuel de MathLive dans une pastille : la barre de symboles de l'application tient ce rôle. */
+.inline-math-chip math-field::part(menu-toggle),
+.inline-math-chip math-field::part(virtual-keyboard-toggle) {
+  display: none;
+}

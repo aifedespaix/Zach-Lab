@@ -248,6 +248,9 @@ function focusNow(field: MathfieldElement): void {
 let loadPromise: Promise<boolean> | undefined
 let loaded = false
 
+/** MathLive est-il déjà en mémoire ? (`<math-field>` est alors défini.) */
+export const isMathLiveLoaded = () => loaded
+
 /**
  * Masks the little keyboard button MathLive keeps in the corner of the field.
  *
@@ -288,7 +291,8 @@ function silencePlonk(module: unknown): void {
   }
 }
 
-function loadMathLive(): Promise<boolean> {
+/** Charge MathLive (une fois par session) ; `false` s'il n'arrive pas. */
+export function loadMathLive(): Promise<boolean> {
   loadPromise ??= import('mathlive')
     .then(module => {
       silencePlonk(module)

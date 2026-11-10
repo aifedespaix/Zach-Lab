@@ -10,8 +10,8 @@ import { CalcEditor } from './CalcEditor'
 import { EmptyAreaContextMenu } from './EmptyAreaContextMenu'
 import { EquationEditor, type SubBlockContext } from './EquationEditor'
 import { FieldContextMenu } from './FieldContextMenu'
-import { MathPreview } from './MathPreview'
-import { HighlightedTextarea, UnitHuesContext } from './HighlightedTextarea'
+import { TextWithFormulas } from './TextWithFormulas'
+import { UnitHuesContext } from './HighlightedTextarea'
 import { borderOf, headerToneOf, infoToneOf, toneOf } from './toolbarCatalog'
 import { canRemoveRect, cellKeyAction, cellMove, clearRect, crossProduct, deleteShortcut, inRect, insertShortcut, pasteGrid, rectOf, rectToTsv, removeRect, type CellMove, type CellPoint } from './tableNav'
 import { tableLayout } from './tableUnits'
@@ -27,14 +27,13 @@ const field = 'rounded border bg-background px-2 py-1 text-sm'
 function TextEditor({ block, onChange }: { block: TextBlock; onChange: (patch: Partial<TextBlock>) => void }) {
   return (
     <FieldContextMenu kind="text">
-      <HighlightedTextarea
-        aria-label="Texte"
+      <TextWithFormulas
+        ariaLabel="Texte"
         value={block.contenu}
         rows={Math.max(2, block.contenu.split('\n').length)}
-        onChange={e => onChange({ contenu: e.target.value })}
+        onValueChange={contenu => onChange({ contenu })}
         className={`${field} hue-field w-full`}
       />
-      <MathPreview text={block.contenu} />
     </FieldContextMenu>
   )
 }

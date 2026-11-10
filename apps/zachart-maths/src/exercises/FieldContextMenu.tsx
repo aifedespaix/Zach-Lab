@@ -4,6 +4,7 @@ import {
   ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuShortcut, ContextMenuSub,
   ContextMenuSubContent, ContextMenuSubTrigger, ContextMenuTrigger,
 } from '@suite/shared/ui'
+import { isInlineText } from '@suite/shared/equation'
 import { caretIndexAt } from './caretAt'
 import { insertAtCursor, isTextField } from './insertAtCursor'
 import { isMathField } from '../math/mathFieldElement'
@@ -11,7 +12,7 @@ import { misspellingAt, type Misspelling } from './spell'
 import { SymbolInsertContext } from './symbolInsert'
 import { SYMBOL_FAMILIES } from './toolbarCatalog'
 
-const editableIn = (wrapper: HTMLElement) => wrapper.querySelector<HTMLElement>('textarea, input, math-field')
+const editableIn = (wrapper: HTMLElement) => wrapper.querySelector<HTMLElement>('[data-inline-text], textarea, input, math-field')
 
 /**
  * Le clic droit d'un champ : couper, copier, coller, tout sélectionner ; pour une formule, en plus
@@ -61,7 +62,8 @@ export function FieldContextMenu({ kind, extra, selectAllLabel = 'Tout sélectio
       .readText()
       .then(text => {
         if (text === '') return
-        if (isMathField(field)) field.insert?.(text, { focus: true })
+        if (isInlineText(field)) field.insertText(text)
+        else if (isMathField(field)) field.insert?.(text, { focus: true })
         else if (isTextField(field)) insertAtCursor(field, text)
       })
       .catch(() => {
@@ -82,7 +84,7 @@ export function FieldContextMenu({ kind, extra, selectAllLabel = 'Tout sélectio
           // défaut de `contextmenu`, que le menu annule. Les corrections arrivent d'un worker, le menu les
           // ajoute en haut dès qu'elles sont là.
           const target = kind === 'text' ? editableIn(e.currentTarget) : null
-          if (target !== null) {
+          if (target !== null && isTextField(target)) {
             const position = caretIndexAt(target, e.clientX, e.clientY) ?? undefined
             void misspellingAt(target, undefined, position).then(setMisspelling).catch(() => setMisspelling(null))
           }
