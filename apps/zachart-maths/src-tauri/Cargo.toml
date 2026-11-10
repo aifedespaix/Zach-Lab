@@ -1,6 +1,6 @@
 [package]
 name = "zachart-maths"
-version = "3.3.3"
+version = "4.0.0"
 description = "Zach'Math : résolution d'exercices de mathématiques"
 authors = ["aifedespaix"]
 edition = "2021"
