@@ -36,10 +36,27 @@ function sortByOrder(names: string[], order: string[]): string[] {
   })
 }
 
-/** Dossiers de la racine (les chapitres) dans l'ordre choisi par l'élève. */
+/** Le chapitre et la fiche où tombent les exercices créés « sans ranger » ; toujours en tête de l'arbre. */
+export const INBOX_CHAPTER = 'Non classé'
+export const INBOX_SHEET = 'Non classé'
+export const INBOX_PATH = joinPath(INBOX_CHAPTER, INBOX_SHEET + EXERCISE_EXT)
+
+/** Dossiers de la racine (les chapitres) dans l'ordre choisi par l'élève, « Non classé » toujours le premier. */
 export async function chapterNames(fs: ExerciseFs): Promise<string[]> {
   const entries = await fs.readDir('')
-  return sortByOrder(entries.filter(e => e.isDirectory && !e.name.startsWith('.')).map(e => e.name), await readOrder(fs, ''))
+  const sorted = sortByOrder(entries.filter(e => e.isDirectory && !e.name.startsWith('.')).map(e => e.name), await readOrder(fs, ''))
+  return sorted.includes(INBOX_CHAPTER) ? [INBOX_CHAPTER, ...sorted.filter(n => n !== INBOX_CHAPTER)] : sorted
+}
+
+/** Crée le chapitre et la fiche « Non classé » s'ils manquent (sans toucher à ce qui existe) ; retourne le chemin de la fiche. */
+export async function ensureInbox(fs: ExerciseFs): Promise<string> {
+  await fs.mkdir(INBOX_CHAPTER)
+  if (!(await fs.exists(INBOX_PATH))) {
+    const files = await exerciseFiles(fs, INBOX_CHAPTER)
+    await saveSheet(fs, INBOX_PATH, newSheet(INBOX_SHEET))
+    await writeOrder(fs, INBOX_CHAPTER, [...files, INBOX_SHEET + EXERCISE_EXT])
+  }
+  return INBOX_PATH
 }
 
 export async function exerciseFiles(fs: ExerciseFs, chapter: string): Promise<string[]> {
@@ -85,13 +102,15 @@ export async function loadTree(fs: ExerciseFs): Promise<ChapterNode[]> {
 export async function createChapter(fs: ExerciseFs, requested: string): Promise<string> {
   const base = safeName(requested)
   if (base === null) throw new InvalidNameError()
-  const name = uniqueName(base, await chapterNames(fs))
+  // Le nom du chapitre réservé est pris d'avance : un chapitre créé à la main ne s'y confond jamais.
+  const name = uniqueName(base, [...(await chapterNames(fs)), INBOX_CHAPTER])
   await fs.mkdir(name)
   await writeOrder(fs, '', [...(await chapterNames(fs)).filter(n => n !== name), name])
   return name
 }
 
 export async function renameChapter(fs: ExerciseFs, chapter: string, requested: string): Promise<string> {
+  if (chapter === INBOX_CHAPTER) throw new Error(`Le chapitre « ${INBOX_CHAPTER} » est réservé : il ne se renomme pas.`)
   const base = safeName(requested)
   if (base === null) throw new InvalidNameError()
   const others = (await chapterNames(fs)).filter(n => n !== chapter)
@@ -104,6 +123,7 @@ export async function renameChapter(fs: ExerciseFs, chapter: string, requested: 
 }
 
 export async function deleteChapter(fs: ExerciseFs, chapter: string): Promise<void> {
+  if (chapter === INBOX_CHAPTER) throw new Error(`Le chapitre « ${INBOX_CHAPTER} » est réservé : il ne se supprime pas.`)
   await fs.remove(chapter)
   await writeOrder(fs, '', (await chapterNames(fs)).filter(n => n !== chapter))
 }
@@ -183,6 +203,7 @@ export async function moveExercise(fs: ExerciseFs, path: string, toChapter: stri
 
 /** Déplace un chapitre à la position `index` parmi les chapitres. */
 export async function moveChapter(fs: ExerciseFs, chapter: string, index: number): Promise<void> {
+  if (chapter === INBOX_CHAPTER) return
   const order = (await chapterNames(fs)).filter(n => n !== chapter)
   order.splice(index, 0, chapter)
   await writeOrder(fs, '', order)

@@ -67,7 +67,7 @@ export const useExerciseStore = create<ExerciseStore>((set, get) => {
 
     async init(fs) {
       set({ fs, selected: null, error: null })
-      await run(async () => {})
+      await run(library.ensureInbox)
       set({ loaded: true })
     },
     refresh: () => run(async () => {}),

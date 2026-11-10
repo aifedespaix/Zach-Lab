@@ -87,6 +87,48 @@ export const SYMBOL_FAMILIES: readonly SymbolFamily[] = [
     ],
   },
   {
+    name: 'Géométrie',
+    hue: 175,
+    symbols: [
+      { glyph: '(AB)', label: 'Droite', latex: '\\left(#0\\right)', plain: '\\left(\\right)', mathOnly: true },
+      { glyph: '[AB]', label: 'Segment', latex: '\\left[#0\\right]', plain: '\\left[\\right]', mathOnly: true },
+      { glyph: '[AB)', label: 'Demi-droite', latex: '\\left[#0\\right)', plain: '\\left[\\right)', mathOnly: true },
+      { glyph: '⟂', label: 'Perpendiculaire à', latex: '\\perp ' },
+      { glyph: '∥', label: 'Parallèle à', latex: '\\parallel ' },
+      { glyph: '△', label: 'Triangle', latex: '\\triangle ' },
+      { glyph: '≅', label: 'Isométrique à (figures égales)', latex: '\\cong ' },
+      { glyph: '∼', label: 'Semblable à', latex: '\\sim ' },
+      { glyph: '𝒞', label: 'Cercle', latex: '\\mathcal{C}' },
+    ],
+  },
+  {
+    name: 'Angles et arcs',
+    hue: 235,
+    symbols: [
+      { glyph: '∠', label: 'Angle', latex: '\\angle ' },
+      { glyph: 'ABĈ', label: 'Angle ABC (chapeau)', latex: '\\widehat{#0}', plain: '\\widehat{}', mathOnly: true },
+      { glyph: '⌒', label: 'Arc de cercle', latex: '\\overset{\\frown}{#0}', plain: '\\overset{\\frown}{}', mathOnly: true },
+      { glyph: '′', label: 'Prime : minute d’angle, point image (A′)', latex: '^{\\prime}' },
+      { glyph: '″', label: 'Seconde d’angle', latex: '^{\\prime\\prime}' },
+      { glyph: 'rad', label: 'Radian', latex: '\\text{ rad}' },
+      { glyph: 'sin', label: 'Sinus', latex: '\\sin ' },
+      { glyph: 'cos', label: 'Cosinus', latex: '\\cos ' },
+      { glyph: 'tan', label: 'Tangente', latex: '\\tan ' },
+    ],
+  },
+  {
+    name: 'Vecteurs',
+    hue: 100,
+    symbols: [
+      { glyph: 'AB⃗', label: 'Vecteur AB', latex: '\\overrightarrow{#0}', plain: '\\overrightarrow{}', mathOnly: true },
+      { glyph: 'u⃗', label: 'Vecteur u', latex: '\\vec{#0}', plain: '\\vec{}', mathOnly: true },
+      { glyph: '0⃗', label: 'Vecteur nul', latex: '\\vec{0}', mathOnly: true },
+      { glyph: '‖ ‖', label: 'Norme', latex: '\\left\\|#0\\right\\|', plain: '\\left\\|\\right\\|', mathOnly: true },
+      { glyph: '(x;y)', label: 'Coordonnées (colonne)', latex: '\\begin{pmatrix}#0\\\\#?\\end{pmatrix}', plain: '\\begin{pmatrix} \\\\ \\end{pmatrix}', mathOnly: true },
+      { glyph: 'AB̅', label: 'Mesure algébrique', latex: '\\overline{#0}', plain: '\\overline{}', mathOnly: true },
+    ],
+  },
+  {
     name: 'Lettres grecques',
     hue: 270,
     symbols: [
@@ -99,7 +141,15 @@ export const SYMBOL_FAMILIES: readonly SymbolFamily[] = [
   },
 ]
 
-export const toneOf = (hue: number) => `color-mix(in oklab, hsl(${hue} 75% 50%) 24%, var(--background))`
+/**
+ * Le fond d'une zone teintée (barre d'outils, carte de bloc, boutons d'ajout). Le pourcentage est lu dans
+ * `--tone-pct` : le mode « couleurs légères » le met à 0 sur la racine, et les fonds disparaissent sans
+ * que les bordures (`borderOf`) changent.
+ */
+export const toneOf = (hue: number) => `color-mix(in oklab, hsl(${hue} 75% 50%) var(--tone-pct, 24%), var(--background))`
+
+/** Une teinte qui PORTE une information (unité, terme, cours) : elle ne s'efface pas avec les couleurs légères. */
+export const infoToneOf = (hue: number) => `color-mix(in oklab, hsl(${hue} 75% 50%) 24%, var(--background))`
 export const borderOf = (hue: number) => `color-mix(in oklab, hsl(${hue} 75% 50%) 55%, var(--background))`
 
 /** Le fond d'une cellule d'en-tête de tableau : un cran plus soutenu que `toneOf`, pour qu'on voie d'où la colonne tient sa couleur. */

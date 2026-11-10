@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { readSheet, saveSheet } from './library'
 import { dropExercise, insertExercise, insertExerciseAt, isBlank, moveExercise as moveInSheet, neighbour, patchExercise } from './sheet'
-import type { Exercise, Sheet } from './types'
+import { newExercise, type Exercise, type Sheet } from './types'
 import { useExerciseStore } from './useExerciseStore'
 
 export const AUTOSAVE_DELAY_MS = 600
@@ -44,6 +44,8 @@ interface OpenExerciseStore {
   insertAt(id: string, where: 'before' | 'after'): void
   /** Retire `id` ; l'exercice affiché ne change que s'il s'agissait de lui. */
   removeById(id: string): void
+  /** Sort `id` de la fiche (elle garde toujours un exercice : sur le seul restant, un vierge le remplace). */
+  takeOut(id: string): void
   /** Écrit tout de suite ce qui attend (changement de fichier, fermeture). */
   flush(): Promise<void>
 }
@@ -185,6 +187,16 @@ export const useOpenExercise = create<OpenExerciseStore>((set, get) => {
       if (sheet === null || currentId === null || sheet.exercices.length <= 1) return
       const dropped = dropExercise(sheet, id)
       if (dropped.sheet === sheet) return
+      change(dropped.sheet, id === currentId ? dropped.focus : currentId)
+    },
+    takeOut(id) {
+      const { sheet, currentId } = get()
+      if (sheet === null || currentId === null || !sheet.exercices.some(e => e.id === id)) return
+      if (sheet.exercices.length <= 1) {
+        const blank = newExercise()
+        return change({ ...sheet, exercices: [blank] }, blank.id)
+      }
+      const dropped = dropExercise(sheet, id)
       change(dropped.sheet, id === currentId ? dropped.focus : currentId)
     },
     flush: write,

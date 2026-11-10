@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
-import { BookOpen, ClipboardCheck, Download, ChevronsDownUp, Redo2, Undo2, ListChecks, ListFilter, FilePlus, FolderPlus, Highlighter, Keyboard, Minus, Moon, Plus, Rows3, NotebookPen, Calculator, Search, Settings as SettingsIcon, Shapes, X } from 'lucide-react'
+import { BookOpen, ClipboardCheck, Download, ChevronsDownUp, Redo2, Undo2, ListChecks, ListFilter, FilePlus, FolderPlus, Highlighter, Keyboard, Maximize2, Palette, Zap, Minus, Moon, Plus, Rows3, NotebookPen, Calculator, Search, Settings as SettingsIcon, Shapes, X } from 'lucide-react'
 import {
   CommandButton,
   CommandDropdownItem,
@@ -10,7 +10,7 @@ import {
   useShortcutSettingsStore,
 } from '@suite/shared/commands'
 import { SettingsDialog, ShortcutSettingsPanel } from '@suite/shared/settings'
-import { AppShell, BootScreen, CollapsiblePanel, OverflowToolbar, createPanelWidthStorage, type OverflowItem } from '@suite/shared/shell'
+import { AppShell, BootScreen, CollapsiblePanel, OverflowToolbar, createPanelWidthStorage, usePanelCollapsed, type OverflowItem } from '@suite/shared/shell'
 import { startCircularThemeTransition, useResolvedTheme, useThemeDomSync, useThemeStore } from '@suite/shared/theme'
 import { Hint, TooltipProvider } from '@suite/shared/ui'
 import { UpdateReadyBanner, UpdateSettingsSection, useAppUpdater } from '@suite/shared/update'
@@ -22,6 +22,7 @@ import { RIGHT_COLLAPSED_KEY } from './cours/useCoursesStore'
 import { ExerciseTree } from './exercises/ExerciseTree'
 import { ExerciseWorkspace } from './exercises/ExerciseWorkspace'
 import { AdvancedSearchDialog } from './exercises/AdvancedSearchDialog'
+import { addQuickExercise } from './exercises/inbox'
 import { NewSheetDialog } from './exercises/NewSheetDialog'
 import { ReviewDialog } from './exercises/ReviewDialog'
 import { useCorrectionView } from './exercises/useCorrectionView'
@@ -31,6 +32,9 @@ import { ToolbarSettingsPanel } from './exercises/ToolbarSettingsPanel'
 import { useCompact } from './exercises/useCompact'
 import { useZoom } from './exercises/useZoom'
 import { useUnitColors } from './exercises/useUnitColors'
+import { useLightColors } from './exercises/useLightColors'
+import { LEFT_COLLAPSED_KEY, isZen, toggleZen } from './exercises/zen'
+import { MoveExerciseDialog } from './exercises/MoveExerciseDialog'
 import { useToolbarFamilies } from './exercises/useToolbarFamilies'
 import { useOpenExercise } from './exercises/useOpenExercise'
 import { createTauriFs, defaultExercisesRoot } from './exercises/tauriFs'
@@ -80,6 +84,18 @@ export default function App() {
   }, [])
 
   const unitColors = useUnitColors(state => state.enabled)
+  const lightColors = useLightColors(state => state.enabled)
+  useEffect(() => {
+    const root = document.documentElement
+    if (lightColors) root.setAttribute('data-light-colors', '')
+    else root.removeAttribute('data-light-colors')
+  }, [lightColors])
+  const [leftFolded] = usePanelCollapsed(LEFT_COLLAPSED_KEY)
+  const [rightFolded] = usePanelCollapsed(RIGHT_COLLAPSED_KEY)
+  const zen = isZen(leftFolded, rightFolded)
+  useCommand('view.zen', toggleZen)
+  useCommand('view.toggleLightColors', () => useLightColors.getState().toggle())
+  useCommand('exercise.quick', () => void addQuickExercise())
   useCommand('app.palette', () => setPaletteOpen(true))
   useCommand('app.settings', () => setSettingsOpen(true))
   const onlyToCorrect = useCorrectionView(state => state.onlyToCorrect)
@@ -141,6 +157,8 @@ export default function App() {
       priority: 5,
     },
     { id: 'colors', node: button('view.toggleUnitColors', Highlighter, unitColors, 'rainbow-active'), menu: <CommandDropdownItem command="view.toggleUnitColors" icon={Highlighter} />, priority: 2 },
+    { id: 'light', node: button('view.toggleLightColors', Palette, lightColors, 'toggle-on'), menu: <CommandDropdownItem command="view.toggleLightColors" icon={Palette} />, priority: 2 },
+    { id: 'zen', node: button('view.zen', Maximize2, zen, 'toggle-on'), menu: <CommandDropdownItem command="view.zen" icon={Maximize2} />, priority: 3 },
     { id: 'compact', node: button('view.toggleCompact', Rows3, compact, 'toggle-on'), menu: <CommandDropdownItem command="view.toggleCompact" icon={Rows3} />, priority: 2 },
     {
       id: 'zoom',
@@ -190,6 +208,7 @@ export default function App() {
               <>
                 <CommandButton command="tree.newChapter" icon={FolderPlus} variant="ghost" size="icon-sm" />
                 <CommandButton command="sheet.new" icon={FilePlus} variant="ghost" size="icon-sm" />
+                <CommandButton command="exercise.quick" icon={Zap} variant="ghost" size="icon-sm" />
                 <CommandButton command="tree.toggleAll" icon={ChevronsDownUp} variant="ghost" size="icon-sm" />
                 <CommandButton command="tree.onlyToCorrect" icon={ListFilter} variant={onlyToCorrect ? 'secondary' : 'ghost'} size="icon-sm" />
               </>
@@ -225,6 +244,7 @@ export default function App() {
               </BootScreen>
             )}
             <NewSheetDialog />
+            <MoveExerciseDialog />
             <ReviewDialog />
             <AdvancedSearchDialog />
             <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowDown, ArrowUp, ArrowUpDown, Check, ChevronDown, Eye, EyeOff, ChevronRight, CornerDownRight, CornerUpRight, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, Check, ChevronDown, Eye, EyeOff, ChevronRight, CornerDownRight, CornerUpRight, FolderInput, Trash2 } from 'lucide-react'
 import {
   ConfirmDialog, Hint, ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger,
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -8,6 +8,7 @@ import { useCorrectionView } from './useCorrectionView'
 import { exerciseStatus } from './sheet'
 import { exerciseLabel, sortedIndices, type SheetSort } from './sheetSort'
 import { useSheetSort } from './useSheetSort'
+import { useMoveExerciseDialog } from './MoveExerciseDialog'
 import { useOpenExercise } from './useOpenExercise'
 
 const SORT_GROUPS: readonly { title: string; options: readonly { sort: SheetSort; label: string }[] }[] = [
@@ -130,6 +131,7 @@ export function SheetOutline() {
                     <ContextMenuItem onSelect={() => actions.insertAt(exercise.id, 'before')}><CornerUpRight /> Nouvel exercice avant</ContextMenuItem>
                     <ContextMenuItem onSelect={() => actions.insertAt(exercise.id, 'after')}><CornerDownRight /> Nouvel exercice après</ContextMenuItem>
                     <ContextMenuSeparator />
+                    <ContextMenuItem onSelect={() => useMoveExerciseDialog.getState().openFor(exercise.id)}><FolderInput /> Déplacer vers…</ContextMenuItem>
                     <ContextMenuItem variant="destructive" disabled={sheet.exercices.length <= 1} onSelect={() => setDeleting(exercise.id)}>
                       <Trash2 /> Supprimer
                     </ContextMenuItem>

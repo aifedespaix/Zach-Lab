@@ -162,7 +162,7 @@
  */
 .hue-field,
 .hue-field-wrap {
-  --field-bg: color-mix(in oklab, hsl(var(--field-hue, 215) 75% 50%) 14%, var(--background));
+  --field-bg: color-mix(in oklab, hsl(var(--field-hue, 215) 75% 50%) var(--field-bg-pct, 14%), var(--background));
   --field-fg: hsl(var(--field-hue, 215) 70% 20%);
   --field-border: color-mix(in oklab, hsl(var(--field-hue, 215) 75% 50%) 45%, var(--background));
 }
@@ -173,6 +173,15 @@
 }
 .dark .hue-field {
   --field-fg: hsl(var(--field-hue, 215) 85% 90%);
+}
+
+/*
+ * Couleurs légères : plus de fond teinté (barre d'outils, cartes de bloc, énoncé, réponse), mais les bordures
+ * gardent leur couleur. Les teintes qui portent une information (unités, termes, en-têtes de tableau) restent.
+ */
+:root[data-light-colors] {
+  --tone-pct: 0%;
+  --field-bg-pct: 0%;
 }
 
 /*

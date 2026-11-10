@@ -307,6 +307,13 @@ under `src/`, wired together in `App.tsx`:
   là ». `toggleBottom(tab)` : ouvre l'onglet, ou referme si c'est déjà lui. Commandes `notes.toggle` (Mod+Shift+N) et `calculatrice.toggle`
   (Mod+Shift+M) ; `cours.toggle` montre/cache la moitié haute (`coursesVisible`). `PanelToggles` réunit les trois pastilles (barre du haut, pied du panneau déplié, rail replié `railActions`) : allumée = `.toggle-on` (fond + bordure bleus) ; l'allumer déplie le panneau (`setPanelCollapsed`, `RIGHT_COLLAPSED_KEY`) ; l'éteindre ne le replie pas, sauf si plus rien n'est allumé ; panneau replié, les pastilles sont éteintes mais la mémoire reste, et un clic déplie en allumant (`cours/pastilles.ts` : `pastilleView`, `onPastilleClick`) (cours ET notes/calculatrice éteints : `foldWhenEmpty` dans `useCoursesStore` range le panneau). Calculatrice seule (cours masqués) : hauteur plafonnée (`CALCULATOR_MAX_HEIGHT`, 480 px) et centrée verticalement. Le moteur est mathjs (`mathjs/number`, fonctions d'Ã©valuation dÃ©sactivÃ©es) dans `calc/calculate.ts` (`calculate`,
   `normalize` : × ÷ − , % √ π Rép) ; `Calculator.tsx` n'est que le champ + le clavier ; calcul et historique dans `useCalculatorStore`.
+- **Non classé, déplacer, couleurs légères, zéro distraction** : `library.INBOX_CHAPTER/INBOX_SHEET/INBOX_PATH` (« Non classé/Non classé.json », créé au
+  lancement par `ensureInbox`, toujours le premier chapitre, ni renommable ni supprimable). `inbox.ts` : `addQuickExercise` (commande `exercise.quick`
+  Mod+Alt+N, aussi « nom de fiche vide » dans `NewSheetDialog` ; réutilise l'exercice vierge de fin de fiche) et `moveExerciseToSheet(id, target)`
+  (cible écrite AVANT de retirer la source ; `MoveExerciseDialog`, clic droit du plan « Déplacer vers… » ; `useOpenExercise.takeOut`). `view.toggleLightColors`
+  (`useLightColors`, clé `zachart-maths:light-colors`, attribut `data-light-colors` sur la racine) met `--tone-pct` et `--field-bg-pct` à 0 : `toneOf` lit
+  `--tone-pct`, les bordures restent ; ce qui PORTE une information (unités, en-têtes de tableau, cours) utilise `infoToneOf`/`headerToneOf`, jamais effacé.
+  `view.zen` (Mod+Shift+H, `zen.ts`) range les deux panneaux et retient leur état d'avant ; il n'a pas d'état propre (zen = les deux repliés).
 - **`math/`** — `isMathField` (the toolbar's target check); MathLive itself and `renderMathToHtml` come from `@suite/shared`.
 - **`cours/`** — courses are Markdown files in `cours/contenu/` (front matter `titre`,
   `chapitre`, `mots-cles`), compiled in with `import.meta.glob`; adding a course is adding a

@@ -1,6 +1,6 @@
 import { createContext, useContext, useRef, type ComponentProps, type ReactNode, type UIEvent } from 'react'
 import { findQuantities } from './quantities'
-import { toneOf } from './toolbarCatalog'
+import { infoToneOf } from './toolbarCatalog'
 import { useUnitColors } from './useUnitColors'
 
 /**
@@ -24,7 +24,7 @@ function marked(text: string, hues: ReadonlyMap<string, number>): ReactNode[] {
       <mark
         key={quantity.start}
         data-unit={quantity.unit}
-        style={{ background: toneOf(hue), color: 'transparent', borderRadius: 3 }}
+        style={{ background: infoToneOf(hue), color: 'transparent', borderRadius: 3 }}
       >
         {text.slice(quantity.start, quantity.end)}
       </mark>,

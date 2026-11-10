@@ -52,6 +52,20 @@ export const COMMANDS = [
     defaultBinding: null,
   },
   {
+    id: 'view.toggleLightColors',
+    label: 'Couleurs légères',
+    description: 'Efface les fonds colorés (barre d’outils, blocs, énoncé, réponse) et garde les bordures de couleur. Les couleurs des unités et des termes restent.',
+    category: 'view',
+    defaultBinding: null,
+  },
+  {
+    id: 'view.zen',
+    label: 'Zéro distraction',
+    description: 'Range les deux panneaux latéraux pour ne garder que l’exercice ; un second appel les remet comme ils étaient.',
+    category: 'view',
+    defaultBinding: 'Mod+Shift+H',
+  },
+  {
     id: 'view.toggleCompact',
     label: 'Mode condensé',
     description: 'Réduit les marges et les espacements de la zone centrale pour voir plus de blocs à la fois.',
@@ -124,6 +138,13 @@ export const COMMANDS = [
     description: 'Replie le panneau des cours et des notes pour donner toute la place à la zone de travail.',
     category: 'view',
     defaultBinding: 'Mod+Shift+B',
+  },
+  {
+    id: 'exercise.quick',
+    label: 'Exercice rapide (non classé)',
+    description: 'Ajoute tout de suite un exercice à la fiche « Non classé », sans choisir de nom ni de chapitre : tu le rangeras plus tard.',
+    category: 'tree',
+    defaultBinding: 'Mod+Alt+N',
   },
   {
     id: 'tree.newChapter',

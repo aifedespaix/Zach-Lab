@@ -11,7 +11,7 @@ import { EmptyAreaContextMenu } from './EmptyAreaContextMenu'
 import { EquationEditor, type SubBlockContext } from './EquationEditor'
 import { FieldContextMenu } from './FieldContextMenu'
 import { HighlightedTextarea, UnitHuesContext } from './HighlightedTextarea'
-import { borderOf, headerToneOf, toneOf } from './toolbarCatalog'
+import { borderOf, headerToneOf, infoToneOf, toneOf } from './toolbarCatalog'
 import { canRemoveRect, cellKeyAction, cellMove, clearRect, crossProduct, deleteShortcut, inRect, insertShortcut, pasteGrid, rectOf, rectToTsv, removeRect, type CellMove, type CellPoint } from './tableNav'
 import { tableLayout } from './tableUnits'
 import { spacing, useCompact } from './useCompact'
@@ -74,7 +74,7 @@ function TableEditor({ block, onChange, index }: { block: TableBlock; onChange: 
     const hue = unit === null || unit === undefined ? undefined : hues.get(unit)
     if (hue === undefined) return undefined
     const isHeader = layout.axis === 'columns' ? row === 0 : column === 0
-    return isHeader ? headerToneOf(hue) : toneOf(hue)
+    return isHeader ? headerToneOf(hue) : infoToneOf(hue)
   }
   const set = (next: string[][]) => onChange({ cellules: next })
   const scrollRef = useRef<HTMLDivElement>(null)

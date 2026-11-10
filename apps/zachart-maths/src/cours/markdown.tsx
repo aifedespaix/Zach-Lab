@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { BookOpen, Lightbulb, ListChecks, Pin, Ruler, TriangleAlert, type LucideIcon } from 'lucide-react'
 import { renderMathToHtml } from '@suite/shared/math'
-import { borderOf, toneOf } from '../exercises/toolbarCatalog'
+import { borderOf, infoToneOf } from '../exercises/toolbarCatalog'
 
 /**
  * Le Markdown des cours, réduit à ce que les cours utilisent : titres, paragraphes, listes,
@@ -135,7 +135,7 @@ const HEADING_SIZE = { 1: 18, 2: 15, 3: 14 } as const
 
 const HEADING_STYLE = {
   1: { paddingBottom: 4, borderBottom: `2px solid ${borderOf(215)}` },
-  2: { paddingLeft: 8, borderLeft: `4px solid ${borderOf(215)}`, background: toneOf(215), borderRadius: '0 4px 4px 0' },
+  2: { paddingLeft: 8, borderLeft: `4px solid ${borderOf(215)}`, background: infoToneOf(215), borderRadius: '0 4px 4px 0' },
   3: { color: `color-mix(in oklab, hsl(215 75% 50%) 70%, var(--foreground))` },
 } as const
 
@@ -149,7 +149,7 @@ function renderBlocks(blocks: MdBlock[]): ReactNode[] {
           case 'callout': {
             const { label, icon: Icon, hue } = CALLOUTS[b.kind]
             return (
-              <aside key={i} data-callout={b.kind} style={{ margin: '10px 0', borderRadius: 6, border: `1px solid ${borderOf(hue)}`, borderLeftWidth: 4, background: toneOf(hue), padding: '6px 12px' }}>
+              <aside key={i} data-callout={b.kind} style={{ margin: '10px 0', borderRadius: 6, border: `1px solid ${borderOf(hue)}`, borderLeftWidth: 4, background: infoToneOf(hue), padding: '6px 12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, color: `color-mix(in oklab, hsl(${hue} 75% 50%) 75%, var(--foreground))` }}>
                   <Icon size={15} aria-hidden />
                   <span>{label}{b.title !== '' && <span style={{ fontWeight: 600 }}> — {inline(b.title)}</span>}</span>
@@ -172,7 +172,7 @@ function renderBlocks(blocks: MdBlock[]): ReactNode[] {
           case 'math': return <div key={i} style={{ margin: '8px 0', overflowX: 'auto' }}><Formula latex={b.latex} display /></div>
           case 'table': return (
             <table key={i} style={{ borderCollapse: 'collapse', margin: '8px 0' }}>
-              <thead><tr>{b.header.map((h, j) => <th key={j} style={{ border: '1px solid var(--border)', padding: '3px 8px', background: toneOf(215) }}>{inline(h)}</th>)}</tr></thead>
+              <thead><tr>{b.header.map((h, j) => <th key={j} style={{ border: '1px solid var(--border)', padding: '3px 8px', background: infoToneOf(215) }}>{inline(h)}</th>)}</tr></thead>
               <tbody>{b.rows.map((r, j) => <tr key={j}>{r.map((c, k) => <td key={k} style={{ border: '1px solid var(--border)', padding: '3px 8px' }}>{inline(c)}</td>)}</tr>)}</tbody>
             </table>
           )

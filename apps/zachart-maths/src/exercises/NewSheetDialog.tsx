@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { create } from 'zustand'
 import { useCommand } from '@suite/shared/commands'
 import { Button, ComboboxSelect, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@suite/shared/ui'
+import { addQuickExercise } from './inbox'
+import { INBOX_CHAPTER } from './library'
 import { useExerciseStore } from './useExerciseStore'
 
 interface NewSheetDialogState {
@@ -26,7 +28,7 @@ const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCas
  * Le chapitre d'une fiche : un champ qui filtre la liste des chapitres existants à la frappe.
  * Un nom qui n'existe pas encore est proposé comme nouveau chapitre.
  */
-function ChapterSelect({ value, onChange, chapters }: { value: string; onChange: (v: string) => void; chapters: string[] }) {
+export function ChapterSelect({ value, onChange, chapters }: { value: string; onChange: (v: string) => void; chapters: string[] }) {
   const options = useMemo(() => chapters.map(name => ({ value: name, label: name })), [chapters])
   const creatable = useMemo(() => ({ label: (name: string) => `Créer le chapitre « ${name} »`, toValue: (name: string) => name }), [])
   return (
@@ -61,10 +63,16 @@ export function NewSheetDialog() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- seule l'ouverture réinitialise le formulaire
   }, [open, preset])
 
-  const valid = titre.trim() !== '' && chapter.trim() !== ''
+  // Sans nom, on ne crée pas de fiche : juste un exercice, rangé plus tard (fiche « Non classé »).
+  const quick = titre.trim() === ''
+  const valid = quick || chapter.trim() !== ''
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     if (!valid) return
+    if (quick) {
+      close()
+      return void addQuickExercise()
+    }
     const store = useExerciseStore.getState()
     const name = chapter.trim()
     const existing = chapters.find(c => fold(c) === fold(name))
@@ -82,7 +90,7 @@ export function NewSheetDialog() {
           <DialogHeader>
             <DialogTitle>Nouvelle fiche</DialogTitle>
             <DialogDescription>
-              Crée une fiche d'exercices vide dans un chapitre, puis l'ouvre. Tu peux taper un nouveau nom de chapitre pour le créer en même temps.
+              Crée une fiche d'exercices vide dans un chapitre, puis l'ouvre. Tu peux taper un nouveau nom de chapitre pour le créer en même temps. Laisse le nom vide pour créer seulement un exercice, sans le ranger.
             </DialogDescription>
           </DialogHeader>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, fontWeight: 600 }}>
@@ -96,13 +104,18 @@ export function NewSheetDialog() {
               className="w-full rounded-md border bg-background px-2 py-1.5 text-sm font-normal"
             />
           </label>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, fontWeight: 600 }}>
+          {quick && (
+            <p style={{ margin: 0, fontSize: 12, color: 'var(--muted-foreground)' }}>
+              Sans nom, cela ajoute juste un exercice à la fiche « {INBOX_CHAPTER} » : tu le rangeras plus tard.
+            </p>
+          )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, fontWeight: 600, opacity: quick ? 0.5 : 1 }}>
             <span>Chapitre</span>
             <ChapterSelect value={chapter} onChange={setChapter} chapters={chapters} />
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={close}>Annuler</Button>
-            <Button type="submit" disabled={!valid}>Valider</Button>
+            <Button type="submit" disabled={!valid}>{quick ? 'Créer un exercice non classé' : 'Valider'}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

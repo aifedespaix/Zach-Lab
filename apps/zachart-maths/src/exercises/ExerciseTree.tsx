@@ -16,6 +16,7 @@ import { useNewSheetDialog } from './NewSheetDialog'
 import { useAdvancedSearch } from './AdvancedSearchDialog'
 import { splitPath } from './names'
 import { filterChapters } from './treeSearch'
+import { INBOX_CHAPTER } from './library'
 import { useExerciseStore } from './useExerciseStore'
 
 /** Ce que l'élève est en train de nommer : un champ de saisie apparaît à l'endroit concerné. */
@@ -257,11 +258,11 @@ export function ExerciseTree() {
                   <ContextMenuItem onSelect={() => useNewSheetDialog.getState().openFor(chapter.name)}>
                     <FilePlus /> Nouvelle fiche
                   </ContextMenuItem>
-                  <ContextMenuItem onSelect={() => setNaming({ kind: 'rename-chapter', chapter: chapter.name })}>Renommer</ContextMenuItem>
-                  <ContextMenuItem disabled={realCi === 0} onSelect={() => void store.moveChapter(chapter.name, -1)}>Monter</ContextMenuItem>
-                  <ContextMenuItem disabled={realCi === tree.length - 1} onSelect={() => void store.moveChapter(chapter.name, 1)}>Descendre</ContextMenuItem>
+                  <ContextMenuItem disabled={chapter.name === INBOX_CHAPTER} onSelect={() => setNaming({ kind: 'rename-chapter', chapter: chapter.name })}>Renommer</ContextMenuItem>
+                  <ContextMenuItem disabled={realCi === 0 || chapter.name === INBOX_CHAPTER || tree[realCi - 1]?.name === INBOX_CHAPTER} onSelect={() => void store.moveChapter(chapter.name, -1)}>Monter</ContextMenuItem>
+                  <ContextMenuItem disabled={realCi === tree.length - 1 || chapter.name === INBOX_CHAPTER} onSelect={() => void store.moveChapter(chapter.name, 1)}>Descendre</ContextMenuItem>
                   <ContextMenuSeparator />
-                  <ContextMenuItem variant="destructive" onSelect={() => setDeletion({ kind: 'chapter', chapter: chapter.name, count: chapter.exercises.length })}>
+                  <ContextMenuItem variant="destructive" disabled={chapter.name === INBOX_CHAPTER} onSelect={() => setDeletion({ kind: 'chapter', chapter: chapter.name, count: chapter.exercises.length })}>
                     Supprimer
                   </ContextMenuItem>
                 </ContextMenuContent>
