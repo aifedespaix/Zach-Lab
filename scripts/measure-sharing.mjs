@@ -12,37 +12,39 @@ import { existsSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const SHARED = join(ROOT, 'packages/shared')
+// Sous Windows `join`/`resolve` rendent des `\` : tout est ramené à des `/` pour les comparaisons.
+const slash = path => path.replaceAll('\\', '/')
+const ROOT = slash(resolve(dirname(fileURLToPath(import.meta.url)), '..'))
+const SHARED = slash(join(ROOT, 'packages/shared'))
 const IMPORT = /(?:from|import|export\s+\*\s+from)\s*\(?\s*['"]([^'"]+)['"]/g
 const EXTENSIONS = ['.ts', '.tsx', '/index.ts', '/index.tsx']
 const isTest = file => /\.(test|spec)\.[tj]sx?$/.test(file) || /\/(test|testing)\//.test(file)
 
 function resolveFile(base) {
-  if (existsSync(base) && statSync(base).isFile()) return base
-  for (const extension of EXTENSIONS) if (existsSync(base + extension)) return base + extension
+  if (existsSync(base) && statSync(base).isFile()) return slash(base)
+  for (const extension of EXTENSIONS) if (existsSync(base + extension)) return slash(base + extension)
   return null
 }
 
 function sharedEntries() {
   const { exports } = JSON.parse(readFileSync(join(SHARED, 'package.json'), 'utf8'))
-  return new Map(Object.entries(exports).map(([key, target]) => [`@suite/shared/${key.slice(2)}`, join(SHARED, target)]))
+  return new Map(Object.entries(exports).map(([key, target]) => [`@suite/shared/${key.slice(2)}`, slash(join(SHARED, target))]))
 }
 
 /** Le fichier visé par `specifier` depuis `from`, ou `null` (paquet npm, CSS, fichier absent). */
 export function resolveImport(specifier, from, appSrc, entries = sharedEntries()) {
   if (entries.has(specifier)) return entries.get(specifier)
-  if (specifier.startsWith('@/')) return resolveFile(join(appSrc, specifier.slice(2)))
-  if (specifier.startsWith('.')) return resolveFile(resolve(dirname(from), specifier))
+  if (specifier.startsWith('@/')) return resolveFile(slash(join(appSrc, specifier.slice(2))))
+  if (specifier.startsWith('.')) return resolveFile(slash(resolve(dirname(from), specifier)))
   return null
 }
 
 export function measure(app) {
-  const appRoot = resolve(ROOT, app)
-  const appSrc = join(appRoot, 'src')
+  const appRoot = slash(resolve(ROOT, app))
+  const appSrc = slash(join(appRoot, 'src'))
   const entries = sharedEntries()
   const seen = new Set()
-  const queue = [join(appSrc, 'main.tsx')]
+  const queue = [`${appSrc}/main.tsx`]
   const totals = { shared: 0, app: 0 }
   const files = { shared: 0, app: 0 }
   while (queue.length > 0) {
